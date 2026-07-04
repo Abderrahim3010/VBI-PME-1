@@ -1538,6 +1538,7 @@ export default function App() {
             onMaximize={() => toggleMaximizeWindow('sales')}
             onFocus={() => focusWindow('sales')}
             scale={scale}
+            overflowVisible={true}
           >
             <SalesVoucherWindow
               isOpen={windows.find(w => w.id === 'sales')?.isOpen || false}

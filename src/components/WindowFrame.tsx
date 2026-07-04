@@ -18,6 +18,7 @@ interface WindowFrameProps {
   onFocus: () => void;
   children: React.ReactNode;
   scale?: number;
+  overflowVisible?: boolean;
 }
 
 // Helper to extract default sizes from Tailwind helper strings such as w-[800px]
@@ -45,7 +46,8 @@ export default function WindowFrame({
   onMaximize,
   onFocus,
   children,
-  scale = 1
+  scale = 1,
+  overflowVisible = false
 }: WindowFrameProps) {
   const [position, setPosition] = useState({ x: initialX, y: initialY });
   const windowRef = useRef<HTMLDivElement>(null);
@@ -311,7 +313,7 @@ export default function WindowFrame({
       </div>
 
       {/* Material 3 Client Area with rounded margins */}
-      <div className="flex-1 min-h-0 bg-m3-surface-container/30 dark:bg-slate-950/30 p-2 flex flex-col relative rounded-2xl border border-m3-outline-variant/10 dark:border-slate-800/30 overflow-auto">
+      <div className={`flex-1 min-h-0 bg-m3-surface-container/30 dark:bg-slate-950/30 p-2 flex flex-col relative rounded-2xl border border-m3-outline-variant/10 dark:border-slate-800/30 ${overflowVisible ? 'overflow-visible' : 'overflow-auto'}`}>
         {children}
       </div>
 

@@ -154,6 +154,14 @@ export default function SalesVoucherWindow({
   const [clientFormAddress, setClientFormAddress] = useState('');
   const [clientFormBalance, setClientFormBalance] = useState<string>('0');
 
+  // Facturation dropdown and preview modal states
+  const [isFacturationDropdownOpen, setIsFacturationDropdownOpen] = useState(false);
+  const [isFacturePreviewOpen, setIsFacturePreviewOpen] = useState(false);
+  const [isBonPreviewOpen, setIsBonPreviewOpen] = useState(false);
+  const [factureType, setFactureType] = useState<'normal' | 'proforma'>('normal');
+  const [showComptabiliseesList, setShowComptabiliseesList] = useState(false);
+  const [showNonComptabiliseesList, setShowNonComptabiliseesList] = useState(false);
+
   // CUSTOM RETRO DIALOG BOX STATE (to completely bypass blocked iframe alert/confirm modals)
   const [retroDialog, setRetroDialog] = useState<{
     isOpen: boolean;
@@ -574,6 +582,50 @@ export default function SalesVoucherWindow({
   // Active items helper reference
   const currentItems = mode === 'create' ? draftItems : (selectedSale?.items || []);
 
+  const previewData = useMemo(() => {
+    const isCreate = mode === 'create';
+    const id = isCreate ? newSaleId : (selectedSale?.id || '');
+    const date = isCreate ? newDate : (selectedSale?.date || '');
+    const time = isCreate ? newTime : (selectedSale?.time || '');
+    const clientName = isCreate ? (newClientName || 'Anonyme') : (selectedSale?.client || 'Anonyme');
+    const items = isCreate ? draftItems : (selectedSale?.items || []);
+    const activeRemise = isCreate ? remise : (selectedSale?.remise || 0);
+    const activeTvaRate = isCreate ? tvaRate : (selectedSale?.tva ? 19 : 0);
+    const activeVendeur = isCreate ? vendeurName : (selectedSale?.vendeur || '<Aucun>');
+    const observationsText = isCreate ? observations : (selectedSale?.observations || '');
+    
+    const rawSum = items.reduce((acc, item) => acc + item.total, 0);
+    const totalHT = Math.max(0, rawSum - activeRemise);
+    const tvaVal = totalHT * (activeTvaRate / 100);
+    const timbreVal = isCreate 
+      ? (totalHT > 15000 ? 50 : 0) 
+      : (selectedSale?.timbre || 0);
+    const ttcVal = totalHT + tvaVal + timbreVal;
+    
+    const clientObj = clients.find(c => c.name === clientName) || { id: 'anonyme', name: clientName, balance: 0, phone: '', address: '' };
+    
+    const payMode = isCreate ? paymentMode : 'A TERME';
+    
+    return {
+      id,
+      date,
+      time,
+      clientName,
+      clientObj,
+      items,
+      remise: activeRemise,
+      tvaRate: activeTvaRate,
+      tva: tvaVal,
+      timbre: timbreVal,
+      totalHT,
+      ttc: ttcVal,
+      rawSum,
+      vendeur: activeVendeur,
+      observations: observationsText,
+      payMode
+    };
+  }, [mode, newSaleId, selectedSale, newDate, newTime, newClientName, draftItems, remise, tvaRate, vendeurName, observations, clients, paymentMode]);
+
   // Keyboard shortcut Ctrl+B for profit/benefit toggle
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -953,6 +1005,9 @@ export default function SalesVoucherWindow({
       } else if (e.key === 'F2') {
         e.preventDefault();
         handleFermerLeBon();
+      } else if (e.key === 'F3') {
+        e.preventDefault();
+        setIsBonPreviewOpen(true);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -1195,12 +1250,12 @@ export default function SalesVoucherWindow({
 
             <button
               type="button"
-              onClick={() => showRetroAlert(`Impression thermique du Bon N° ${mode === 'create' ? newSaleId : (selectedSale?.id || '')} envoyée!`, "Impression")}
+              onClick={() => setIsBonPreviewOpen(true)}
               className="px-3.5 h-10 flex items-center justify-center gap-2 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-950 shadow-xs cursor-pointer transition-transform duration-100 active:scale-95"
             >
               <span className="text-base">🖨️</span>
               <div className="flex flex-col text-left">
-                <span style={{ fontSize: '12px', fontFamily: 'Arial' }} className="font-extrabold text-[10px] uppercase tracking-wider leading-none">Imprimer</span>
+                <span style={{ fontSize: '12px', fontFamily: 'Arial' }} className="font-extrabold text-[10px] uppercase tracking-wider leading-none">Imprimer le bon</span>
                 <span className="text-[8px] font-bold text-slate-400 tracking-wider mt-0.5">[ F3 ]</span>
               </div>
             </button>
@@ -1246,7 +1301,7 @@ export default function SalesVoucherWindow({
         {/* 2. Client and Document Metadatas panel */}
         <div 
           style={{ height: '128px', width: '100%' }}
-          className="mx-0.5 mt-0.5 mb-2 p-3 bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800/80 rounded-2xl flex flex-nowrap gap-3.5 items-center justify-start text-slate-900 dark:text-slate-100 shadow-xs relative overflow-x-auto no-scrollbar shrink-0"
+          className="mx-0.5 mt-0.5 mb-2 p-3 bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800/80 rounded-2xl flex flex-nowrap gap-3.5 items-center justify-start text-slate-900 dark:text-slate-100 shadow-xs relative overflow-visible shrink-0"
         >
         
         {/* Left container: Client + metadata on Row 1, and facturation auxiliary cards raised to Row 2 */}
@@ -1345,14 +1400,99 @@ export default function SalesVoucherWindow({
           </div>
 
           {/* Row 2: Facturation, Autres imp, Import/Exp raised to Row 2 side by side */}
-          <div className="flex flex-row gap-1.5 select-none font-sans font-bold shrink-0">
-            <div className="h-8 bg-slate-50 dark:bg-slate-900/60 px-2.5 border border-slate-200/50 dark:border-slate-800 rounded-xl flex gap-2 items-center text-slate-600 dark:text-slate-300 w-[145px]">
-              <span className="text-[11px]">📊</span>
-              <div className="flex flex-col leading-none text-left">
-                <span className="text-[8.5px] font-extrabold uppercase tracking-wide text-slate-700 dark:text-slate-300">Facturation</span>
-                <span className="text-[7.5px] text-slate-400 mt-0.5">Comptes actifs</span>
-              </div>
+          <div className="flex flex-row gap-1.5 select-none font-sans font-bold shrink-0 relative">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsFacturationDropdownOpen(!isFacturationDropdownOpen)}
+                className={`h-8 px-2.5 border rounded-xl flex gap-2 items-center text-left transition-all cursor-pointer active:scale-95 w-[145px] focus:outline-none ${
+                  isFacturationDropdownOpen
+                    ? 'bg-blue-50 border-blue-400 text-blue-700 dark:bg-slate-800 dark:border-sky-500 dark:text-sky-450'
+                    : 'bg-slate-50 dark:bg-slate-900/60 border-slate-200/50 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                <span className="text-[11px]">📊</span>
+                <div className="flex-1 flex flex-col leading-none">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[8.5px] font-extrabold uppercase tracking-wide text-slate-700 dark:text-slate-300">Facturation</span>
+                    <span className="text-[7px] text-slate-400">▼</span>
+                  </div>
+                  <span className="text-[7.5px] text-slate-400 mt-0.5">Comptes actifs</span>
+                </div>
+              </button>
+
+              {isFacturationDropdownOpen && (
+                <>
+                  {/* Backdrop to close dropdown */}
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setIsFacturationDropdownOpen(false)} 
+                  />
+                  
+                  {/* Dropdown Menu exactly like image.png */}
+                  <div className="absolute left-0 top-full mt-1 w-[260px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-xl py-1 z-50 text-left font-sans select-none animate-in fade-in slide-in-from-top-1 duration-100 no-gray-override">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsFacturationDropdownOpen(false);
+                        setFactureType('normal');
+                        setIsFacturePreviewOpen(true);
+                      }}
+                      className="w-full px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-start text-xs text-slate-800 dark:text-slate-200 font-semibold cursor-pointer"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mr-2.5"></span>
+                      <span className="flex-1 text-slate-800 dark:text-slate-100">
+                        Imprimer Facture
+                      </span>
+                    </button>
+                    
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsFacturationDropdownOpen(false);
+                        setShowComptabiliseesList(true);
+                      }}
+                      className="w-full px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-start text-xs text-slate-800 dark:text-slate-200 font-semibold cursor-pointer border-t border-slate-100 dark:border-slate-800/60"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-slate-400 mr-2.5"></span>
+                      <span className="flex-1 text-slate-800 dark:text-slate-100">
+                        Factures de Ventes Comptabilisées
+                      </span>
+                    </button>
+                    
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsFacturationDropdownOpen(false);
+                        setShowNonComptabiliseesList(true);
+                      }}
+                      className="w-full px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-start text-xs text-slate-800 dark:text-slate-200 font-semibold cursor-pointer"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-slate-400 mr-2.5"></span>
+                      <span className="flex-1 text-slate-800 dark:text-slate-100">
+                        Factures de Ventes NON Comptabilisées
+                      </span>
+                    </button>
+                    
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsFacturationDropdownOpen(false);
+                        setFactureType('proforma');
+                        setIsFacturePreviewOpen(true);
+                      }}
+                      className="w-full px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-start text-xs text-slate-800 dark:text-slate-200 font-semibold cursor-pointer border-t border-slate-100 dark:border-slate-800/60"
+                    >
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mr-2.5"></span>
+                      <span className="flex-1 text-slate-800 dark:text-slate-100">
+                        Facture Proforma
+                      </span>
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
+
             <div className="h-8 bg-slate-50 dark:bg-slate-900/60 px-2.5 border border-slate-200/50 dark:border-slate-800 rounded-xl flex gap-2 items-center text-slate-600 dark:text-slate-300 w-[145px]">
               <span className="text-[11px]">🖨️</span>
               <div className="flex flex-col leading-none text-left">
@@ -2793,6 +2933,726 @@ export default function SalesVoucherWindow({
         </div>
       )}
 
+      {/* -------------------- INVOICE PRINT PREVIEW MODAL (A4 PAPER SPECIFICATION) -------------------- */}
+      {isFacturePreviewOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex justify-center items-start overflow-y-auto z-[100200] py-8 select-none print:p-0 print:bg-white print:backdrop-blur-none">
+          <div className="flex flex-col gap-4 items-center print:gap-0">
+            {/* Toolbar - Hidden when printing */}
+            <div className="w-[794px] bg-slate-800 text-white p-3 px-5 rounded-2xl flex justify-between items-center shadow-lg print:hidden font-sans">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🖨️</span>
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-wider">Aperçu avant impression</h4>
+                  <p className="text-[10px] text-slate-300 font-medium">Facture de Vente au format A4</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="px-4 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                >
+                  🖨️ Imprimer la Facture
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsFacturePreviewOpen(false)}
+                  className="px-4 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-100 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                >
+                  ✕ Fermer
+                </button>
+              </div>
+            </div>
+
+            {/* A4 Printable Sheet */}
+            <div 
+              id="print-invoice-sheet"
+              className="w-[794px] min-h-[1123px] bg-white text-black p-12 relative shadow-2xl rounded-sm font-sans flex flex-col justify-between print:shadow-none print:p-0 print:w-full print:min-h-0 print:bg-white"
+            >
+              <div>
+                {/* Header Section */}
+                <div className="flex justify-between items-start mb-6">
+                  {/* Left: Company & Seller */}
+                  <div className="flex flex-col text-left font-sans select-text">
+                    <h1 className="text-xl font-black tracking-tight text-slate-900 uppercase">
+                      {config?.invoiceInfo?.nomRaisonSociale || config?.company || 'VBI'}
+                    </h1>
+                    {config?.invoiceInfo?.detail1 && <p className="text-[10px] text-slate-600 leading-normal">{config.invoiceInfo.detail1}</p>}
+                    {config?.invoiceInfo?.detail2 && <p className="text-[10px] text-slate-600 leading-normal">{config.invoiceInfo.detail2}</p>}
+                    {config?.invoiceInfo?.detail3 && <p className="text-[10px] text-slate-600 leading-normal">{config.invoiceInfo.detail3}</p>}
+                    <p className="text-[11px] text-slate-800 font-bold mt-3">
+                      Vendeur :<span className="font-semibold text-slate-700"> {previewData.vendeur || 'admin'}</span>
+                    </p>
+                  </div>
+
+                  {/* Right: Beautiful logo box matching Capture d’écran */}
+                  <div className="flex flex-col items-end gap-1.5">
+                    {config?.invoiceInfo?.logo ? (
+                      <img 
+                        src={config.invoiceInfo.logo} 
+                        alt="Logo de l'entreprise" 
+                        className="max-h-16 max-w-44 object-contain"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="border border-black p-0.5 bg-white select-none w-44">
+                        <div className="border border-black px-3 py-1 flex flex-col items-center justify-center">
+                          <span className="font-serif italic font-black text-2xl tracking-tight text-blue-900 leading-none">VBI</span>
+                          <span className="text-[7.5px] font-black tracking-widest text-blue-950 mt-1 uppercase leading-none">Informatique</span>
+                        </div>
+                      </div>
+                    )}
+                    <div className="text-[11px] font-bold text-slate-900 mt-1 select-text">
+                      le, {previewData.date}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Subtitle / Document Title & Client Box */}
+                <div className="grid grid-cols-12 gap-4 items-end mb-4">
+                  {/* Title and ID */}
+                  <div className="col-span-7 text-left pb-2">
+                    <h2 className="text-lg font-black tracking-tight text-black uppercase leading-none select-text">
+                      {factureType === 'proforma' ? 'FACTURE PROFORMA' : 'FACTURE'} N°{previewData.id.padStart(5, '0')}/{previewData.date.split('/')[2] || new Date().getFullYear().toString()}
+                    </h2>
+                    <span className="text-[10px] font-bold text-slate-500 block mt-1">PAGE : 1</span>
+                  </div>
+
+                  {/* Client "DOIT" box matching exactly image.png */}
+                  <div className="col-span-5 flex flex-col items-start font-sans">
+                    <span className="text-[10px] font-black uppercase text-slate-900 tracking-wider mb-1 leading-none">DOIT :</span>
+                    <div className="w-full border border-black rounded-lg p-3 min-h-[75px] text-left select-text">
+                      <h4 className="font-black text-xs uppercase leading-snug">{previewData.clientName}</h4>
+                      {previewData.clientObj?.address && (
+                        <p className="text-[10px] text-slate-600 mt-1 font-medium leading-tight">
+                          {previewData.clientObj.address}
+                        </p>
+                      )}
+                      {previewData.clientObj?.contact && (
+                        <p className="text-[10px] text-slate-500 mt-0.5 font-mono">
+                          {previewData.clientObj.contact}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Main Items Table */}
+                <div className="mb-6">
+                  <table className="w-full border-collapse border border-black text-xs">
+                    <thead>
+                      <tr className="border-b border-black text-center font-bold bg-slate-50">
+                        <th className="border-r border-black p-1 text-[9px] w-[5%]">N°</th>
+                        <th className="border-r border-black p-1 text-[9px] w-[16%]">REF</th>
+                        <th className="border-r border-black p-1 text-[9px] w-[37%] text-left pl-2">DESIGNATION</th>
+                        <th className="border-r border-black p-1 text-[9px] w-[7%]">QTE</th>
+                        <th className="border-r border-black p-1 text-[9px] w-[10%]">P.U HT</th>
+                        <th className="border-r border-black p-1 text-[9px] w-[11%]">Montant HT</th>
+                        <th className="border-r border-black p-1 text-[8.5px] w-[14%]" colSpan={2}>
+                          <div className="border-b border-black pb-0.5 mb-0.5 font-black text-center text-[8.5px]">TVA</div>
+                          <div className="flex text-[7.5px] font-bold">
+                            <span className="w-1/2 border-r border-black/30 text-center">Taux%</span>
+                            <span className="w-1/2 text-center">Montant</span>
+                          </div>
+                        </th>
+                        <th className="p-1 text-[9px] w-[12%]">Montant TTC</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {/* Real Items */}
+                      {previewData.items.map((item, idx) => {
+                        const itemHt = item.total;
+                        const itemTva = itemHt * (previewData.tvaRate / 100);
+                        const itemTtc = itemHt + itemTva;
+                        return (
+                          <tr key={item.id || idx} className="border-b border-black h-7 text-center font-mono select-text">
+                            <td className="border-r border-black p-1 text-[9.5px] font-sans font-bold">{idx + 1}</td>
+                            <td className="border-r border-black p-1 text-[9px] text-left leading-none font-mono font-medium">{item.code}</td>
+                            <td className="border-r border-black p-1 text-[9.5px] text-left font-sans font-semibold uppercase leading-tight select-text pl-2">{item.designation}</td>
+                            <td className="border-r border-black p-1 text-[11px] font-sans font-black">{item.qty}</td>
+                            <td className="border-r border-black p-1 text-[9.5px] text-right">{item.price.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}</td>
+                            <td className="border-r border-black p-1 text-[9.5px] text-right">{(item.total).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}</td>
+                            <td className="border-r border-black p-1 text-[9px] w-[7%] text-center font-sans">
+                              {previewData.tvaRate}%
+                            </td>
+                            <td className="border-r border-black p-1 text-[9px] w-[7%] text-right">
+                              {itemTva.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
+                            </td>
+                            <td className="p-1 text-[9.5px] text-right font-sans font-black">{itemTtc.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}</td>
+                          </tr>
+                        );
+                      })}
+                      
+                      {/* Empty padded rows for professional ERP document feel */}
+                      {Array.from({ length: Math.max(0, 8 - previewData.items.length) }).map((_, idx) => (
+                        <tr key={`empty-${idx}`} className="border-b border-black h-7">
+                          <td className="border-r border-black"></td>
+                          <td className="border-r border-black"></td>
+                          <td className="border-r border-black"></td>
+                          <td className="border-r border-black"></td>
+                          <td className="border-r border-black"></td>
+                          <td className="border-r border-black"></td>
+                          <td className="border-r border-black"></td>
+                          <td className="border-r border-black"></td>
+                          <td></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Invoice Footer Details (Totals & Stop wording) */}
+                <div className="grid grid-cols-12 gap-4 items-start mt-6">
+                  {/* Left block: Payment mode & sum in words */}
+                  <div className="col-span-7 flex flex-col gap-3 text-left font-sans select-text">
+                    <p className="text-[10px] font-black text-slate-800 uppercase">
+                      Mode de payement : <span className="font-black text-slate-900 border-b border-black pb-0.5">{previewData.payMode}</span>
+                    </p>
+                    <div className="mt-2 text-[10px] leading-relaxed select-text">
+                      <p className="font-bold text-slate-600">Arrêter le présente facture à la somme de :</p>
+                      <p className="font-black text-xs text-black uppercase mt-1 tracking-wide leading-tight">
+                        {amountToWordsFR(previewData.ttc)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Right block: Totals grid */}
+                  <div className="col-span-5 flex justify-end">
+                    <table className="w-[260px] border-collapse border border-black text-[10px] font-sans font-bold">
+                      <tbody>
+                        <tr className="border-b border-black">
+                          <td className="border-r border-black p-1.5 bg-slate-50/50 uppercase tracking-wider text-[9px] w-[50%]">TOTAL</td>
+                          <td className="p-1.5 text-right font-mono text-[10.5px] w-[50%]">{previewData.rawSum.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                        <tr className="border-b border-black">
+                          <td className="border-r border-black p-1.5 bg-slate-50/50 uppercase tracking-wider text-[9px]">REMISE</td>
+                          <td className="p-1.5 text-right font-mono text-[10.5px] text-red-600">{previewData.remise.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                        <tr className="border-b border-black">
+                          <td className="border-r border-black p-1.5 bg-slate-50/50 uppercase tracking-wider text-[9px]">TOTAL HT</td>
+                          <td className="p-1.5 text-right font-mono text-[10.5px]">{previewData.totalHT.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                        <tr className="border-b border-black">
+                          <td className="border-r border-black p-1.5 bg-slate-50/50 uppercase tracking-wider text-[9px]">TVA</td>
+                          <td className="p-1.5 text-right font-mono text-[10.5px]">{previewData.tva.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                        <tr className="border-b border-black">
+                          <td className="border-r border-black p-1.5 bg-slate-50/50 uppercase tracking-wider text-[9px]">TIMBRE</td>
+                          <td className="p-1.5 text-right font-mono text-[10.5px]">{previewData.timbre.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                        <tr className="bg-slate-100 font-black">
+                          <td className="border-r border-black p-1.5 uppercase tracking-wider text-[9px]">TOTAL TTC</td>
+                          <td className="p-1.5 text-right font-mono text-xs">{previewData.ttc.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom statutory watermark - centered */}
+              <div className="text-center text-[8.5px] text-slate-400 font-bold tracking-wider mt-8 border-t border-dashed border-slate-200 pt-4 print:mt-12 select-none uppercase">
+                VBI PME ERP • SYSTÈME DE FACTURATION AUTOMATISÉ • MERCI POUR VOTRE CONFIANCE
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* -------------------- COMPTABILISEES INVOICES LIST MODAL -------------------- */}
+      {showComptabiliseesList && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-[9999] p-4 select-none animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-white dark:bg-slate-900 w-[640px] rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col font-sans">
+            
+            {/* Title Bar */}
+            <div className="bg-gradient-to-r from-indigo-700 to-indigo-800 dark:from-slate-950 dark:to-slate-900 p-4.5 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">📁</span>
+                <div className="text-left">
+                  <h3 className="font-sans font-black text-xs uppercase tracking-wider">
+                    Factures de Ventes Comptabilisées
+                  </h3>
+                  <p className="text-[10px] opacity-80 font-medium">Invoices validated and stored in the database</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowComptabiliseesList(false)}
+                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center font-bold transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* List Table Content */}
+            <div className="p-5 overflow-y-auto max-h-[350px]">
+              {sales.length === 0 ? (
+                <div className="text-center py-10 text-slate-400 dark:text-slate-500 font-bold text-xs">
+                  Aucune facture validée et comptabilisée enregistrée.
+                </div>
+              ) : (
+                <div className="border border-slate-150 dark:border-slate-800 rounded-2xl overflow-hidden">
+                  <table className="w-full text-left text-xs font-bold text-slate-700 dark:text-slate-300">
+                    <thead className="bg-slate-50 dark:bg-slate-950 text-slate-500 text-[10px] uppercase tracking-wider border-b border-slate-150 dark:border-slate-800">
+                      <tr>
+                        <th className="p-3 pl-4">N° Facture</th>
+                        <th className="p-3">Client</th>
+                        <th className="p-3 text-center">Date</th>
+                        <th className="p-3 text-right pr-4">Montant TTC (DA)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
+                      {sales.map((sale) => (
+                        <tr 
+                          key={sale.id}
+                          onClick={() => {
+                            setSelectedSaleId(sale.id);
+                            setFactureType('normal');
+                            setShowComptabiliseesList(false);
+                            setIsFacturePreviewOpen(true);
+                          }}
+                          className="hover:bg-indigo-50/40 dark:hover:bg-slate-850/40 transition-colors cursor-pointer"
+                        >
+                          <td className="p-3 pl-4 font-mono text-indigo-700 dark:text-indigo-400 font-black">
+                            {String(sale.id).padStart(5, '0')}
+                          </td>
+                          <td className="p-3 uppercase text-slate-900 dark:text-white font-bold">{sale.client}</td>
+                          <td className="p-3 text-center font-mono text-[11px] text-slate-500">{sale.date}</td>
+                          <td className="p-3 text-right pr-4 font-mono text-slate-900 dark:text-slate-100 font-black">
+                            {(sale.ttc ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Footer buttons */}
+            <div className="bg-slate-50 dark:bg-slate-950 px-5 py-3.5 flex justify-end gap-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setShowComptabiliseesList(false)}
+                className="px-5 h-8.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              >
+                Fermer
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* -------------------- NON COMPTABILISEES INVOICES LIST MODAL -------------------- */}
+      {showNonComptabiliseesList && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-[9999] p-4 select-none animate-in fade-in zoom-in-95 duration-150">
+          <div className="bg-white dark:bg-slate-900 w-[640px] rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col font-sans">
+            
+            {/* Title Bar */}
+            <div className="bg-gradient-to-r from-amber-600 to-amber-700 dark:from-slate-950 dark:to-slate-900 p-4.5 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="text-xl">📝</span>
+                <div className="text-left">
+                  <h3 className="font-sans font-black text-xs uppercase tracking-wider">
+                    Factures de Ventes NON Comptabilisées
+                  </h3>
+                  <p className="text-[10px] opacity-80 font-medium">Brouillons et sessions de vente en cours</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowNonComptabiliseesList(false)}
+                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center font-bold transition-colors cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* List Table Content */}
+            <div className="p-5 overflow-y-auto max-h-[350px]">
+              {openVouchers.length === 0 ? (
+                <div className="text-center py-12 flex flex-col items-center justify-center gap-2 text-slate-400 dark:text-slate-500 font-bold text-xs">
+                  <span>Aucun brouillon de vente en cours de rédaction.</span>
+                  <span className="font-medium text-[10.5px] text-slate-400">Pour rédiger une nouvelle facture, fermez ce menu et basculez en mode Nouveau Bon.</span>
+                </div>
+              ) : (
+                <div className="border border-slate-150 dark:border-slate-800 rounded-2xl overflow-hidden">
+                  <table className="w-full text-left text-xs font-bold text-slate-700 dark:text-slate-300">
+                    <thead className="bg-slate-50 dark:bg-slate-950 text-slate-500 text-[10px] uppercase tracking-wider border-b border-slate-150 dark:border-slate-800">
+                      <tr>
+                        <th className="p-3 pl-4">Réf. Brouillon</th>
+                        <th className="p-3">Client</th>
+                        <th className="p-3 text-center">Nbre d'articles</th>
+                        <th className="p-3 text-right pr-4 font-black">Montant Estimé (DA)</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
+                      {openVouchers.map((v) => {
+                        const sumDraft = v.draftItems.reduce((sum, i) => sum + i.total, 0);
+                        return (
+                          <tr 
+                            key={v.id}
+                            onClick={() => {
+                              setActiveDraftId(v.id);
+                              setMode('create');
+                              setDraftItems([...v.draftItems]);
+                              setNewClientName(v.clientName);
+                              setNewTime(v.time);
+                              setNewDate(v.date);
+                              setVendeurName(v.vendeurName);
+                              setObservations(v.observations);
+                              setVersement(v.versement);
+                              setRemise(v.remise);
+                              setTvaRate(v.tvaRate);
+                              
+                              setFactureType('proforma');
+                              setShowNonComptabiliseesList(false);
+                              setIsFacturePreviewOpen(true);
+                            }}
+                            className="hover:bg-amber-50/40 dark:hover:bg-slate-850/40 transition-colors cursor-pointer"
+                          >
+                            <td className="p-3 pl-4 font-mono text-amber-700 dark:text-amber-400 font-black">
+                              DRAFT-{v.id}
+                            </td>
+                            <td className="p-3 uppercase text-slate-900 dark:text-white font-bold">{v.clientName}</td>
+                            <td className="p-3 text-center font-mono text-slate-500">{v.draftItems.length}</td>
+                            <td className="p-3 text-right pr-4 font-mono text-slate-900 dark:text-slate-100 font-black">
+                              {sumDraft.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* Footer buttons */}
+            <div className="bg-slate-50 dark:bg-slate-950 px-5 py-3.5 flex justify-end gap-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => setShowNonComptabiliseesList(false)}
+                className="px-5 h-8.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold transition-all cursor-pointer"
+              >
+                Fermer
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* -------------------- PORTABLE THERMAL RECEIPT (BON) PRINT PREVIEW MODAL -------------------- */}
+      {isBonPreviewOpen && (() => {
+        const clientPhone = previewData.clientObj?.phone || '';
+        const clientAddress = previewData.clientObj?.address || '';
+        const previousBalance = computedMetrics.oldBalance ?? 0;
+        const ttcVal = previewData.ttc ?? 0;
+        const paidVal = versement ?? 0;
+        const currentBalance = computedMetrics.newBalance ?? 0;
+        const totalItemsQty = previewData.items.reduce((sum, item) => sum + (item.qty || 0), 0);
+
+        return (
+          <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-xs flex justify-center items-start overflow-y-auto z-[100250] py-6 select-none print:p-0 print:bg-white print:backdrop-blur-none">
+            {/* Inject print-specific CSS dynamically when this modal is open */}
+            <style dangerouslySetInnerHTML={{ __html: `
+              @media print {
+                body * {
+                  visibility: hidden !important;
+                }
+                #print-bon-receipt-sheet, #print-bon-receipt-sheet * {
+                  visibility: visible !important;
+                }
+                #print-bon-receipt-sheet {
+                  position: absolute !important;
+                  left: 0 !important;
+                  top: 0 !important;
+                  width: 76mm !important; /* Perfect for 80mm and auto-scales beautifully */
+                  margin: 0 !important;
+                  padding: 2mm !important;
+                  box-shadow: none !important;
+                  border: none !important;
+                  background: white !important;
+                  color: black !important;
+                }
+                @page {
+                  margin: 0 !important;
+                  size: auto !important;
+                }
+              }
+            `}} />
+
+            <div className="flex flex-col gap-3 items-center print:gap-0">
+              {/* Toolbar */}
+              <div className="w-[340px] bg-slate-800 text-white p-3 px-4 rounded-xl flex justify-between items-center shadow-lg print:hidden font-sans">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-base">🖨️</span>
+                  <div>
+                    <h4 className="text-[10px] font-black uppercase tracking-wider">Format Ticket (Bon)</h4>
+                    <p className="text-[8px] text-slate-300 font-medium">Imprimantes portables 58/80mm</p>
+                  </div>
+                </div>
+                <div className="flex gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => window.print()}
+                    className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer active:scale-95"
+                  >
+                    🖨️ Imprimer
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsBonPreviewOpen(false)}
+                    className="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 text-slate-100 rounded-lg text-[10px] font-bold transition-all cursor-pointer"
+                  >
+                    ✕ Fermer
+                  </button>
+                </div>
+              </div>
+
+              {/* Thermal Receipt Sheet */}
+              <div
+                id="print-bon-receipt-sheet"
+                className="w-[320px] bg-white text-black p-4 pb-8 shadow-2xl rounded-sm font-mono text-[11px] select-text no-gray-override leading-normal border border-slate-200"
+              >
+                {/* Header */}
+                <div className="text-center mb-2">
+                  <h2 className="text-sm font-black uppercase tracking-wider font-sans mb-0.5">
+                    {config?.invoiceInfo?.nomRaisonSociale || config?.company || "Abdou accessoires"}
+                  </h2>
+                  <p className="text-[10px] font-bold">الهاتف: {config?.invoiceInfo?.telephone || config?.phone || "0794346165"}</p>
+                  {(config?.invoiceInfo?.adresse || config?.address) && (
+                    <p className="text-[9px] text-slate-700">{config?.invoiceInfo?.adresse || config?.address}</p>
+                  )}
+                  
+                  <div className="border-t border-dashed border-black/80 my-2"></div>
+                  
+                  <h3 className="text-[11px] font-black uppercase tracking-widest font-sans">
+                    فاتورة مبيعات / BON DE VENTE
+                  </h3>
+                </div>
+
+                {/* Metadata block - Algerian standard */}
+                <div className="grid grid-cols-2 gap-x-1 gap-y-0.5 text-[9.5px] font-sans">
+                  <div className="text-left">
+                    <span className="font-bold">N° :</span> {String(previewData.id).padStart(5, '0')}
+                  </div>
+                  <div className="text-right" dir="rtl">
+                    <span className="font-bold">الرقم:</span> {String(previewData.id).padStart(5, '0')}
+                  </div>
+
+                  <div className="text-left">
+                    <span className="font-bold">Date :</span> {previewData.date}
+                  </div>
+                  <div className="text-right" dir="rtl">
+                    <span className="font-bold">التاريخ:</span> {previewData.date}
+                  </div>
+
+                  <div className="text-left">
+                    <span className="font-bold">Heure :</span> {previewData.time || "00:00"}
+                  </div>
+                  <div className="text-right" dir="rtl">
+                    <span className="font-bold">الوقت:</span> {previewData.time || "00:00"}
+                  </div>
+
+                  <div className="text-left">
+                    <span className="font-bold">Type :</span> {previewData.clientName === 'Anonyme' ? 'COMPTANT' : 'A TERME'}
+                  </div>
+                  <div className="text-right" dir="rtl">
+                    <span className="font-bold">النوع:</span> {previewData.clientName === 'Anonyme' ? 'نقدا' : 'أجل'}
+                  </div>
+                </div>
+
+                <div className="border-t border-dashed border-black/80 my-2"></div>
+
+                {/* Client Info */}
+                <div className="text-[9.5px] leading-relaxed font-sans mb-2">
+                  <div className="flex justify-between">
+                    <span>Client: <strong className="uppercase">{previewData.clientName}</strong></span>
+                    <span dir="rtl">العميل: <strong className="uppercase">{previewData.clientName}</strong></span>
+                  </div>
+                  {clientPhone && (
+                    <div className="flex justify-between">
+                      <span>Tél: <strong>{clientPhone}</strong></span>
+                      <span dir="rtl">الهاتف: <strong>{clientPhone}</strong></span>
+                    </div>
+                  )}
+                  {clientAddress && (
+                    <div className="flex justify-between">
+                      <span>Adresse: <strong>{clientAddress}</strong></span>
+                      <span dir="rtl">العنوان: <strong>{clientAddress}</strong></span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Items Table */}
+                <table className="w-full text-left font-mono text-[10px] mt-2 border-collapse">
+                  <thead>
+                    <tr className="border-b border-black/60 font-bold">
+                      <th className="pb-1 text-left w-[50%]">المنتج / Désignation</th>
+                      <th className="pb-1 text-center w-[12%]">الكمية</th>
+                      <th className="pb-1 text-right w-[18%]">السعر</th>
+                      <th className="pb-1 text-right w-[20%]">الإجمالي</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-dotted divide-black/40">
+                    {previewData.items.map((item, idx) => (
+                      <tr key={idx} className="py-1">
+                        <td className="py-1 font-sans text-[9px] leading-tight break-all pr-1">
+                          {item.designation}
+                        </td>
+                        <td className="py-1 text-center font-bold">
+                          {item.qty}
+                        </td>
+                        <td className="py-1 text-right">
+                          {item.price.toLocaleString('fr-FR', { minimumFractionDigits: 1 })}
+                        </td>
+                        <td className="py-1 text-right font-bold">
+                          {item.total.toLocaleString('fr-FR', { minimumFractionDigits: 1 })}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
+                <div className="border-t border-dashed border-black/80 my-2"></div>
+
+                {/* Total Quantity */}
+                <div className="flex justify-between text-[10px] font-bold">
+                  <span>Qté totale: {totalItemsQty}</span>
+                  <span dir="rtl">إجمالي الكمية: {totalItemsQty}</span>
+                </div>
+
+                <div className="border-t border-dotted border-black/60 my-1.5"></div>
+
+                {/* Totals Recaps (Matching image of the bon precisely!) */}
+                <div className="space-y-1 text-[10.5px] font-sans">
+                  {/* Previous balance */}
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-700">R. Précédent (عليكم) :</span>
+                    <strong className="font-mono text-black">
+                      {previousBalance.toLocaleString('fr-FR', { minimumFractionDigits: 1 })} DA
+                    </strong>
+                  </div>
+
+                  {/* Total Invoice */}
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-700">Total Facture (إجمالي ف.) :</span>
+                    <strong className="font-mono text-black">
+                      {ttcVal.toLocaleString('fr-FR', { minimumFractionDigits: 1 })} DA
+                    </strong>
+                  </div>
+
+                  {/* Versement/Paid */}
+                  <div className="flex justify-between items-center">
+                    <span className="text-slate-700">Versé (المدفوع) :</span>
+                    <strong className="font-mono text-emerald-700">
+                      {paidVal.toLocaleString('fr-FR', { minimumFractionDigits: 1 })} DA
+                    </strong>
+                  </div>
+
+                  <div className="border-t border-dotted border-black/60 my-1"></div>
+
+                  {/* Current Balance */}
+                  <div className="flex justify-between items-center text-[11px] font-black">
+                    <span>N. Solde (الرصيد الحالي) :</span>
+                    <span className="font-mono text-blue-900">
+                      {currentBalance.toLocaleString('fr-FR', { minimumFractionDigits: 1 })} DA
+                    </span>
+                  </div>
+                </div>
+
+                <div className="border-t border-dashed border-black/80 my-3"></div>
+
+                {/* Footer greeting */}
+                <div className="text-center font-sans text-[9px] space-y-0.5">
+                  <p className="font-bold">شكرا على زيارتكم / Merci de votre visite</p>
+                  <p className="text-slate-600 font-mono text-[8px]">VBI-PME - www.vbi-pme-dz.com</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
     </div>
   );
+}
+
+// -------------------- FRENCH NUMBER TO WORDS CONVERTER UTILITIES --------------------
+function NumberToWordsFR(num: number): string {
+  if (num === 0) return "ZÉRO";
+  
+  const units = ["", "UN", "DEUX", "TROIS", "QUATRE", "CINQ", "SIX", "SEPT", "HUIT", "NEUF"];
+  const teens = ["DIX", "ONZE", "DOUZE", "TREIZE", "QUATORZE", "QUINZE", "SEIZE", "DIX-SEPT", "DIX-HUIT", "DIX-NEUF"];
+  const tens = ["", "DIX", "VINGT", "TRENTE", "QUARANTE", "CINQUANTE", "SOIXANTE", "SOIXANTE-DIX", "QUATRE-VINGTS", "QUATRE-VINGT-DIX"];
+  
+  function convertSection(n: number): string {
+    let result = "";
+    const h = Math.floor(n / 100);
+    const remainder = n % 100;
+    
+    if (h > 0) {
+      if (h === 1) {
+        result += "CENT ";
+      } else {
+        result += units[h] + " CENT ";
+      }
+    }
+    
+    if (remainder > 0) {
+      if (remainder < 10) {
+        result += units[remainder];
+      } else if (remainder < 20) {
+        result += teens[remainder - 10];
+      } else {
+        const t = Math.floor(remainder / 10);
+        const u = remainder % 10;
+        
+        if (t === 7) {
+          result += "SOIXANTE-" + (u === 1 ? "ET-ONZE" : teens[u]);
+        } else if (t === 9) {
+          result += "QUATRE-VINGT-" + teens[u];
+        } else {
+          result += tens[t];
+          if (u > 0) {
+            result += (u === 1 ? "-ET-UN" : "-" + units[u]);
+          }
+        }
+      }
+    }
+    return result.trim();
+  }
+  
+  const thousand = Math.floor(num / 1000) % 1000;
+  const million = Math.floor(num / 1000000) % 1000;
+  const rest = Math.floor(num) % 1000;
+  
+  let finalStr = "";
+  if (million > 0) {
+    finalStr += convertSection(million) + " MILLION" + (million > 1 ? "S " : " ");
+  }
+  if (thousand > 0) {
+    if (thousand === 1) {
+      finalStr += "MILLE ";
+    } else {
+      finalStr += convertSection(thousand) + " MILLE ";
+    }
+  }
+  if (rest > 0) {
+    finalStr += convertSection(rest);
+  }
+  
+  return finalStr.trim().replace(/\s+/g, ' ');
+}
+
+function amountToWordsFR(amount: number): string {
+  const integerPart = Math.floor(amount);
+  const decimalPart = Math.round((amount - integerPart) * 100);
+  
+  let words = NumberToWordsFR(integerPart) + " DINAR" + (integerPart > 1 ? "S" : "");
+  if (decimalPart > 0) {
+    words += " ET " + NumberToWordsFR(decimalPart) + " CENTIME" + (decimalPart > 1 ? "S" : "");
+  }
+  return words;
 }

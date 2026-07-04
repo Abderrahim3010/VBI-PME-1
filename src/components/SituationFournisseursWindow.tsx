@@ -862,10 +862,28 @@ export default function SituationFournisseursWindow({
 
             {/* Current Solde */}
             <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-black uppercase text-slate-700 dark:text-rose-400 bg-sky-50 dark:bg-slate-850 px-1 py-0.5 rounded">Solde:</span>
-              <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-900 rounded px-3 py-1 text-xs font-mono font-black min-w-[110px] text-right text-red-700 dark:text-red-400 shadow-sm leading-none flex items-center justify-end">
-                {(ledgerMetrics.soldeFinal ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </div>
+              {ledgerMetrics.soldeFinal > 0 ? (
+                <>
+                  <span className="text-[10px] font-black uppercase text-red-700 dark:text-red-400 bg-red-50 dark:bg-slate-850 px-1.5 py-0.5 rounded">Solde:</span>
+                  <div className="bg-red-50/50 dark:bg-red-950/20 border border-red-300 dark:border-red-900 rounded px-3 py-1 text-xs font-mono font-black min-w-[110px] text-right text-red-700 dark:text-red-400 shadow-sm leading-none flex items-center justify-end">
+                    {(ledgerMetrics.soldeFinal ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                </>
+              ) : ledgerMetrics.soldeFinal < 0 ? (
+                <>
+                  <span className="text-[10px] font-black uppercase text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-slate-850 px-1.5 py-0.5 rounded">Solde:</span>
+                  <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-900 rounded px-3 py-1 text-xs font-mono font-black min-w-[110px] text-right text-emerald-700 dark:text-emerald-400 shadow-sm leading-none flex items-center justify-end">
+                    {Math.abs(ledgerMetrics.soldeFinal ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} CR
+                  </div>
+                </>
+              ) : (
+                <>
+                  <span className="text-[10px] font-black uppercase text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-850 px-1.5 py-0.5 rounded">Solde:</span>
+                  <div className="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded px-3 py-1 text-xs font-mono font-black min-w-[110px] text-right text-slate-700 dark:text-slate-350 shadow-sm leading-none flex items-center justify-end">
+                    0,00
+                  </div>
+                </>
+              )}
             </div>
           </div>
 

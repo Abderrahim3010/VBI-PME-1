@@ -187,7 +187,7 @@ export default function ClientsSuppliersWindow({
           <span className="flex items-center gap-2">
             📊 Registre Comptable {mode === 'clients' ? 'des Clients' : 'des Fournisseurs'}
           </span>
-          <span className="text-[10px] bg-slate-200/60 dark:bg-slate-850 px-2 py-0.5 rounded-md font-mono text-slate-500">
+          <span className="text-[10px] bg-slate-200/60 dark:bg-slate-850 px-2 py-0.5 rounded-md font-mono text-slate-600 dark:text-slate-200">
             Total Encours: {recordsList.reduce((acc, curr) => acc + (curr.balance ?? 0), 0).toLocaleString('fr-FR')} DA
           </span>
         </div>
