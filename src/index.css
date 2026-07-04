@@ -1,0 +1,421 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+:root {
+  --primary-color: #0284c7; /* Sky 600 - clean professional blue */
+  --primary-container-color: #e0f2fe; /* Sky 100 */
+  --on-primary-color: #ffffff;
+  
+  /* Classic Desktop Silver/Slate Gray Theme */
+  --surface-color: #f1f5f9; /* Slate 100 - window/panel background (distinct gray) */
+  --surface-container-color: #e2e8f0; /* Slate 200 - container backdrops */
+  --outline-variant-color: #cbd5e1; /* Slate 300 - borders */
+}
+
+.dark {
+  --primary-color: #0ea5e9; /* Sky 500 */
+  --primary-container-color: #0369a1; /* Sky 700 */
+  --on-primary-color: #ffffff;
+  
+  --surface-color: #0f172a; /* Slate 900 */
+  --surface-container-color: #020617; /* Slate 950 */
+  --outline-variant-color: #1e293b; /* Slate 800 */
+}
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* Material 3 Expressive Palette (Tokens) */
+  --color-m3-primary: var(--primary-color);
+  --color-m3-primary-container: var(--primary-container-color);
+  --color-m3-on-primary: var(--on-primary-color);
+  --color-m3-secondary: #625B71;
+  --color-m3-secondary-container: #E8DEF8;
+  --color-m3-tertiary: #7D5260;
+  --color-m3-tertiary-container: #FFD8E4;
+  --color-m3-surface: var(--surface-color);
+  --color-m3-surface-container: var(--surface-container-color);
+  --color-m3-surface-container-low: #F7F2FA;
+  --color-m3-surface-container-high: #ECE6F0;
+  --color-m3-outline: #79747E;
+  --color-m3-outline-variant: var(--outline-variant-color);
+}
+
+/* Base resets & scrollbars helper */
+body {
+  font-family: var(--font-sans);
+  background-color: #f8fafc;
+  overflow: hidden;
+  transition: background-color 0.3s ease;
+}
+
+.dark body {
+  background-color: #0f172a;
+}
+
+/* Scrollbar customizations */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(103, 80, 164, 0.2);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(103, 80, 164, 0.4);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(234, 221, 255, 0.15);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(234, 221, 255, 0.3);
+}
+
+/* Disable drag highlight of tables */
+.select-none {
+  user-select: none;
+}
+
+/* Dynamic glow effect */
+.m3-glow {
+  box-shadow: 0 0 15px rgba(103, 80, 164, 0.15);
+}
+
+/* Material Ripple transition simulation */
+.ripple-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.ripple-btn:active {
+  transform: scale(0.97);
+  filter: brightness(0.95);
+}
+
+/* ==========================================================================
+   CLASSIC DESKTOP GRAPHICS - CONTRAST POLISH FOR LIGHT MODE
+   Prevents inputs and panels from blending together by forcing crisp white
+   backgrounds on interactive controls and high-visibility slate borders.
+   ========================================================================== */
+
+/* Standardize Inputs, Selects & Textareas for Light Mode */
+html:not(.dark) input[type="text"],
+html:not(.dark) input[type="number"],
+html:not(.dark) input[type="date"],
+html:not(.dark) input[type="time"],
+html:not(.dark) input[type="search"],
+html:not(.dark) select,
+html:not(.dark) textarea,
+html:not(.dark) .editable-input,
+html:not(.dark) [contenteditable="true"] {
+  background-color: #ffffff !important;
+  color: #0f172a !important; /* Slate 900 - high contrast text */
+  border: 1.5px solid #94a3b8 !important; /* Solid Slate 400 border for perfect clarity */
+  border-radius: 8px !important;
+  font-weight: 600 !important;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.05) !important;
+  transition: all 0.15s ease-in-out !important;
+}
+
+/* Hover and Focus States for interactive inputs in light mode */
+html:not(.dark) input[type="text"]:hover,
+html:not(.dark) input[type="number"]:hover,
+html:not(.dark) input[type="date"]:hover,
+html:not(.dark) input[type="time"]:hover,
+html:not(.dark) input[type="search"]:hover,
+html:not(.dark) select:hover,
+html:not(.dark) textarea:hover {
+  border-color: #475569 !important; /* Slate 600 on hover */
+}
+
+html:not(.dark) input[type="text"]:focus,
+html:not(.dark) input[type="number"]:focus,
+html:not(.dark) input[type="date"]:focus,
+html:not(.dark) input[type="time"]:focus,
+html:not(.dark) input[type="search"]:focus,
+html:not(.dark) select:focus,
+html:not(.dark) textarea:focus {
+  border-color: #0284c7 !important; /* Sky 600 on focus */
+  background-color: #ffffff !important;
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2), inset 0 1px 2px rgba(0,0,0,0.05) !important;
+  outline: none !important;
+}
+
+/* Non-editable, read-only, or disabled elements inside the form (Calculations/Labels) */
+html:not(.dark) input[readonly],
+html:not(.dark) input[disabled],
+html:not(.dark) select[disabled],
+html:not(.dark) textarea[disabled],
+html:not(.dark) .readonly-field {
+  background-color: #e2e8f0 !important; /* Shaded Slate 200 background */
+  color: #334155 !important; /* Slate 700 text */
+  border-color: #cbd5e1 !important; /* Slate 300 border */
+  font-weight: 700 !important;
+  cursor: not-allowed !important;
+  box-shadow: none !important;
+}
+
+/* Global button disabled styles - simple, elegant, and preserves button color identity with perfect contrast */
+button:disabled {
+  opacity: 0.55 !important;
+  cursor: not-allowed !important;
+}
+
+/* Color compatibility mappings for non-standard utility classes used in components */
+.bg-indigo-650 { background-color: #493fdf !important; }
+.hover\:bg-indigo-650:hover { background-color: #493fdf !important; }
+.dark .bg-indigo-650 { background-color: #3b32c0 !important; }
+.text-indigo-650 { color: #493fdf !important; }
+.dark .text-indigo-650 { color: #818cf8 !important; }
+.border-indigo-650 { border-color: #493fdf !important; }
+.dark .border-indigo-650 { border-color: #6366f1 !important; }
+
+.bg-indigo-750 { background-color: #3730a3 !important; }
+.dark .bg-indigo-750 { background-color: #1e1b4b !important; }
+
+.bg-red-650 { background-color: #d31d1d !important; }
+.hover\:bg-red-650:hover { background-color: #b91c1c !important; }
+.dark .bg-red-650 { background-color: #991b1b !important; }
+.text-red-650 { color: #d31d1d !important; }
+.dark .text-red-650 { color: #f87171 !important; }
+.border-red-650 { border-color: #d31d1d !important; }
+.dark .border-red-650 { border-color: #ef4444 !important; }
+.border-red-700 { border-color: #b91c1c !important; }
+
+.bg-emerald-650 { background-color: #048c61 !important; }
+.hover\:bg-emerald-650:hover { background-color: #047857 !important; }
+.dark .bg-emerald-650 { background-color: #065f46 !important; }
+.text-emerald-650 { color: #048c61 !important; }
+.dark .text-emerald-650 { color: #34d399 !important; }
+.border-emerald-650 { border-color: #048c61 !important; }
+.dark .border-emerald-650 { border-color: #10b981 !important; }
+
+.bg-rose-650 { background-color: #db123f !important; }
+.text-rose-650 { color: #db123f !important; }
+.dark .text-rose-650 { color: #f43f5e !important; }
+
+.bg-yellow-450 { background-color: #f2a104 !important; }
+.dark .bg-yellow-450 { background-color: #ca8a04 !important; }
+
+.bg-sky-650 { background-color: #027dbd !important; }
+.dark .bg-sky-650 { background-color: #0369a1 !important; }
+.bg-sky-650\/90 { background-color: rgba(2, 125, 189, 0.9) !important; }
+.dark .bg-sky-650\/90 { background-color: rgba(3, 105, 161, 0.9) !important; }
+
+.border-sky-750 { border-color: #025f92 !important; }
+.dark .border-sky-750 { border-color: #0369a1 !important; }
+
+.border-sky-850 { border-color: #034f75 !important; }
+.dark .border-sky-850 { border-color: #075985 !important; }
+
+.border-red-900 { border-color: #7f1d1d !important; }
+.border-emerald-850 { border-color: #064e3b !important; }
+.dark .border-emerald-850 { border-color: #065f46 !important; }
+
+.bg-slate-350 { background-color: #cbd5e1 !important; }
+.dark .bg-slate-350 { background-color: #334155 !important; }
+
+.border-slate-350 { border-color: #cbd5e1 !important; }
+.dark .border-slate-350 { border-color: #334155 !important; }
+
+.text-slate-350 { color: #64748b !important; }
+.dark .text-slate-350 { color: #cbd5e1 !important; }
+
+.text-slate-450 { color: #475569 !important; }
+.dark .text-slate-450 { color: #94a3b8 !important; }
+
+.border-slate-450 { border-color: #94a3b8 !important; }
+.dark .border-slate-450 { border-color: #475569 !important; }
+
+.text-slate-650 { color: #334155 !important; }
+.dark .text-slate-650 { color: #cbd5e1 !important; }
+
+.text-slate-655 { color: #334155 !important; }
+.dark .text-slate-655 { color: #cbd5e1 !important; }
+
+.text-slate-750 { color: #1e293b !important; }
+.dark .text-slate-750 { color: #f1f5f9 !important; }
+
+.text-slate-755 { color: #1e293b !important; }
+.dark .text-slate-755 { color: #f1f5f9 !important; }
+
+.text-slate-805 { color: #0f172a !important; }
+.dark .text-slate-805 { color: #f8fafc !important; }
+
+.bg-slate-350\/45 { background-color: rgba(203, 213, 225, 0.45) !important; }
+.dark .bg-slate-350\/45 { background-color: rgba(51, 65, 85, 0.45) !important; }
+
+.border-slate-705 { border-color: #475569 !important; }
+.dark .border-slate-705 { border-color: #94a3b8 !important; }
+
+.border-emerald-350 { border-color: #6ee7b7 !important; }
+.dark .border-emerald-350 { border-color: #047857 !important; }
+
+.border-rose-350 { border-color: #fda4af !important; }
+.dark .border-rose-350 { border-color: #be123c !important; }
+
+/* Specific calculated summary values (like total price / TTC blocks on the right) */
+html:not(.dark) .summary-panel-value {
+  background-color: #ffffff !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+  font-weight: 800 !important;
+}
+
+/* Tables in light mode - Make grid lines crisp and background purely white */
+html:not(.dark) table {
+  background-color: #ffffff !important;
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+html:not(.dark) th,
+html:not(.dark) thead tr {
+  background-color: #e2e8f0 !important; /* Solid desktop gray for headers */
+  color: #1e293b !important; /* Slate 800 */
+  font-weight: 700 !important;
+  border-bottom: 1.5px solid #94a3b8 !important;
+  border-top: 1px solid #cbd5e1 !important;
+}
+
+html:not(.dark) td {
+  border-bottom: 1px solid #cbd5e1 !important;
+  border-right: 1px solid #e2e8f0 !important;
+  color: #0f172a !important; /* Deep dark slate for reading product names */
+  background-color: inherit !important;
+}
+
+/* Zebra striping for ultra high data legibility in table lists */
+html:not(.dark) tbody tr:nth-child(even) {
+  background-color: #ffffff !important;
+}
+html:not(.dark) tbody tr:nth-child(odd) {
+  background-color: #f8fafc !important; /* Very subtle Slate 50 */
+}
+
+html:not(.dark) tbody tr:hover {
+  background-color: #e2e8f0 !important; /* Slate 200 on hover */
+}
+
+/* Highlight style for active / selected row in a table grid list */
+html:not(.dark) tbody tr.bg-m3-primary,
+html:not(.dark) tbody tr[data-selected="true"],
+html:not(.dark) tr[class*="bg-sky-500"],
+html:not(.dark) tr[class*="bg-indigo-600"],
+html:not(.dark) tr[class*="bg-m3-primary"] {
+  background-color: #0284c7 !important; /* Deep sky blue selection */
+  color: #ffffff !important;
+}
+html:not(.dark) tbody tr.bg-m3-primary td,
+html:not(.dark) tbody tr[data-selected="true"] td,
+html:not(.dark) tr[class*="bg-sky-500"] td,
+html:not(.dark) tr[class*="bg-indigo-600"] td,
+html:not(.dark) tr[class*="bg-m3-primary"] td {
+  background-color: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+/* Material buttons polish for light mode */
+html:not(.dark) .ripple-btn:not(.bg-m3-primary):not(.bg-red-600):not(.bg-emerald-600) {
+  background-color: #ffffff !important;
+  color: #1e293b !important;
+  border: 1.5px solid #94a3b8 !important;
+}
+html:not(.dark) .ripple-btn:not(.bg-m3-primary):not(.bg-red-600):not(.bg-emerald-600):hover {
+  background-color: #f1f5f9 !important;
+  border-color: #475569 !important;
+}
+
+/* ==========================================================================
+   CLASSIC DESKTOP GRAPHICS - GRAY PANEL / WHITE CONTENT BALANCED CONTRAST
+   Translates shiny/blinding all-white light mode layouts into a classic 
+   high-contrast desktop workspace. Structural backgrounds are set to smooth,
+   easy-on-the-eyes slate gray (Slate 100/200), and only interactive inputs,
+   dropdown options, listboxes, and data grid row cells remain crisp white.
+   ========================================================================== */
+
+/* Prevent structural panels from being blinding white in light mode */
+html:not(.dark) [id^="window-"] .bg-white:not(input):not(select):not(textarea):not(button):not(td):not(tr):not(tbody):not([role="listbox"]):not([role="combobox"]):not(.dropdown-content):not(.no-gray-override) {
+  background-color: #f1f5f9 !important; /* Soft Slate 100 panel backdrop */
+  border-color: #cbd5e1 !important;     /* Slate 300 divider/border */
+}
+
+/* Shaded secondary container grids inside windows */
+html:not(.dark) [id^="window-"] .bg-slate-50:not(input):not(select):not(textarea):not(button):not(td):not(tr):not(tbody) {
+  background-color: #e2e8f0 !important; /* Soft Slate 200 secondary structure */
+  border-color: #cbd5e1 !important;
+}
+
+/* Window Workspace backing */
+html:not(.dark) [id^="window-"] .bg-m3-surface-container\/30 {
+  background-color: #cbd5e1 !important; /* Steel-blue/slate 300 frame divider background */
+}
+
+/* Guarantee that interactive text fields, drop-downs, and editors are purely white */
+html:not(.dark) [id^="window-"] input:not([readonly]):not([disabled]),
+html:not(.dark) [id^="window-"] select:not([disabled]),
+html:not(.dark) [id^="window-"] textarea:not([disabled]) {
+  background-color: #ffffff !important;
+  color: #0f172a !important; /* High contrast text */
+  border: 1.5px solid #94a3b8 !important; /* Strong border for clear visual boundary */
+}
+
+/* Highlighted selected items in listings */
+html:not(.dark) [id^="window-"] [data-selected="true"] {
+  background-color: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+/* Grid Table Rows - Ensure rows are purely white with crisp zebra striping to pop beautifully */
+html:not(.dark) [id^="window-"] tr:not(.bg-m3-primary):not([data-selected="true"]):not([class*="bg-sky-"]):not([class*="bg-indigo-"]) {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+html:not(.dark) [id^="window-"] tr:nth-child(even):not(.bg-m3-primary):not([data-selected="true"]):not([class*="bg-sky-"]):not([class*="bg-indigo-"]) {
+  background-color: #f8fafc !important; /* Soft Slate 50 for row grouping readability */
+}
+html:not(.dark) [id^="window-"] td {
+  color: #0f172a !important;
+  border-bottom: 1.5px solid #cbd5e1 !important; /* Solid desktop borders */
+  border-right: 1.5px solid #e2e8f0 !important;
+}
+
+/* Force every container frame, header panel, search toolbar, and metrics box 
+   inside windows in light mode to have the exact same clear, solid outer boundary.
+   We precisely exclude single-edge borders, colored borders, and fully rounded pills to prevent visual alignment issues. */
+html:not(.dark) [id^="window-"] div[class*="border"]:not(button):not(input):not(select):not(textarea):not(span):not(table):not(tr):not(td):not(li):not(ul):not(.no-gray-override):not([class*="border-t"]):not([class*="border-b"]):not([class*="border-l"]):not([class*="border-r"]):not([class*="border-x"]):not([class*="border-y"]):not([class*="border-dashed"]):not([class*="border-dotted"]):not([class*="border-none"]):not([class*="border-transparent"]):not([class*="rounded-full"]):not([class*="rounded-t-"]):not([class*="rounded-b-"]):not([class*="rounded-l-"]):not([class*="rounded-r-"]):not([class*="border-emerald"]):not([class*="border-rose"]):not([class*="border-red"]):not([class*="border-green"]):not([class*="border-blue"]):not([class*="border-amber"]):not([class*="border-yellow"]):not([class*="border-indigo"]):not([class*="border-teal"]):not([class*="border-sky"]):not([class*="border-purple"]):not([class*="border-violet"]):not([class*="border-orange"]),
+html:not(.dark) [id^="window-"] .overflow-hidden:has(table),
+html:not(.dark) [id^="window-"] .overflow-auto:has(table) {
+  border: 2px solid #94a3b8 !important;
+  border-radius: 16px !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+}
+
+/* Ensure nested elements do not get too busy but retain their standard visual grouping */
+html:not(.dark) [id^="window-"] div[class*="border"]:not([class*="border-t"]):not([class*="border-b"]):not([class*="border-l"]):not([class*="border-r"]):not([class*="border-x"]):not([class*="border-y"]):not([class*="border-dashed"]):not([class*="border-dotted"]):not([class*="border-none"]):not([class*="border-transparent"]):not([class*="rounded-full"]):not([class*="rounded-t-"]):not([class*="rounded-b-"]):not([class*="rounded-l-"]):not([class*="rounded-r-"]):not([class*="border-emerald"]):not([class*="border-rose"]):not([class*="border-red"]):not([class*="border-green"]):not([class*="border-blue"]):not([class*="border-amber"]):not([class*="border-yellow"]):not([class*="border-indigo"]):not([class*="border-teal"]):not([class*="border-sky"]):not([class*="border-purple"]):not([class*="border-violet"]):not([class*="border-orange"]) div[class*="border"]:not(button):not(input):not(select):not(textarea):not([class*="border-t"]):not([class*="border-b"]):not([class*="border-l"]):not([class*="border-r"]):not([class*="border-x"]):not([class*="border-y"]):not([class*="border-dashed"]):not([class*="border-dotted"]):not([class*="border-none"]):not([class*="border-transparent"]):not([class*="rounded-full"]):not([class*="rounded-t-"]):not([class*="rounded-b-"]):not([class*="rounded-l-"]):not([class*="rounded-r-"]):not([class*="border-emerald"]):not([class*="border-rose"]):not([class*="border-red"]):not([class*="border-green"]):not([class*="border-blue"]):not([class*="border-amber"]):not([class*="border-yellow"]):not([class*="border-indigo"]):not([class*="border-teal"]):not([class*="border-sky"]):not([class*="border-purple"]):not([class*="border-violet"]):not([class*="border-orange"]) {
+  border-width: 1.5px !important;
+  border-color: #cbd5e1 !important;
+}
+
+/* Ensure the table element itself has no outer border to prevent double-line / clipping artifacts */
+html:not(.dark) [id^="window-"] table {
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+

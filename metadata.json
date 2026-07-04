@@ -1,0 +1,6 @@
+{
+  "name": "VBI PME",
+  "description": "A high-fidelity web rebuild of the classic VBI PME billing and inventory management software. Featuring an immersive retro Windows desktop environment, custom sub-windows for Product Lists, Purchase Vouchers (Bons d'Achat), and Delivery Vouchers (Bons de Livraison), search filters, barcode scanner simulation, client/supplier tracking, and full local-first state persistence.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
