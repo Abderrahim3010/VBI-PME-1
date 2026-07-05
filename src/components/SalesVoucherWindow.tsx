@@ -701,16 +701,6 @@ export default function SalesVoucherWindow({
       return;
     }
 
-    // 1. Check if there is an empty draft
-    const hasEmptyDraft = openVouchers.some(v => v.draftItems.length === 0);
-    if (hasEmptyDraft || (mode === 'create' && draftItems.length === 0)) {
-      showRetroAlert(
-        "Impossible de créer un nouveau bon. Veuillez d'abord ajouter au moins un produit dans le bon actuel.",
-        "Saisie ventes"
-      );
-      return;
-    }
-
     // Sync starting products
     setLocalProducts(products);
 
@@ -2234,7 +2224,7 @@ export default function SalesVoucherWindow({
                 <div className="flex items-center justify-between gap-2 border-t border-slate-100 dark:border-slate-800 pt-2.5">
                   <span className="font-bold text-slate-800 dark:text-slate-200 text-[10px] uppercase tracking-wide">Nouveau Solde Tiers:</span>
                   <div className="px-3 py-1.5 bg-slate-100 dark:bg-slate-950 font-mono font-black text-xs text-rose-600 dark:text-rose-400 rounded-lg min-w-[120px] text-right">
-                    {Math.max(0, ((computedMetrics.oldBalance ?? 0) + (computedMetrics.ttc ?? 0)) - paymentVersement).toLocaleString('fr-FR', { minimumFractionDigits: 1 })} DA
+                    {(((computedMetrics.oldBalance ?? 0) + (computedMetrics.ttc ?? 0)) - paymentVersement).toLocaleString('fr-FR', { minimumFractionDigits: 1 })} DA
                   </div>
                 </div>
 
@@ -2242,18 +2232,22 @@ export default function SalesVoucherWindow({
 
               {/* Right Column (Sources and description) */}
               <div className="w-full md:w-44 flex flex-col gap-2.5 font-sans">
-                <span className="font-bold text-slate-500 dark:text-slate-400 text-[9.5px] uppercase tracking-wide block border-b border-slate-100 dark:border-slate-800 pb-1">
-                  Trésorerie d'affectation
-                </span>
-                <select
-                  value={paymentSource}
-                  onChange={(e) => setPaymentSource(e.target.value)}
-                  className="w-full h-8.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl font-bold px-2 px-3 outline-none text-xs text-slate-800 dark:text-slate-200"
-                >
-                  <option value="CAISSE PRINCIPALE">CAISSE PRINCIPALE</option>
-                  <option value="COFFRE N°1">COFFRE N°1</option>
-                  <option value="COFFRE N°2">COFFRE N°2</option>
-                </select>
+                {paymentMode !== 'A_TERME' && (
+                  <>
+                    <span className="font-bold text-slate-500 dark:text-slate-400 text-[9.5px] uppercase tracking-wide block border-b border-slate-100 dark:border-slate-800 pb-1">
+                      Trésorerie d'affectation
+                    </span>
+                    <select
+                      value={paymentSource}
+                      onChange={(e) => setPaymentSource(e.target.value)}
+                      className="w-full h-8.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl font-bold px-2 px-3 outline-none text-xs text-slate-800 dark:text-slate-200"
+                    >
+                      <option value="CAISSE PRINCIPALE">CAISSE PRINCIPALE</option>
+                      <option value="COFFRE N°1">COFFRE N°1</option>
+                      <option value="COFFRE N°2">COFFRE N°2</option>
+                    </select>
+                  </>
+                )}
                 
                 <div className="mt-auto bg-slate-100 dark:bg-slate-950/60 p-3.5 rounded-xl text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed border border-slate-200/10">
                   Veuillez spécifier le montant effectivement perçu. Le reste sera imputé au registre crédit de la fiche tierce.
@@ -3070,7 +3064,7 @@ export default function SalesVoucherWindow({
                       {(previewData.clientObj?.address || (previewData.clientName?.toLowerCase() === 'anonyme' && config?.invoiceInfo?.adresse)) && (
                         <p className="text-[10px] text-slate-600 mt-1 font-medium leading-tight">
                           {previewData.clientName?.toLowerCase() === 'anonyme'
-                            ? (config?.invoiceInfo?.adresse || 'Alger')
+                            ? (config?.invoiceInfo?.adresse || '')
                             : (previewData.clientObj?.address || '')}
                         </p>
                       )}
@@ -3396,7 +3390,7 @@ export default function SalesVoucherWindow({
         const clientPhone = previewData.clientObj?.phone || '';
         const isAnonyme = previewData.clientName?.toLowerCase() === 'anonyme' || previewData.clientObj?.name?.toLowerCase() === 'anonyme';
         const clientAddress = isAnonyme
-          ? (config?.deliveryInfo?.adresse || previewData.clientObj?.address || 'Alger')
+          ? (config?.deliveryInfo?.adresse || previewData.clientObj?.address || '')
           : (previewData.clientObj?.address || '');
         const previousBalance = computedMetrics.oldBalance ?? 0;
         const ttcVal = previewData.ttc ?? 0;

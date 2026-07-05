@@ -3109,18 +3109,22 @@ export default function PurchaseVoucherWindow({
 
               {/* Right Column (Sources and description) */}
               <div className="w-full md:w-44 flex flex-col gap-2.5 font-sans">
-                <span className="font-bold text-slate-500 dark:text-slate-400 text-[9.5px] uppercase tracking-wide block border-b border-slate-100 dark:border-slate-800 pb-1">
-                  Trésorerie d'affectation
-                </span>
-                <select
-                  value={paymentSource}
-                  onChange={(e) => setPaymentSource(e.target.value)}
-                  className="w-full h-8.5 bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-800 rounded-xl font-bold px-3 outline-none text-xs text-slate-800 dark:text-slate-200"
-                >
-                  <option value="CAISSE PRINCIPALE">CAISSE PRINCIPALE</option>
-                  <option value="COFFRE N°1">COFFRE N°1</option>
-                  <option value="COFFRE N°2">COFFRE N°2</option>
-                </select>
+                {paymentMode !== 'A_TERME' && (
+                  <>
+                    <span className="font-bold text-slate-500 dark:text-slate-400 text-[9.5px] uppercase tracking-wide block border-b border-slate-100 dark:border-slate-800 pb-1">
+                      Trésorerie d'affectation
+                    </span>
+                    <select
+                      value={paymentSource}
+                      onChange={(e) => setPaymentSource(e.target.value)}
+                      className="w-full h-8.5 bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-800 rounded-xl font-bold px-3 outline-none text-xs text-slate-800 dark:text-slate-200"
+                    >
+                      <option value="CAISSE PRINCIPALE">CAISSE PRINCIPALE</option>
+                      <option value="COFFRE N°1">COFFRE N°1</option>
+                      <option value="COFFRE N°2">COFFRE N°2</option>
+                    </select>
+                  </>
+                )}
                 
                 <div className="mt-auto bg-slate-100 dark:bg-slate-950/60 p-3.5 rounded-xl text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed border border-slate-150/10">
                   Veuillez spécifier le montant effectivement versé au fournisseur. Le reliquat sera inscrit dans son grand livre.

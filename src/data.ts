@@ -8,7 +8,7 @@ export const INITIAL_CLIENTS: Client[] = [
     code: 'CLI-0001',
     name: 'Anonyme',
     balance: 0,
-    address: 'Alger'
+    address: ''
   }
 ];
 
