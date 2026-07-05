@@ -109,14 +109,16 @@ export default function App() {
       compteBancaire: '',
       defaultPayModeDelivery: 'ESPECE',
       defaultPayModePurchase: 'ESPECE',
-      defaultTarifMode: 'Tarif 1'
+      defaultTarifMode: 'Tarif 1',
+      multiLangueBon: 'arabe'
     },
     invoiceInfo: {
       nomRaisonSociale: '',
       detail1: '',
       detail2: '',
       detail3: '',
-      logo: ''
+      logo: '',
+      messageFacture: 'Merci pour votre confiance'
     },
     affichage: {
       backgroundImage: '',

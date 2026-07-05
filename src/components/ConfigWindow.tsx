@@ -34,6 +34,7 @@ export default function ConfigWindow({
   const [deliveryDetail3, setDeliveryDetail3] = useState(config?.deliveryInfo?.detail3 || '');
   const [messageTicket, setMessageTicket] = useState(config?.deliveryInfo?.messageTicket || '');
   const [deliveryLogo, setDeliveryLogo] = useState(config?.deliveryInfo?.logo || '');
+  const [multiLangueBon, setMultiLangueBon] = useState(config?.deliveryInfo?.multiLangueBon || 'arabe');
   
   const [rc, setRc] = useState(config?.deliveryInfo?.rc || '');
   const [article, setArticle] = useState(config?.deliveryInfo?.article || '');
@@ -51,6 +52,7 @@ export default function ConfigWindow({
   const [invoiceDetail2, setInvoiceDetail2] = useState(config?.invoiceInfo?.detail2 || '');
   const [invoiceDetail3, setInvoiceDetail3] = useState(config?.invoiceInfo?.detail3 || '');
   const [invoiceLogo, setInvoiceLogo] = useState(config?.invoiceInfo?.logo || '');
+  const [messageFacture, setMessageFacture] = useState(config?.invoiceInfo?.messageFacture || 'Merci pour votre confiance');
 
   // Tab 3: Affichage & Company Settings
   const [companyName, setCompanyName] = useState(config?.company || '');
@@ -136,6 +138,7 @@ export default function ConfigWindow({
         defaultPayModeDelivery,
         defaultPayModePurchase,
         defaultTarifMode,
+        multiLangueBon,
       },
       invoiceInfo: {
         nomRaisonSociale: invoiceNom,
@@ -143,6 +146,7 @@ export default function ConfigWindow({
         detail2: invoiceDetail2,
         detail3: invoiceDetail3,
         logo: invoiceLogo,
+        messageFacture,
       },
       affichage: {
         backgroundImage: bgImage,
@@ -482,6 +486,19 @@ export default function ConfigWindow({
                         className="w-full h-8 rounded-xl bg-slate-50/60 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 outline-none text-[11px] font-bold text-slate-700 dark:text-slate-250 focus:border-indigo-500 transition-colors font-mono"
                       />
                     </div>
+
+                    {/* Multi langue bon de vente */}
+                    <div className="flex flex-col gap-1">
+                      <span className="font-extrabold text-[9px] uppercase text-slate-500 tracking-wider">Multi langue bon de vente</span>
+                      <select
+                        value={multiLangueBon}
+                        onChange={(e) => setMultiLangueBon(e.target.value)}
+                        className="w-full h-8 rounded-xl bg-slate-50/60 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 outline-none text-[11px] font-bold text-slate-700 dark:text-slate-250 focus:border-indigo-500 transition-colors"
+                      >
+                        <option value="off">Off (Français uniquement)</option>
+                        <option value="arabe">Arabe (Français & Arabe)</option>
+                      </select>
+                    </div>
                   </div>
                 </div>
 
@@ -715,6 +732,21 @@ export default function ConfigWindow({
                           value={invoiceDetail3}
                           onChange={(e) => setInvoiceDetail3(e.target.value)}
                           placeholder="e.g. Mentions légales, TVA, etc..."
+                          className="flex-1 h-8 rounded-xl bg-slate-50/60 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 outline-none text-[11px] font-bold text-slate-700 dark:text-slate-250 focus:border-indigo-500 transition-colors"
+                        />
+                        <button className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-850 dark:hover:bg-slate-800 flex items-center justify-center font-black text-indigo-700 border border-slate-200 dark:border-slate-800">A</button>
+                      </div>
+                    </div>
+
+                    {/* Message Facture */}
+                    <div className="flex flex-col gap-1">
+                      <span className="font-extrabold text-[9px] uppercase text-slate-500 tracking-wider">Message facture</span>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={messageFacture}
+                          onChange={(e) => setMessageFacture(e.target.value)}
+                          placeholder="e.g. Merci de votre confiance (affiché en bas de la facture)..."
                           className="flex-1 h-8 rounded-xl bg-slate-50/60 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 outline-none text-[11px] font-bold text-slate-700 dark:text-slate-250 focus:border-indigo-500 transition-colors"
                         />
                         <button className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-850 dark:hover:bg-slate-800 flex items-center justify-center font-black text-indigo-700 border border-slate-200 dark:border-slate-800">A</button>
