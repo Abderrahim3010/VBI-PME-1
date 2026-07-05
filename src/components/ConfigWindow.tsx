@@ -541,15 +541,7 @@ export default function ConfigWindow({
                             referrerPolicy="no-referrer"
                           />
                         ) : (
-                          <div className="flex flex-col items-center gap-1 select-none">
-                            {/* SVG mockup of Noon/Meem red circular sticker */}
-                            <svg width="64" height="64" viewBox="0 0 100 100" className="drop-shadow-md shrink-0">
-                              <circle cx="50" cy="50" r="46" fill="#dc2626" />
-                              <circle cx="50" cy="50" r="41" fill="none" stroke="white" strokeWidth="2" strokeDasharray="3 3" />
-                              <text x="50" y="58" fill="white" fontSize="30" fontWeight="bold" fontFamily="sans-serif" textAnchor="middle">ن م</text>
-                            </svg>
-                            <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider mt-1">(Sticker d'évaluation)</span>
-                          </div>
+                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">(Aucun logo)</span>
                         )}
                       </div>
                     </div>

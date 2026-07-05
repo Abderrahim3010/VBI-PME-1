@@ -556,12 +556,14 @@ export default function PurchaseVoucherWindow({
       const origVoucher = purchases.find(v => String(v.id) === String(draft.id));
       if (origVoucher) {
         baseProductsList = products.map(p => {
-          const item = origVoucher.items.find(i => i.code === p.code);
-          if (item) {
-            const revStock = Math.max(0, p.stock - item.qty);
+          const matchingItems = origVoucher.items.filter(i => i.code === p.code);
+          if (matchingItems.length > 0) {
+            const totalQty = matchingItems.reduce((acc, curr) => acc + curr.qty, 0);
+            const totalCostVal = matchingItems.reduce((acc, curr) => acc + (curr.qty * curr.price), 0);
+            const revStock = Math.max(0, p.stock - totalQty);
             let revCost = p.prixDeRevient;
             if (revStock > 0 && p.prixDeRevient !== undefined) {
-              revCost = Math.round((p.prixDeRevient * p.stock - item.qty * item.price) / revStock);
+              revCost = Math.round((p.prixDeRevient * p.stock - totalCostVal) / revStock);
             }
             return {
               ...p,
@@ -900,29 +902,32 @@ export default function PurchaseVoucherWindow({
 
     // Calculate final products with both updated stocks and updated cost prices (weighted average cost / CUMP)
     const finalizedProducts = localProducts.map(p => {
-      const voucherItem = savedVoucher.items.find(item => item.code === p.code);
-      if (voucherItem) {
-        const finalStock = p.stock + voucherItem.qty;
+      const matchingItems = savedVoucher.items.filter(item => item.code === p.code);
+      if (matchingItems.length > 0) {
+        const totalQtyPurchased = matchingItems.reduce((acc, curr) => acc + curr.qty, 0);
+        const finalStock = p.stock + totalQtyPurchased;
         
         // Calculate the new weighted average cost dynamically to be 100% correct and up to date
         const oldStock = p.stock;
         const oldCost = p.prixDeRevient || 0;
-        const newCost = voucherItem.price || 0;
-        const newQty = voucherItem.qty || 0;
+        const totalPurchasedCost = matchingItems.reduce((acc, curr) => acc + (curr.qty * curr.price), 0);
 
         let finalCostPrice = oldCost;
         if (oldStock <= 0 || oldCost <= 0) {
-          finalCostPrice = newCost;
-        } else if (newQty > 0) {
-          finalCostPrice = Math.round(((oldStock * oldCost) + (newQty * newCost)) / (oldStock + newQty));
+          finalCostPrice = Math.round(totalPurchasedCost / totalQtyPurchased);
+        } else {
+          finalCostPrice = Math.round(((oldStock * oldCost) + totalPurchasedCost) / (oldStock + totalQtyPurchased));
         }
+
+        const firstColisage = matchingItems[0].colisage;
+        const lastPrice = matchingItems[matchingItems.length - 1].price;
 
         return {
           ...p,
           stock: finalStock,
-          stockColis: voucherItem.colisage && voucherItem.colisage > 0 ? Math.ceil(finalStock / voucherItem.colisage) : 0,
+          stockColis: firstColisage && firstColisage > 0 ? Math.ceil(finalStock / firstColisage) : 0,
           prixDeRevient: finalCostPrice,
-          prixAchat: voucherItem.price
+          prixAchat: lastPrice
         };
       }
       return p;
@@ -1156,6 +1161,20 @@ export default function PurchaseVoucherWindow({
 
     const cleanCode = prodCode.trim();
     const cleanDesignation = prodDesignation.trim();
+
+    // Check if another product already has the same designation (case-insensitive)
+    const duplicateProduct = localProducts.find(
+      p => p.designation.trim().toLowerCase() === cleanDesignation.toLowerCase()
+    );
+
+    if (duplicateProduct && duplicateProduct.code !== cleanCode) {
+      showRetroAlert(
+        `Impossible d'enregistrer l'article : un produit avec la désignation "${duplicateProduct.designation}" existe déjà dans la base (Code: ${duplicateProduct.code}).`,
+        "Désignation Déjà Utilisée"
+      );
+      return;
+    }
+
     const cost = Number(prodPrixAchat) || 0;
     const qty = Number(prodQtyCalculated) || 0;
     const sp1 = Number(prodPrixVente1) || 0;
@@ -1675,9 +1694,9 @@ export default function PurchaseVoucherWindow({
                   const v = nav.data;
                   const isEditing = editingVoucherId === v.id;
                   
-                  const isSelected = isDraft 
-                    ? (mode === 'create' && !editingVoucherId && newVoucherId === v.id)
-                    : (selectedVoucherId === v.id || isEditing);
+                  const isSelected = mode === 'create'
+                    ? (v.id === newVoucherId)
+                    : (v.id === selectedVoucherId);
 
                   const displaySupplier = isEditing ? newSupplierName : v.supplier;
                   const displayItemsCount = isEditing ? draftItems.length : isDraft ? (v.draftItems || []).length : v.itemsCount;

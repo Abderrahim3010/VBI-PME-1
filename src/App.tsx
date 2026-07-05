@@ -726,6 +726,23 @@ export default function App() {
 
     const otherPurchases = purchases.filter(p => String(p.id) !== String(id));
 
+    // Revert stock (subtract purchased quantities from products)
+    setProducts(prevProducts => {
+      return prevProducts.map(p => {
+        const matchingItems = target.items.filter(i => i.code === p.code);
+        if (matchingItems.length > 0) {
+          const totalQtyToSubtract = matchingItems.reduce((acc, curr) => acc + curr.qty, 0);
+          const finalStock = Math.max(0, p.stock - totalQtyToSubtract);
+          return {
+            ...p,
+            stock: finalStock,
+            stockColis: Math.ceil(finalStock / 12)
+          };
+        }
+        return p;
+      });
+    });
+
     // Revert supplier balance back / delete supplier entirely if it was their only/first purchase
     setSuppliers(prevSuppliers => {
       const hasOtherPurchasesWithThisSupplier = otherPurchases.some(p => p.supplier === target.supplier);
@@ -807,15 +824,17 @@ export default function App() {
     const target = sales.find(s => s.id === id);
     if (!target) return;
 
-    // Restore stock
+    // Restore stock correctly handling multiple entries of the same product
     setProducts(prevProducts => {
       return prevProducts.map(p => {
-        const item = target.items.find(i => i.code === p.code);
-        if (item) {
+        const matchingItems = target.items.filter(i => i.code === p.code);
+        if (matchingItems.length > 0) {
+          const totalQtyToRestore = matchingItems.reduce((acc, curr) => acc + curr.qty, 0);
+          const finalStock = p.stock + totalQtyToRestore;
           return {
             ...p,
-            stock: p.stock + item.qty,
-            stockColis: Math.ceil((p.stock + item.qty) / 12)
+            stock: finalStock,
+            stockColis: Math.ceil(finalStock / 12)
           };
         }
         return p;

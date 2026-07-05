@@ -217,14 +217,16 @@ export default function SalesVoucherWindow({
     if (items.length === 0 && (!originalItemsToSubtract || originalItemsToSubtract.length === 0)) return;
     const updatedProducts = products.map(p => {
       let finalStock = p.stock;
-      const itemToRestore = items.find(i => i.code === p.code);
-      if (itemToRestore) {
-        finalStock += itemToRestore.qty;
+      
+      const matchingItemsToRestore = items.filter(i => i.code === p.code);
+      if (matchingItemsToRestore.length > 0) {
+        finalStock += matchingItemsToRestore.reduce((sum, item) => sum + item.qty, 0);
       }
+      
       if (originalItemsToSubtract) {
-        const itemToSubtract = originalItemsToSubtract.find(i => i.code === p.code);
-        if (itemToSubtract) {
-          finalStock -= itemToSubtract.qty;
+        const matchingItemsToSubtract = originalItemsToSubtract.filter(i => i.code === p.code);
+        if (matchingItemsToSubtract.length > 0) {
+          finalStock -= matchingItemsToSubtract.reduce((sum, item) => sum + item.qty, 0);
         }
       }
       return {
@@ -543,7 +545,7 @@ export default function SalesVoucherWindow({
     const tva = totalHT * (activeTvaRate / 100);
     
     const activeTimbre = mode === 'create' 
-      ? (totalHT > 15000 ? 50 : 0) 
+      ? 0 
       : (selectedSale?.timbre || 0);
 
     const ttc = totalHT + tva + activeTimbre;
@@ -600,7 +602,7 @@ export default function SalesVoucherWindow({
     const totalHT = Math.max(0, rawSum - activeRemise);
     const tvaVal = totalHT * (activeTvaRate / 100);
     const timbreVal = isCreate 
-      ? (totalHT > 15000 ? 50 : 0) 
+      ? 0 
       : (selectedSale?.timbre || 0);
     const ttcVal = totalHT + tvaVal + timbreVal;
     
@@ -2622,46 +2624,63 @@ export default function SalesVoucherWindow({
               </div>
 
               {/* Grid for Buy Price & Final Sell Price */}
-              <div className="grid grid-cols-2 gap-4">
-                {/* Prix d'Achat (not editable) */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wide">📉 Prix d'Achat</span>
-                  <div className="h-9.5 px-3 bg-slate-100 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800/80 rounded-xl flex items-center font-mono font-bold text-slate-500 dark:text-slate-500 text-xs select-none">
-                    {(selectedProductInChooser.prixAchat || selectedProductInChooser.prixDeRevient || 0).toLocaleString('fr-FR', { minimumFractionDigits: 1 })} DA
-                  </div>
-                </div>
+              {(() => {
+                const hasRevient = typeof selectedProductInChooser.prixDeRevient === 'number' && 
+                                    selectedProductInChooser.prixDeRevient > 0 && 
+                                    selectedProductInChooser.prixDeRevient !== selectedProductInChooser.prixAchat;
+                return (
+                  <div className={`grid ${hasRevient ? 'grid-cols-3' : 'grid-cols-2'} gap-4`}>
+                    {/* Prix d'Achat (not editable) */}
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wide">📉 Prix d'Achat</span>
+                      <div className="h-9.5 px-3 bg-slate-100 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center font-mono font-bold text-slate-500 dark:text-slate-500 text-xs select-none">
+                        {(selectedProductInChooser.prixAchat || 0).toLocaleString('fr-FR', { minimumFractionDigits: 1 })} DA
+                      </div>
+                    </div>
 
-                {/* Prix de Vente Final (editable) */}
-                <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] font-black uppercase text-rose-600 dark:text-rose-400 tracking-wide">📈 Prix de Vente Final</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="any"
-                    required
-                    value={customSellingPrice}
-                    onChange={(e) => {
-                      const valStr = e.target.value;
-                      if (valStr === '') {
-                        setCustomSellingPrice('');
-                      } else {
-                        const val = Number(valStr);
-                        setCustomSellingPrice(val);
-                        if (val !== selectedProductInChooser.prixVente1 && 
-                            val !== selectedProductInChooser.prixVente2 && 
-                            val !== selectedProductInChooser.prixVente3) {
-                          setSelectedPriceType('' as any);
-                        }
-                      }
-                    }}
-                    className="h-9.5 px-3 font-mono font-black rounded-xl border border-rose-350 focus:border-rose-500 bg-rose-50/20 dark:bg-rose-950/20 text-rose-700 dark:text-rose-300 w-full focus:outline-none text-sm"
-                  />
-                </div>
-              </div>
+                    {/* Prix de Revient (not editable, only shown if different from Prix d'Achat) */}
+                    {hasRevient && (
+                      <div className="flex flex-col gap-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                        <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wide">🔄 Prix de Revient</span>
+                        <div className="h-9.5 px-3 bg-slate-100 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center font-mono font-bold text-slate-500 dark:text-slate-500 text-xs select-none">
+                          {(selectedProductInChooser.prixDeRevient || 0).toLocaleString('fr-FR', { minimumFractionDigits: 1 })} DA
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Prix de Vente Final (editable) */}
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[10px] font-black uppercase text-rose-600 dark:text-rose-400 tracking-wide">📈 Prix de Vente Final</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        required
+                        value={customSellingPrice}
+                        onChange={(e) => {
+                          const valStr = e.target.value;
+                          if (valStr === '') {
+                            setCustomSellingPrice('');
+                          } else {
+                            const val = Number(valStr);
+                            setCustomSellingPrice(val);
+                            if (val !== selectedProductInChooser.prixVente1 && 
+                                val !== selectedProductInChooser.prixVente2 && 
+                                val !== selectedProductInChooser.prixVente3) {
+                              setSelectedPriceType('' as any);
+                            }
+                          }
+                        }}
+                        className="h-9.5 px-3 font-mono font-black rounded-xl border border-rose-350 focus:border-rose-500 bg-rose-50/20 dark:bg-rose-950/20 text-rose-700 dark:text-rose-300 w-full focus:outline-none text-sm"
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Benefit Box */}
               {(() => {
-                const purchasePrice = selectedProductInChooser.prixAchat || selectedProductInChooser.prixDeRevient || 0;
+                const purchasePrice = selectedProductInChooser.prixDeRevient || selectedProductInChooser.prixAchat || 0;
                 const price = customSellingPrice === '' ? 0 : Number(customSellingPrice);
                 const qty = chooserQty === '' ? 1 : Number(chooserQty);
                 const unitBenefit = price - purchasePrice;

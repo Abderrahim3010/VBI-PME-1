@@ -280,9 +280,22 @@ export default function ProductListWindow({
     e.preventDefault();
     if (!formCode || !formDesignation) return;
 
+    const cleanCode = formCode.trim();
+    const cleanDesignation = formDesignation.trim();
+
+    // Check if another product already has the same designation (case-insensitive)
+    const duplicateProduct = products.find(
+      p => p.designation.trim().toLowerCase() === cleanDesignation.toLowerCase()
+    );
+
+    if (duplicateProduct && duplicateProduct.code !== cleanCode) {
+      alert(`Impossible d'enregistrer l'article : un produit avec la désignation "${duplicateProduct.designation}" existe déjà dans la base (Code: ${duplicateProduct.code}).`);
+      return;
+    }
+
     const payload: Product = {
-      code: formCode.trim(),
-      designation: formDesignation.trim().toUpperCase(),
+      code: cleanCode,
+      designation: cleanDesignation.toUpperCase(),
       category: formCategory || undefined,
       stock: Number(formStock),
       date: yyyymmddToDdmmyyyy(formDate) || undefined,
