@@ -3425,7 +3425,7 @@ export default function PurchaseVoucherWindow({
 
       {/* -------------------- PURCHASE VOUCHER PRINT PREVIEW MODAL (A4 PAPER SPECIFICATION) -------------------- */}
       {isPrintPreviewOpen && (
-        <div id="print-purchase-portal" className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex justify-center items-start overflow-y-auto z-[100200] py-8 select-none print:p-0 print:bg-white print:backdrop-blur-none">
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex justify-center items-start overflow-y-auto z-[100200] py-8 select-none print:p-0 print:bg-white print:backdrop-blur-none">
           {/* Inject print-specific CSS dynamically when this modal is open */}
           <style dangerouslySetInnerHTML={{ __html: `
             @media print {
@@ -3435,39 +3435,19 @@ export default function PurchaseVoucherWindow({
               #print-purchase-invoice-sheet, #print-purchase-invoice-sheet * {
                 visibility: visible !important;
               }
-              #print-purchase-portal, #print-purchase-wrapper {
-                position: static !important;
-                display: block !important;
-                padding: 0 !important;
-                margin: 0 !important;
-                width: 100% !important;
-                height: auto !important;
-                min-height: 0 !important;
-                background: transparent !important;
-                backdrop-filter: none !important;
-                box-shadow: none !important;
-              }
               #print-purchase-invoice-sheet {
                 position: absolute !important;
                 left: 0 !important;
                 top: 0 !important;
-                width: 210mm !important;
-                min-height: 297mm !important;
+                width: 100% !important;
                 margin: 0 !important;
-                padding: 15mm !important;
+                padding: 0 !important;
                 box-shadow: none !important;
-                border: none !important;
-                background: white !important;
-                box-sizing: border-box !important;
-              }
-              @page {
-                size: A4;
-                margin: 0;
               }
             }
           ` }} />
 
-          <div id="print-purchase-wrapper" className="flex flex-col gap-4 items-center print:gap-0">
+          <div className="flex flex-col gap-4 items-center print:gap-0">
             {/* Toolbar - Hidden when printing */}
             <div className="w-[794px] bg-slate-800 text-white p-3 px-5 rounded-2xl flex justify-between items-center shadow-lg print:hidden font-sans">
               <div className="flex items-center gap-2">
