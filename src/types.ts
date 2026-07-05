@@ -61,6 +61,7 @@ export interface PurchaseVoucher {
   oldBalance: number;
   newBalance: number;
   items: VoucherItem[];
+  paymentMode?: string;
 }
 
 export interface SalesVoucher {
@@ -83,6 +84,7 @@ export interface SalesVoucher {
   items: VoucherItem[];
   vendeur?: string;
   observations?: string;
+  paymentMode?: string;
 }
 
 export type ActiveWindowId = 

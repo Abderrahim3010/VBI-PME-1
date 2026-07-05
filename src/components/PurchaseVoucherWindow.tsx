@@ -78,8 +78,15 @@ export default function PurchaseVoucherWindow({
   const [quickSupplierName, setQuickSupplierName] = useState('');
   const [quickSupplierCode, setQuickSupplierCode] = useState('');
   
+  // Mode de paiement modal states
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
+  const [paymentMode, setPaymentMode] = useState(() => config?.deliveryInfo?.defaultPayModePurchase || 'ESPECE');
+  const [paymentSource, setPaymentSource] = useState('COFFRE N°1');
+  const [paymentVersement, setPaymentVersement] = useState<number>(0);
+
   // Voucher editing state tracker
   const [editingVoucherId, setEditingVoucherId] = useState<string | null>(null);
+  const [isPrintPreviewOpen, setIsPrintPreviewOpen] = useState(false);
 
   // List of currently open drafts/bons (can have multiple active drafts open at once)
   const [openDrafts, setOpenDrafts] = useState<any[]>(() => {
@@ -105,6 +112,7 @@ export default function PurchaseVoucherWindow({
             supplier: newSupplierName,
             draftItems,
             versement,
+            paymentMode,
             isEditingExisting: !!editingVoucherId
           }];
         }
@@ -117,6 +125,7 @@ export default function PurchaseVoucherWindow({
               supplier: newSupplierName,
               draftItems,
               versement,
+              paymentMode,
               isEditingExisting: draft.isEditingExisting !== undefined ? draft.isEditingExisting : !!editingVoucherId
             };
           }
@@ -124,7 +133,7 @@ export default function PurchaseVoucherWindow({
         });
       });
     }
-  }, [mode, newVoucherId, newDate, newTime, newSupplierName, draftItems, versement, editingVoucherId]);
+  }, [mode, newVoucherId, newDate, newTime, newSupplierName, draftItems, versement, paymentMode, editingVoucherId]);
 
   // Dynamic list of Families created manually by user, persisted through the local DB adapter as fallback
   const [localCreatedFamilles, setLocalCreatedFamilles] = useState<string[]>(() => {
@@ -221,12 +230,6 @@ export default function PurchaseVoucherWindow({
       setProdFamille('');
     }
   };
-
-  // Mode de paiement modal states
-  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
-  const [paymentMode, setPaymentMode] = useState(() => config?.deliveryInfo?.defaultPayModePurchase || 'ESPECE');
-  const [paymentSource, setPaymentSource] = useState('COFFRE N°1');
-  const [paymentVersement, setPaymentVersement] = useState<number>(0);
 
   // Resizable proportions / sections
   const [topSplitWidth, setTopSplitWidth] = useState<number>(() => {
@@ -549,6 +552,9 @@ export default function PurchaseVoucherWindow({
     setDraftItems(draft.draftItems || []);
     setVersement(draft.versement || 0);
     setEditingVoucherId(draft.isEditingExisting ? draft.id : null);
+    if (draft.paymentMode) {
+      setPaymentMode(draft.paymentMode);
+    }
     
     let baseProductsList = [...products];
     if (draft.isEditingExisting) {
@@ -671,6 +677,49 @@ export default function PurchaseVoucherWindow({
     return { rawAmount, totalQty, totalHT, tva, timbre, ttc, oldBalance, newBalance };
   }, [draftItems, selectedSupplierObj, versement, editingVoucherId, purchases]);
 
+  const previewData = useMemo(() => {
+    const isCreate = mode === 'create';
+    const id = isCreate ? newVoucherId : (selectedVoucher?.id || '');
+    const date = isCreate ? newDate : (selectedVoucher?.date || '');
+    const time = isCreate ? newTime : (selectedVoucher?.time || '');
+    const supplierName = isCreate ? newSupplierName : (selectedVoucher?.supplier || '');
+    const items = isCreate ? draftItems : (selectedVoucher?.items || []);
+    const activeRemise = isCreate ? 0 : (selectedVoucher?.remise || 0);
+    
+    const rawSum = items.reduce((acc, item) => acc + item.total, 0);
+    const totalHT = Math.max(0, rawSum - activeRemise);
+    const tvaVal = isCreate ? (draftMetrics?.tva || 0) : (selectedVoucher?.tva || 0);
+    const timbreVal = isCreate ? (draftMetrics?.timbre || 0) : (selectedVoucher?.timbre || 0);
+    const ttcVal = isCreate ? (draftMetrics?.ttc || 0) : (selectedVoucher?.ttc || 0);
+    const versementVal = isCreate ? versement : (selectedVoucher?.versement || 0);
+    
+    const supplierObj = suppliers.find(s => s.name === supplierName) || { id: 'anonyme', name: supplierName, balance: 0, phone: '', address: '', contact: '' };
+    
+    const payMode = isCreate 
+      ? (paymentMode === 'ESPECE' ? 'ESPÈCE / CASH' : (paymentMode === 'CHEQUE' ? 'CHÈQUE / VIREMENT' : 'A TERME'))
+      : (selectedVoucher?.paymentMode
+          ? (selectedVoucher.paymentMode === 'ESPECE' ? 'ESPÈCE / CASH' : (selectedVoucher.paymentMode === 'CHEQUE' ? 'CHÈQUE / VIREMENT' : 'A TERME'))
+          : (selectedVoucher && selectedVoucher.versement >= selectedVoucher.ttc ? 'ESPÈCE / CASH' : 'A TERME')
+        );
+    
+    return {
+      id,
+      date,
+      time,
+      supplierName,
+      supplierObj,
+      items,
+      remise: activeRemise,
+      tva: tvaVal,
+      timbre: timbreVal,
+      totalHT,
+      ttc: ttcVal,
+      rawSum,
+      versement: versementVal,
+      payMode
+    };
+  }, [mode, newVoucherId, selectedVoucher, newDate, newTime, newSupplierName, draftItems, versement, suppliers, draftMetrics, paymentMode]);
+
   // Starts voucher creation flow
   const handleNewVoucher = () => {
     if (!config?.isActivated && purchases.length >= 1) {
@@ -756,7 +805,8 @@ export default function PurchaseVoucherWindow({
       time: formattedTime,
       supplier: finalSupplierName,
       draftItems: [],
-      versement: 0
+      versement: 0,
+      paymentMode: paymentMode
     };
     setOpenDrafts(prev => [...prev, newDraft]);
   };
@@ -783,6 +833,7 @@ export default function PurchaseVoucherWindow({
       supplier: selectedVoucher.supplier,
       draftItems: [...selectedVoucher.items],
       versement: selectedVoucher.versement || 0,
+      paymentMode: selectedVoucher.paymentMode,
       isEditingExisting: true
     };
 
@@ -840,18 +891,13 @@ export default function PurchaseVoucherWindow({
         setDraftItems(updated);
         setSelectedDraftIdx(updated.length > 0 ? updated.length - 1 : -1);
 
-        // Revert product cost price / existence in draft localProducts catalog
-        const originalProd = products.find(p => p.code === itemToRemove.code);
-        if (originalProd) {
-          setLocalProducts(prev => prev.map(p => 
-            p.code === itemToRemove.code 
-              ? { ...p, prixDeRevient: originalProd.prixDeRevient } 
-              : p
-          ));
-        } else {
-          // If it was newly registered in this session, remove it entirely from localProducts catalog
-          setLocalProducts(prev => prev.filter(p => p.code !== itemToRemove.code));
+        // When deleting articles from it, they should be deleted from catalogue,
+        // but not necessarily from sales (saisie ventes F2)
+        const codeToDelete = itemToRemove.code;
+        if (onProductsUpdate) {
+          onProductsUpdate(products.filter(p => p.code !== codeToDelete));
         }
+        setLocalProducts(prev => prev.filter(p => p.code !== codeToDelete));
       },
       "Suppression d'article"
     );
@@ -894,7 +940,8 @@ export default function PurchaseVoucherWindow({
       versement: finalVersement,
       oldBalance: oldBal,
       newBalance: finalNewBalance,
-      items: draftItems
+      items: draftItems,
+      paymentMode: paymentMode
     };
 
     // Update the on-screen versement field to align with the dialog choice
@@ -964,6 +1011,12 @@ export default function PurchaseVoucherWindow({
   // Delete Voucher
   const handleDeleteVoucher = () => {
     if (!selectedVoucher) return;
+    
+    if (selectedVoucher.items && selectedVoucher.items.length > 0) {
+      showRetroAlert("Ce bon d'achat n'est pas vide. Veuillez d'abord supprimer tous les articles de ce bon.", "Saisie achats");
+      return;
+    }
+
     showRetroConfirm(
       `Voulez-vous vraiment supprimer définitivement le Bon d'Achat N° ${selectedVoucher.id} ?\n\nCette action rétablira le stock des articles et ajustera le solde du fournisseur (${selectedVoucher.supplier}) automatiquement.`,
       () => {
@@ -1345,6 +1398,14 @@ export default function PurchaseVoucherWindow({
           onClose();
         }
       }
+      if (e.key === 'F3') {
+        e.preventDefault();
+        if (mode === 'create') {
+          showRetroAlert("Impression impossible. Veuillez d'abord fermer le bon (enregistrer) !", "Saisie achats");
+        } else if (selectedVoucher) {
+          setIsPrintPreviewOpen(true);
+        }
+      }
       if (e.key === 'F4') {
         e.preventDefault();
         if (mode !== 'create') handleEditVoucher();
@@ -1485,7 +1546,7 @@ export default function PurchaseVoucherWindow({
               </button>
             ) : (
               <button
-                onClick={() => alert(`Impression lancée pour Bon d'Achat N° ${selectedVoucher?.id || ''}`)}
+                onClick={() => setIsPrintPreviewOpen(true)}
                 disabled={!selectedVoucher}
                 className="px-3.5 h-10 flex items-center justify-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-950 shadow-xs cursor-pointer transition-transform duration-100 active:scale-95 disabled:opacity-40"
               >
@@ -1533,43 +1594,69 @@ export default function PurchaseVoucherWindow({
                 <button
                   type="button"
                   onClick={() => {
-                    showRetroConfirm(
-                      `Voulez-vous vraiment supprimer le Brouillon de Bon d'Achat N° ${newVoucherId} ?`,
-                      () => {
-                        const idToDelete = newVoucherId;
-                        const draftToDel = openDrafts.find(d => String(d.id) === String(idToDelete));
-                        if (draftToDel && onProductsUpdate) {
-                          const otherPurchasesCodes = new Set(purchases.flatMap(p => p.items.map(i => String(i.code))));
-                          const otherDraftsCodes = new Set(
-                            openDrafts
-                              .filter(d => String(d.id) !== String(idToDelete))
-                              .flatMap(d => (d.draftItems || []).map((i: any) => String(i.code)))
-                          );
-                          const cleanedProducts = products.filter(p => {
-                            const inThisDraft = (draftToDel.draftItems || []).some((i: any) => String(i.code) === String(p.code));
-                            if (inThisDraft) {
-                              return otherPurchasesCodes.has(String(p.code)) || otherDraftsCodes.has(String(p.code));
-                            }
-                            return true;
-                          });
-                          onProductsUpdate(cleanedProducts);
+                    if (draftItems && draftItems.length > 0) {
+                      showRetroAlert("Ce bon d'achat n'est pas vide. Veuillez d'abord supprimer tous les articles de ce bon.", "Saisie achats");
+                      return;
+                    }
+                    if (editingVoucherId) {
+                      showRetroConfirm(
+                        `Voulez-vous vraiment supprimer définitivement le Bon d'Achat N° ${newVoucherId} ?\n\nCette action ajustera le solde du fournisseur (${newSupplierName}) automatiquement.`,
+                        () => {
+                          const idToDelete = newVoucherId;
+                          onDeletePurchase(idToDelete);
+                          setOpenDrafts(prev => prev.filter(d => String(d.id) !== String(idToDelete)));
+                          setMode('view');
+                          setEditingVoucherId(null);
+                          const remaining = purchases.filter(p => String(p.id) !== String(idToDelete));
+                          if (remaining.length > 0) {
+                            setSelectedVoucherId(remaining[remaining.length - 1].id);
+                          } else {
+                            setSelectedVoucherId('');
+                          }
+                          showRetroAlert(`Le Bon d'Achat N° ${idToDelete} a été retiré de la base de données.`);
                         }
-                        setOpenDrafts(prev => prev.filter(d => String(d.id) !== String(idToDelete)));
-                        setMode('view');
-                        setEditingVoucherId(null);
-                        if (purchases.length > 0) {
-                          setSelectedVoucherId(purchases[purchases.length - 1].id);
-                        } else {
-                          setSelectedVoucherId('');
+                      );
+                    } else {
+                      showRetroConfirm(
+                        `Voulez-vous vraiment supprimer le Brouillon de Bon d'Achat N° ${newVoucherId} ?`,
+                        () => {
+                          const idToDelete = newVoucherId;
+                          const draftToDel = openDrafts.find(d => String(d.id) === String(idToDelete));
+                          if (draftToDel && onProductsUpdate) {
+                            const otherPurchasesCodes = new Set(purchases.flatMap(p => p.items.map(i => String(i.code))));
+                            const otherDraftsCodes = new Set(
+                              openDrafts
+                                .filter(d => String(d.id) !== String(idToDelete))
+                                .flatMap(d => (d.draftItems || []).map((i: any) => String(i.code)))
+                            );
+                            const cleanedProducts = products.filter(p => {
+                              const inThisDraft = (draftToDel.draftItems || []).some((i: any) => String(i.code) === String(p.code));
+                              if (inThisDraft) {
+                                return otherPurchasesCodes.has(String(p.code)) || otherDraftsCodes.has(String(p.code));
+                              }
+                              return true;
+                            });
+                            onProductsUpdate(cleanedProducts);
+                          }
+                          setOpenDrafts(prev => prev.filter(d => String(d.id) !== String(idToDelete)));
+                          setMode('view');
+                          setEditingVoucherId(null);
+                          if (purchases.length > 0) {
+                            setSelectedVoucherId(purchases[purchases.length - 1].id);
+                          } else {
+                            setSelectedVoucherId('');
+                          }
                         }
-                      }
-                    );
+                      );
+                    }
                   }}
                   className="px-3.5 h-10 flex items-center justify-center gap-2 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 text-rose-700 dark:text-rose-300 rounded-xl hover:bg-rose-100 dark:hover:bg-rose-950 cursor-pointer transition-transform duration-100 active:scale-95 shadow-xs"
                 >
                   <span className="text-base">🗑️</span>
                   <div className="flex flex-col text-left font-sans">
-                    <span className="font-extrabold text-[10px] uppercase tracking-wider leading-none">Suppr. Brouillon</span>
+                    <span className="font-extrabold text-[10px] uppercase tracking-wider leading-none">
+                      {editingVoucherId ? "Suppr. Bon d'Achat" : "Suppr. Brouillon"}
+                    </span>
                     <span className="text-[8px] font-bold text-rose-500 tracking-wider mt-0.5">Dispo</span>
                   </div>
                 </button>
@@ -3332,6 +3419,330 @@ export default function PurchaseVoucherWindow({
         </div>
       )}
 
+      {/* -------------------- PURCHASE VOUCHER PRINT PREVIEW MODAL (A4 PAPER SPECIFICATION) -------------------- */}
+      {isPrintPreviewOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex justify-center items-start overflow-y-auto z-[100200] py-8 select-none print:p-0 print:bg-white print:backdrop-blur-none">
+          {/* Inject print-specific CSS dynamically when this modal is open */}
+          <style dangerouslySetInnerHTML={{ __html: `
+            @media print {
+              body * {
+                visibility: hidden !important;
+              }
+              #print-purchase-invoice-sheet, #print-purchase-invoice-sheet * {
+                visibility: visible !important;
+              }
+              #print-purchase-invoice-sheet {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+              }
+            }
+          ` }} />
+
+          <div className="flex flex-col gap-4 items-center print:gap-0">
+            {/* Toolbar - Hidden when printing */}
+            <div className="w-[794px] bg-slate-800 text-white p-3 px-5 rounded-2xl flex justify-between items-center shadow-lg print:hidden font-sans">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🖨️</span>
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-wider">Aperçu avant impression</h4>
+                  <p className="text-[10px] text-slate-300 font-medium">Bon d'Achat au format A4</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="px-4 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                >
+                  🖨️ Imprimer le Bon
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsPrintPreviewOpen(false)}
+                  className="px-4 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-100 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                >
+                  ✕ Fermer
+                </button>
+              </div>
+            </div>
+
+            {/* A4 Printable Sheet */}
+            <div 
+              id="print-purchase-invoice-sheet"
+              className="w-[794px] min-h-[1123px] bg-white text-black p-12 relative shadow-2xl rounded-sm font-sans flex flex-col justify-between print:shadow-none print:p-0 print:w-full print:min-h-0 print:bg-white"
+            >
+              <div>
+                {/* Header Section */}
+                <div className="flex justify-between items-start mb-6">
+                  {/* Left: Company & Buyer */}
+                  <div className="flex flex-col text-left font-sans select-text">
+                    <h1 className="text-[26px] font-black tracking-tight text-slate-900 uppercase">
+                      {config?.invoiceInfo?.nomRaisonSociale || ''}
+                    </h1>
+                    <p className="text-[10.5px] text-slate-600 leading-normal mt-1">{config?.invoiceInfo?.detail1 || ''}</p>
+                    <p className="text-[10.5px] text-slate-600 leading-normal mt-0.5">{config?.invoiceInfo?.detail2 || ''}</p>
+                    <p className="text-[10.5px] text-slate-600 leading-normal mt-0.5">{config?.invoiceInfo?.detail3 || ''}</p>
+                    <p className="text-[11px] text-slate-800 font-bold mt-3">
+                      Acheteur :<span className="font-semibold text-slate-700"> {sessionStorage.getItem('compos_current_user') ? JSON.parse(sessionStorage.getItem('compos_current_user') || '{}')?.username : 'admin'}</span>
+                    </p>
+                  </div>
+
+                  {/* Right: Beautiful logo box */}
+                  <div className="flex flex-col items-end gap-1.5 min-h-[96px] justify-center">
+                    {config?.invoiceInfo?.logo ? (
+                      <img 
+                        src={config.invoiceInfo.logo} 
+                        alt="Logo de l'entreprise" 
+                        className="max-h-24 max-w-64 object-contain"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="w-64 h-24"></div>
+                    )}
+                    <div className="text-[11px] font-bold text-slate-900 mt-1 select-text">
+                      le, {previewData.date}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Subtitle / Document Title & Supplier Box */}
+                <div className="grid grid-cols-12 gap-4 items-end mb-4">
+                  {/* Title and ID */}
+                  <div className="col-span-7 text-left pb-2">
+                    <h2 className="text-lg font-black tracking-tight text-black uppercase leading-none select-text">
+                      BON D'ACHAT N°{previewData.id.padStart(5, '0')}/{previewData.date.split('/')[2] || new Date().getFullYear().toString()}
+                    </h2>
+                    <span className="text-[10px] font-bold text-slate-500 block mt-1">PAGE : 1</span>
+                  </div>
+
+                  {/* Supplier Box */}
+                  <div className="col-span-5 flex flex-col items-start font-sans">
+                    <span className="text-[10px] font-black uppercase text-slate-900 tracking-wider mb-1 leading-none">FOURNISSEUR :</span>
+                    <div className="w-full border border-black rounded-lg p-3 min-h-[75px] text-left select-text">
+                      <h4 className="font-black text-xs uppercase leading-snug">{previewData.supplierName}</h4>
+                      {previewData.supplierObj?.address && (
+                        <p className="text-[10px] text-slate-600 mt-1 font-medium leading-tight">
+                          {previewData.supplierObj.address}
+                        </p>
+                      )}
+                      {previewData.supplierObj?.contact && (
+                        <p className="text-[10px] text-slate-500 mt-0.5 font-mono">
+                          {previewData.supplierObj.contact}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Main Items Table */}
+                <div className="mb-6">
+                  <table className="w-full border-collapse border border-black text-xs">
+                    <thead>
+                      <tr className="border-b border-black text-center font-bold bg-slate-50">
+                        <th className="border-r border-black p-1 text-[9px] w-[5%]">N°</th>
+                        <th className="border-r border-black p-1 text-[9px] w-[16%]">REF</th>
+                        <th className="border-r border-black p-1 text-[9px] w-[37%] text-left pl-2">DESIGNATION</th>
+                        <th className="border-r border-black p-1 text-[9px] w-[7%]">QTE</th>
+                        <th className="border-r border-black p-1 text-[9px] w-[10%]">P.U HT</th>
+                        <th className="border-r border-black p-1 text-[9px] w-[11%]">Montant HT</th>
+                        <th className="border-r border-black p-1 text-[8.5px] w-[14%]" colSpan={2}>
+                          <div className="border-b border-black pb-0.5 mb-0.5 font-black text-center text-[8.5px]">TVA</div>
+                          <div className="flex text-[7.5px] font-bold">
+                            <span className="w-1/2 border-r border-black/30 text-center">Taux%</span>
+                            <span className="w-1/2 text-center">Montant</span>
+                          </div>
+                        </th>
+                        <th className="p-1 text-[9px] w-[12%]">Montant TTC</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {/* Real Items */}
+                      {previewData.items.map((item, idx) => {
+                        const calculatedItemTvaRate = previewData.totalHT > 0 ? Math.round((previewData.tva / previewData.totalHT) * 100) : 0;
+                        const itemHt = item.total;
+                        const itemTva = itemHt * (calculatedItemTvaRate / 100);
+                        const itemTtc = itemHt + itemTva;
+                        return (
+                          <tr key={item.id || idx} className="border-b border-black h-7 text-center font-mono select-text">
+                            <td className="border-r border-black p-1 text-[9.5px] font-sans font-bold">{idx + 1}</td>
+                            <td className="border-r border-black p-1 text-[9px] text-left leading-none font-mono font-medium">{item.code}</td>
+                            <td className="border-r border-black p-1 text-[9.5px] text-left font-sans font-semibold uppercase leading-tight select-text pl-2">{item.designation}</td>
+                            <td className="border-r border-black p-1 text-[11px] font-sans font-black">{item.qty}</td>
+                            <td className="border-r border-black p-1 text-[9.5px] text-right">{item.price.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}</td>
+                            <td className="border-r border-black p-1 text-[9.5px] text-right">{(item.total).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}</td>
+                            <td className="border-r border-black p-1 text-[9px] w-[7%] text-center font-sans">
+                              {calculatedItemTvaRate}%
+                            </td>
+                            <td className="border-r border-black p-1 text-[9px] w-[7%] text-right">
+                              {itemTva.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
+                            </td>
+                            <td className="p-1 text-[9.5px] text-right font-sans font-black">{itemTtc.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}</td>
+                          </tr>
+                        );
+                      })}
+                      
+                      {/* Empty padded rows for professional feel */}
+                      {Array.from({ length: Math.max(0, 8 - previewData.items.length) }).map((_, idx) => (
+                        <tr key={`empty-${idx}`} className="border-b border-black h-7">
+                          <td className="border-r border-black"></td>
+                          <td className="border-r border-black"></td>
+                          <td className="border-r border-black"></td>
+                          <td className="border-r border-black"></td>
+                          <td className="border-r border-black"></td>
+                          <td className="border-r border-black"></td>
+                          <td className="border-r border-black"></td>
+                          <td className="border-r border-black"></td>
+                          <td></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* Invoice Footer Details (Totals & Stop wording) */}
+                <div className="grid grid-cols-12 gap-4 items-start mt-6">
+                  {/* Left block: Payment mode & sum in words */}
+                  <div className="col-span-7 flex flex-col gap-3 text-left font-sans select-text">
+                    <p className="text-[10px] font-black text-slate-800 uppercase">
+                      Mode de payement : <span className="font-black text-slate-900 border-b border-black pb-0.5">{previewData.payMode}</span>
+                    </p>
+                    <div className="mt-2 text-[10px] leading-relaxed select-text">
+                      <p className="font-bold text-slate-600">Arrêter le présent bon d'achat à la somme de :</p>
+                      <p className="font-black text-xs text-black uppercase mt-1 tracking-wide leading-tight">
+                        {amountToWordsFR(previewData.ttc)}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Right block: Totals grid */}
+                  <div className="col-span-5 flex justify-end">
+                    <table className="w-[260px] border-collapse border border-black text-[10px] font-sans font-bold">
+                      <tbody>
+                        <tr className="border-b border-black">
+                          <td className="border-r border-black p-1.5 bg-slate-50/50 uppercase tracking-wider text-[9px] w-[50%]">TOTAL</td>
+                          <td className="p-1.5 text-right font-mono text-[10.5px] w-[50%]">{previewData.rawSum.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                        <tr className="border-b border-black">
+                          <td className="border-r border-black p-1.5 bg-slate-50/50 uppercase tracking-wider text-[9px]">REMISE</td>
+                          <td className="p-1.5 text-right font-mono text-[10.5px] text-red-600">{previewData.remise.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                        <tr className="border-b border-black">
+                          <td className="border-r border-black p-1.5 bg-slate-50/50 uppercase tracking-wider text-[9px]">TOTAL HT</td>
+                          <td className="p-1.5 text-right font-mono text-[10.5px]">{previewData.totalHT.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                        <tr className="border-b border-black">
+                          <td className="border-r border-black p-1.5 bg-slate-50/50 uppercase tracking-wider text-[9px]">TVA</td>
+                          <td className="p-1.5 text-right font-mono text-[10.5px]">{previewData.tva.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                        <tr className="border-b border-black">
+                          <td className="border-r border-black p-1.5 bg-slate-50/50 uppercase tracking-wider text-[9px]">TIMBRE</td>
+                          <td className="p-1.5 text-right font-mono text-[10.5px]">{previewData.timbre.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                        <tr className="bg-slate-100 font-black">
+                          <td className="border-r border-black p-1.5 uppercase tracking-wider text-[9px]">TOTAL TTC</td>
+                          <td className="p-1.5 text-right font-mono text-xs">{previewData.ttc.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              {/* Bottom statutory watermark - centered */}
+              <div className="text-center text-[9px] text-slate-400 font-bold tracking-wider mt-5 border-t border-dashed border-slate-200 pt-3 print:mt-10 select-none uppercase">
+                SYSTÈME DE FACTURATION AUTOMATISÉ
+                <div className="mt-1.5 text-[10.5px] text-slate-700 font-sans font-bold tracking-normal normal-case">
+                  {config?.invoiceInfo?.messageFacture || 'Merci pour votre confiance'}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
+}
+
+// -------------------- FRENCH NUMBER TO WORDS CONVERTER UTILITIES --------------------
+function NumberToWordsFR(num: number): string {
+  if (num === 0) return "ZÉRO";
+  
+  const units = ["", "UN", "DEUX", "TROIS", "QUATRE", "CINQ", "SIX", "SEPT", "HUIT", "NEUF"];
+  const teens = ["DIX", "ONZE", "DOUZE", "TREIZE", "QUATORZE", "QUINZE", "SEIZE", "DIX-SEPT", "DIX-HUIT", "DIX-NEUF"];
+  const tens = ["", "DIX", "VINGT", "TRENTE", "QUARANTE", "CINQUANTE", "SOIXANTE", "SOIXANTE-DIX", "QUATRE-VINGTS", "QUATRE-VINGT-DIX"];
+  
+  function convertSection(n: number): string {
+    let result = "";
+    const h = Math.floor(n / 100);
+    const remainder = n % 100;
+    
+    if (h > 0) {
+      if (h === 1) {
+        result += "CENT ";
+      } else {
+        result += units[h] + " CENT ";
+      }
+    }
+    
+    if (remainder > 0) {
+      if (remainder < 10) {
+        result += units[remainder];
+      } else if (remainder < 20) {
+        result += teens[remainder - 10];
+      } else {
+        const t = Math.floor(remainder / 10);
+        const u = remainder % 10;
+        
+        if (t === 7) {
+          result += "SOIXANTE-" + (u === 1 ? "ET-ONZE" : teens[u]);
+        } else if (t === 9) {
+          result += "QUATRE-VINGT-" + teens[u];
+        } else {
+          result += tens[t];
+          if (u > 0) {
+            result += (u === 1 ? "-ET-UN" : "-" + units[u]);
+          }
+        }
+      }
+    }
+    return result.trim();
+  }
+  
+  const thousand = Math.floor(num / 1000) % 1000;
+  const million = Math.floor(num / 1000000) % 1000;
+  const rest = Math.floor(num) % 1000;
+  
+  let finalStr = "";
+  if (million > 0) {
+    finalStr += convertSection(million) + " MILLION" + (million > 1 ? "S " : " ");
+  }
+  if (thousand > 0) {
+    if (thousand === 1) {
+      finalStr += "MILLE ";
+    } else {
+      finalStr += convertSection(thousand) + " MILLE ";
+    }
+  }
+  if (rest > 0) {
+    finalStr += convertSection(rest);
+  }
+  
+  return finalStr.trim().replace(/\s+/g, ' ');
+}
+
+function amountToWordsFR(amount: number): string {
+  const integerPart = Math.floor(amount);
+  const decimalPart = Math.round((amount - integerPart) * 100);
+  
+  let words = NumberToWordsFR(integerPart) + " DINAR" + (integerPart > 1 ? "S" : "");
+  if (decimalPart > 0) {
+    words += " ET " + NumberToWordsFR(decimalPart) + " CENTIME" + (decimalPart > 1 ? "S" : "");
+  }
+  return words;
 }

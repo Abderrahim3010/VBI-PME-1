@@ -14,6 +14,7 @@ interface OpenVoucher {
   remise: number;
   tvaRate: number;
   draftItems: VoucherItem[];
+  paymentMode?: 'ESPECE' | 'A_TERME';
 }
 
 interface SalesVoucherWindowProps {
@@ -442,7 +443,8 @@ export default function SalesVoucherWindow({
             versement: versement,
             remise: remise,
             tvaRate: tvaRate,
-            draftItems: draftItems
+            draftItems: draftItems,
+            paymentMode: paymentMode
           };
         }
         return v;
@@ -459,7 +461,8 @@ export default function SalesVoucherWindow({
     versement,
     remise,
     tvaRate,
-    draftItems
+    draftItems,
+    paymentMode
   ]);
 
   const loadDraft = (draft: OpenVoucher) => {
@@ -475,6 +478,9 @@ export default function SalesVoucherWindow({
     setRemise(draft.remise);
     setTvaRate(draft.tvaRate);
     setDraftItems(draft.draftItems);
+    if (draft.paymentMode) {
+      setPaymentMode(draft.paymentMode);
+    }
     
     setEditingVoucherId(draft.isEditingExisting ? draft.id : null);
     
@@ -608,7 +614,12 @@ export default function SalesVoucherWindow({
     
     const clientObj = clients.find(c => c.name === clientName) || { id: 'anonyme', name: clientName, balance: 0, phone: '', address: '' };
     
-    const payMode = isCreate ? paymentMode : 'A TERME';
+    const payMode = isCreate 
+      ? (paymentMode === 'ESPECE' ? 'ESPÈCE / CASH' : 'A TERME')
+      : (selectedSale?.paymentMode
+          ? (selectedSale.paymentMode === 'ESPECE' ? 'ESPÈCE / CASH' : 'A TERME')
+          : (selectedSale && selectedSale.versement >= selectedSale.ttc ? 'ESPÈCE / CASH' : 'A TERME')
+        );
     
     return {
       id,
@@ -727,7 +738,8 @@ export default function SalesVoucherWindow({
       versement: 0,
       remise: 0,
       tvaRate: 0,
-      draftItems: []
+      draftItems: [],
+      paymentMode: paymentMode
     };
 
     setOpenVouchers(prev => [...prev, newDraft]);
@@ -797,7 +809,8 @@ export default function SalesVoucherWindow({
           versement: selectedSale.versement || 0,
           remise: selectedSale.remise || 0,
           tvaRate: selectedSale.tva ? 19 : 0,
-          draftItems: [...selectedSale.items]
+          draftItems: [...selectedSale.items],
+          paymentMode: selectedSale.paymentMode as 'ESPECE' | 'A_TERME'
         };
 
         setOpenVouchers(prev => [...prev, newDraft]);
@@ -854,7 +867,8 @@ export default function SalesVoucherWindow({
       newBalance: finalNewBalance,
       observations: observations,
       vendeur: vendeurName,
-      items: draftItems
+      items: draftItems,
+      paymentMode: paymentMode
     };
 
     // The parent stock is already fully decremented in real-time as items are added/edited in the draft.
@@ -1011,7 +1025,11 @@ export default function SalesVoucherWindow({
         handleFermerLeBon();
       } else if (e.key === 'F3') {
         e.preventDefault();
-        setIsBonPreviewOpen(true);
+        if (mode === 'create') {
+          showRetroAlert("Impression impossible. Veuillez d'abord fermer le bon (enregistrer) !", "Saisie ventes");
+        } else {
+          setIsBonPreviewOpen(true);
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -1254,8 +1272,9 @@ export default function SalesVoucherWindow({
 
             <button
               type="button"
+              disabled={mode === 'create'}
               onClick={() => setIsBonPreviewOpen(true)}
-              className="px-3.5 h-10 flex items-center justify-center gap-2 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-950 shadow-xs cursor-pointer transition-transform duration-100 active:scale-95"
+              className="px-3.5 h-10 flex items-center justify-center gap-2 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-950 shadow-xs cursor-pointer transition-transform duration-100 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <span className="text-base">🖨️</span>
               <div className="flex flex-col text-left">
@@ -1408,7 +1427,13 @@ export default function SalesVoucherWindow({
             <div className="relative">
               <button
                 type="button"
-                onClick={() => setIsFacturationDropdownOpen(!isFacturationDropdownOpen)}
+                onClick={() => {
+                  if (mode === 'create') {
+                    showRetroAlert("Impression impossible. Veuillez d'abord fermer le bon (enregistrer) !", "Saisie ventes");
+                    return;
+                  }
+                  setIsFacturationDropdownOpen(!isFacturationDropdownOpen);
+                }}
                 className={`h-8 px-2.5 border rounded-xl flex gap-2 items-center text-left transition-all cursor-pointer active:scale-95 w-[145px] focus:outline-none ${
                   isFacturationDropdownOpen
                     ? 'bg-blue-50 border-blue-400 text-blue-700 dark:bg-slate-800 dark:border-sky-500 dark:text-sky-450'
