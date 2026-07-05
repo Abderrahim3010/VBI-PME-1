@@ -3026,6 +3026,9 @@ export default function SalesVoucherWindow({
                     <p className="text-[10.5px] text-slate-600 leading-normal mt-1">{config?.invoiceInfo?.detail1 || ''}</p>
                     <p className="text-[10.5px] text-slate-600 leading-normal mt-0.5">{config?.invoiceInfo?.detail2 || ''}</p>
                     <p className="text-[10.5px] text-slate-600 leading-normal mt-0.5">{config?.invoiceInfo?.detail3 || ''}</p>
+                    {config?.invoiceInfo?.adresse && (
+                      <p className="text-[10.5px] text-slate-600 leading-normal mt-0.5">{config.invoiceInfo.adresse}</p>
+                    )}
                     <p className="text-[11px] text-slate-800 font-bold mt-3">
                       Vendeur :<span className="font-semibold text-slate-700"> {currentUser?.username || previewData.vendeur || 'admin'}</span>
                     </p>
@@ -3064,9 +3067,11 @@ export default function SalesVoucherWindow({
                     <span className="text-[10px] font-black uppercase text-slate-900 tracking-wider mb-1 leading-none">DOIT :</span>
                     <div className="w-full border border-black rounded-lg p-3 min-h-[75px] text-left select-text">
                       <h4 className="font-black text-xs uppercase leading-snug">{previewData.clientName}</h4>
-                      {previewData.clientObj?.address && (
+                      {(previewData.clientObj?.address || (previewData.clientName?.toLowerCase() === 'anonyme' && config?.invoiceInfo?.adresse)) && (
                         <p className="text-[10px] text-slate-600 mt-1 font-medium leading-tight">
-                          {previewData.clientObj.address}
+                          {previewData.clientName?.toLowerCase() === 'anonyme'
+                            ? (config?.invoiceInfo?.adresse || 'Alger')
+                            : (previewData.clientObj?.address || '')}
                         </p>
                       )}
                       {previewData.clientObj?.contact && (
@@ -3389,7 +3394,10 @@ export default function SalesVoucherWindow({
       {/* -------------------- PORTABLE THERMAL RECEIPT (BON) PRINT PREVIEW MODAL -------------------- */}
       {isBonPreviewOpen && (() => {
         const clientPhone = previewData.clientObj?.phone || '';
-        const clientAddress = previewData.clientObj?.address || '';
+        const isAnonyme = previewData.clientName?.toLowerCase() === 'anonyme' || previewData.clientObj?.name?.toLowerCase() === 'anonyme';
+        const clientAddress = isAnonyme
+          ? (config?.deliveryInfo?.adresse || previewData.clientObj?.address || 'Alger')
+          : (previewData.clientObj?.address || '');
         const previousBalance = computedMetrics.oldBalance ?? 0;
         const ttcVal = previewData.ttc ?? 0;
         const paidVal = versement ?? 0;
@@ -3468,6 +3476,9 @@ export default function SalesVoucherWindow({
                   <p className="text-[9px] text-slate-700">{config?.deliveryInfo?.detail2 || ''}</p>
                   {config?.deliveryInfo?.detail3 && (
                     <p className="text-[9px] text-slate-700">{config.deliveryInfo.detail3}</p>
+                  )}
+                  {config?.deliveryInfo?.adresse && (
+                    <p className="text-[9px] text-slate-700">{config.deliveryInfo.adresse}</p>
                   )}
                   
                   <div className="border-t border-dashed border-black/80 my-2"></div>

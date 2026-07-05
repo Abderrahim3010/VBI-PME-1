@@ -32,6 +32,7 @@ export default function ConfigWindow({
   const [deliveryDetail1, setDeliveryDetail1] = useState(config?.deliveryInfo?.detail1 || '');
   const [deliveryDetail2, setDeliveryDetail2] = useState(config?.deliveryInfo?.detail2 || '');
   const [deliveryDetail3, setDeliveryDetail3] = useState(config?.deliveryInfo?.detail3 || '');
+  const [deliveryAdresse, setDeliveryAdresse] = useState(config?.deliveryInfo?.adresse || '');
   const [messageTicket, setMessageTicket] = useState(config?.deliveryInfo?.messageTicket || '');
   const [deliveryLogo, setDeliveryLogo] = useState(config?.deliveryInfo?.logo || '');
   const [multiLangueBon, setMultiLangueBon] = useState(config?.deliveryInfo?.multiLangueBon || 'arabe');
@@ -51,6 +52,7 @@ export default function ConfigWindow({
   const [invoiceDetail1, setInvoiceDetail1] = useState(config?.invoiceInfo?.detail1 || '');
   const [invoiceDetail2, setInvoiceDetail2] = useState(config?.invoiceInfo?.detail2 || '');
   const [invoiceDetail3, setInvoiceDetail3] = useState(config?.invoiceInfo?.detail3 || '');
+  const [invoiceAdresse, setInvoiceAdresse] = useState(config?.invoiceInfo?.adresse || '');
   const [invoiceLogo, setInvoiceLogo] = useState(config?.invoiceInfo?.logo || '');
   const [messageFacture, setMessageFacture] = useState(config?.invoiceInfo?.messageFacture || 'Merci pour votre confiance');
 
@@ -128,6 +130,7 @@ export default function ConfigWindow({
         detail1: deliveryDetail1,
         detail2: deliveryDetail2,
         detail3: deliveryDetail3,
+        adresse: deliveryAdresse,
         messageTicket: messageTicket,
         logo: deliveryLogo,
         rc,
@@ -145,6 +148,7 @@ export default function ConfigWindow({
         detail1: invoiceDetail1,
         detail2: invoiceDetail2,
         detail3: invoiceDetail3,
+        adresse: invoiceAdresse,
         logo: invoiceLogo,
         messageFacture,
       },
@@ -475,6 +479,21 @@ export default function ConfigWindow({
                       </div>
                     </div>
 
+                    {/* Adresse */}
+                    <div className="flex flex-col gap-1">
+                      <span className="font-extrabold text-[9px] uppercase text-slate-500 tracking-wider">Adresse</span>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={deliveryAdresse}
+                          onChange={(e) => setDeliveryAdresse(e.target.value)}
+                          placeholder="Adresse de l'entreprise"
+                          className="flex-1 h-8 rounded-xl bg-slate-50/60 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 outline-none text-[11px] font-bold text-slate-700 dark:text-slate-250 focus:border-indigo-500 transition-colors"
+                        />
+                        <button className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-850 dark:hover:bg-slate-800 flex items-center justify-center font-black text-indigo-700 border border-slate-200 dark:border-slate-800" title="Style de police">A</button>
+                      </div>
+                    </div>
+
                     {/* Message ticket */}
                     <div className="flex flex-col gap-1">
                       <span className="font-extrabold text-[9px] uppercase text-slate-500 tracking-wider">Message ticket</span>
@@ -724,6 +743,21 @@ export default function ConfigWindow({
                           value={invoiceDetail3}
                           onChange={(e) => setInvoiceDetail3(e.target.value)}
                           placeholder="e.g. Mentions légales, TVA, etc..."
+                          className="flex-1 h-8 rounded-xl bg-slate-50/60 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 outline-none text-[11px] font-bold text-slate-700 dark:text-slate-250 focus:border-indigo-500 transition-colors"
+                        />
+                        <button className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-850 dark:hover:bg-slate-800 flex items-center justify-center font-black text-indigo-700 border border-slate-200 dark:border-slate-800">A</button>
+                      </div>
+                    </div>
+
+                    {/* Adresse */}
+                    <div className="flex flex-col gap-1">
+                      <span className="font-extrabold text-[9px] uppercase text-slate-500 tracking-wider">Adresse</span>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={invoiceAdresse}
+                          onChange={(e) => setInvoiceAdresse(e.target.value)}
+                          placeholder="Adresse de l'entreprise"
                           className="flex-1 h-8 rounded-xl bg-slate-50/60 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 outline-none text-[11px] font-bold text-slate-700 dark:text-slate-250 focus:border-indigo-500 transition-colors"
                         />
                         <button className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-850 dark:hover:bg-slate-800 flex items-center justify-center font-black text-indigo-700 border border-slate-200 dark:border-slate-800">A</button>

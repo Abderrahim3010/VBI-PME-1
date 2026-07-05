@@ -100,6 +100,7 @@ export default function App() {
       detail1: '',
       detail2: '',
       detail3: '',
+      adresse: '',
       messageTicket: '',
       logo: '',
       rc: '',
@@ -117,6 +118,7 @@ export default function App() {
       detail1: '',
       detail2: '',
       detail3: '',
+      adresse: '',
       logo: '',
       messageFacture: 'Merci pour votre confiance'
     },

@@ -3487,6 +3487,9 @@ export default function PurchaseVoucherWindow({
                     <p className="text-[10.5px] text-slate-600 leading-normal mt-1">{config?.invoiceInfo?.detail1 || ''}</p>
                     <p className="text-[10.5px] text-slate-600 leading-normal mt-0.5">{config?.invoiceInfo?.detail2 || ''}</p>
                     <p className="text-[10.5px] text-slate-600 leading-normal mt-0.5">{config?.invoiceInfo?.detail3 || ''}</p>
+                    {config?.invoiceInfo?.adresse && (
+                      <p className="text-[10.5px] text-slate-600 leading-normal mt-0.5">{config.invoiceInfo.adresse}</p>
+                    )}
                     <p className="text-[11px] text-slate-800 font-bold mt-3">
                       Acheteur :<span className="font-semibold text-slate-700"> {sessionStorage.getItem('compos_current_user') ? JSON.parse(sessionStorage.getItem('compos_current_user') || '{}')?.username : 'admin'}</span>
                     </p>
