@@ -1554,6 +1554,7 @@ export default function App() {
               onClientsUpdate={setClients}
               onClose={() => closeWindow('sales')}
               config={config}
+              currentUser={currentUser}
             />
           </WindowFrame>
 

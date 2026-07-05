@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Product, Client, SalesVoucher, VoucherItem } from '../types';
+import { Product, Client, SalesVoucher, VoucherItem, User } from '../types';
 
 interface OpenVoucher {
   id: string; // The draft ID or edited ID
@@ -28,6 +28,7 @@ interface SalesVoucherWindowProps {
   onClose: () => void;
   isOpen?: boolean;
   config?: any;
+  currentUser?: User | null;
 }
 
 export default function SalesVoucherWindow({
@@ -41,7 +42,8 @@ export default function SalesVoucherWindow({
   onClientsUpdate,
   onClose,
   isOpen = false,
-  config
+  config,
+  currentUser
 }: SalesVoucherWindowProps) {
   // Selection/navigation between previous invoices
   const [selectedSaleId, setSelectedSaleId] = useState<string>(() => {
@@ -2974,33 +2976,28 @@ export default function SalesVoucherWindow({
                 <div className="flex justify-between items-start mb-6">
                   {/* Left: Company & Seller */}
                   <div className="flex flex-col text-left font-sans select-text">
-                    <h1 className="text-xl font-black tracking-tight text-slate-900 uppercase">
-                      {config?.invoiceInfo?.nomRaisonSociale || config?.company || 'VBI'}
+                    <h1 className="text-[26px] font-black tracking-tight text-slate-900 uppercase">
+                      {config?.invoiceInfo?.nomRaisonSociale || ''}
                     </h1>
-                    {config?.invoiceInfo?.detail1 && <p className="text-[10px] text-slate-600 leading-normal">{config.invoiceInfo.detail1}</p>}
-                    {config?.invoiceInfo?.detail2 && <p className="text-[10px] text-slate-600 leading-normal">{config.invoiceInfo.detail2}</p>}
-                    {config?.invoiceInfo?.detail3 && <p className="text-[10px] text-slate-600 leading-normal">{config.invoiceInfo.detail3}</p>}
+                    <p className="text-[10.5px] text-slate-600 leading-normal mt-1">{config?.invoiceInfo?.detail1 || ''}</p>
+                    <p className="text-[10.5px] text-slate-600 leading-normal mt-0.5">{config?.invoiceInfo?.detail2 || ''}</p>
+                    <p className="text-[10.5px] text-slate-600 leading-normal mt-0.5">{config?.invoiceInfo?.detail3 || ''}</p>
                     <p className="text-[11px] text-slate-800 font-bold mt-3">
-                      Vendeur :<span className="font-semibold text-slate-700"> {previewData.vendeur || 'admin'}</span>
+                      Vendeur :<span className="font-semibold text-slate-700"> {currentUser?.username || previewData.vendeur || 'admin'}</span>
                     </p>
                   </div>
 
                   {/* Right: Beautiful logo box matching Capture d’écran */}
-                  <div className="flex flex-col items-end gap-1.5">
+                  <div className="flex flex-col items-end gap-1.5 min-h-[96px] justify-center">
                     {config?.invoiceInfo?.logo ? (
                       <img 
                         src={config.invoiceInfo.logo} 
                         alt="Logo de l'entreprise" 
-                        className="max-h-16 max-w-44 object-contain"
+                        className="max-h-24 max-w-64 object-contain"
                         referrerPolicy="no-referrer"
                       />
                     ) : (
-                      <div className="border border-black p-0.5 bg-white select-none w-44">
-                        <div className="border border-black px-3 py-1 flex flex-col items-center justify-center">
-                          <span className="font-serif italic font-black text-2xl tracking-tight text-blue-900 leading-none">VBI</span>
-                          <span className="text-[7.5px] font-black tracking-widest text-blue-950 mt-1 uppercase leading-none">Informatique</span>
-                        </div>
-                      </div>
+                      <div className="w-64 h-24"></div>
                     )}
                     <div className="text-[11px] font-bold text-slate-900 mt-1 select-text">
                       le, {previewData.date}
@@ -3151,8 +3148,11 @@ export default function SalesVoucherWindow({
               </div>
 
               {/* Bottom statutory watermark - centered */}
-              <div className="text-center text-[8.5px] text-slate-400 font-bold tracking-wider mt-8 border-t border-dashed border-slate-200 pt-4 print:mt-12 select-none uppercase">
-                VBI PME ERP • SYSTÈME DE FACTURATION AUTOMATISÉ • MERCI POUR VOTRE CONFIANCE
+              <div className="text-center text-[9px] text-slate-400 font-bold tracking-wider mt-5 border-t border-dashed border-slate-200 pt-3 print:mt-10 select-none uppercase">
+                SYSTÈME DE FACTURATION AUTOMATISÉ
+                <div className="mt-1.5 text-[10.5px] text-slate-700 font-sans font-bold tracking-normal normal-case">
+                  {config?.invoiceInfo?.messageFacture || 'Merci pour votre confiance'}
+                </div>
               </div>
             </div>
           </div>
@@ -3418,49 +3418,58 @@ export default function SalesVoucherWindow({
                 {/* Header */}
                 <div className="text-center mb-2">
                   <h2 className="text-sm font-black uppercase tracking-wider font-sans mb-0.5">
-                    {config?.invoiceInfo?.nomRaisonSociale || config?.company || "Abdou accessoires"}
+                    {config?.deliveryInfo?.nomRaisonSociale || ''}
                   </h2>
-                  <p className="text-[10px] font-bold">الهاتف: {config?.invoiceInfo?.telephone || config?.phone || "0794346165"}</p>
-                  {(config?.invoiceInfo?.adresse || config?.address) && (
-                    <p className="text-[9px] text-slate-700">{config?.invoiceInfo?.adresse || config?.address}</p>
+                  <p className="text-[10px] font-bold">{config?.deliveryInfo?.detail1 || ''}</p>
+                  <p className="text-[9px] text-slate-700">{config?.deliveryInfo?.detail2 || ''}</p>
+                  {config?.deliveryInfo?.detail3 && (
+                    <p className="text-[9px] text-slate-700">{config.deliveryInfo.detail3}</p>
                   )}
                   
                   <div className="border-t border-dashed border-black/80 my-2"></div>
                   
                   <h3 className="text-[11px] font-black uppercase tracking-widest font-sans">
-                    فاتورة مبيعات / BON DE VENTE
+                    {config?.deliveryInfo?.multiLangueBon === 'arabe' ? 'فاتورة مبيعات / BON DE VENTE' : 'BON DE VENTE'}
                   </h3>
                 </div>
 
                 {/* Metadata block - Algerian standard */}
-                <div className="grid grid-cols-2 gap-x-1 gap-y-0.5 text-[9.5px] font-sans">
+                <div className={`grid ${config?.deliveryInfo?.multiLangueBon === 'arabe' ? 'grid-cols-2' : 'grid-cols-1'} gap-x-1 gap-y-0.5 text-[9.5px] font-sans`}>
                   <div className="text-left">
                     <span className="font-bold">N° :</span> {String(previewData.id).padStart(5, '0')}
                   </div>
-                  <div className="text-right" dir="rtl">
-                    <span className="font-bold">الرقم:</span> {String(previewData.id).padStart(5, '0')}
-                  </div>
+                  {config?.deliveryInfo?.multiLangueBon === 'arabe' && (
+                    <div className="text-right" dir="rtl">
+                      <span className="font-bold">الرقم:</span> {String(previewData.id).padStart(5, '0')}
+                    </div>
+                  )}
 
                   <div className="text-left">
                     <span className="font-bold">Date :</span> {previewData.date}
                   </div>
-                  <div className="text-right" dir="rtl">
-                    <span className="font-bold">التاريخ:</span> {previewData.date}
-                  </div>
+                  {config?.deliveryInfo?.multiLangueBon === 'arabe' && (
+                    <div className="text-right" dir="rtl">
+                      <span className="font-bold">التاريخ:</span> {previewData.date}
+                    </div>
+                  )}
 
                   <div className="text-left">
                     <span className="font-bold">Heure :</span> {previewData.time || "00:00"}
                   </div>
-                  <div className="text-right" dir="rtl">
-                    <span className="font-bold">الوقت:</span> {previewData.time || "00:00"}
-                  </div>
+                  {config?.deliveryInfo?.multiLangueBon === 'arabe' && (
+                    <div className="text-right" dir="rtl">
+                      <span className="font-bold">الوقت:</span> {previewData.time || "00:00"}
+                    </div>
+                  )}
 
                   <div className="text-left">
                     <span className="font-bold">Type :</span> {previewData.clientName === 'Anonyme' ? 'COMPTANT' : 'A TERME'}
                   </div>
-                  <div className="text-right" dir="rtl">
-                    <span className="font-bold">النوع:</span> {previewData.clientName === 'Anonyme' ? 'نقدا' : 'أجل'}
-                  </div>
+                  {config?.deliveryInfo?.multiLangueBon === 'arabe' && (
+                    <div className="text-right" dir="rtl">
+                      <span className="font-bold">النوع:</span> {previewData.clientName === 'Anonyme' ? 'نقدا' : 'أجل'}
+                    </div>
+                  )}
                 </div>
 
                 <div className="border-t border-dashed border-black/80 my-2"></div>
@@ -3469,18 +3478,24 @@ export default function SalesVoucherWindow({
                 <div className="text-[9.5px] leading-relaxed font-sans mb-2">
                   <div className="flex justify-between">
                     <span>Client: <strong className="uppercase">{previewData.clientName}</strong></span>
-                    <span dir="rtl">العميل: <strong className="uppercase">{previewData.clientName}</strong></span>
+                    {config?.deliveryInfo?.multiLangueBon === 'arabe' && (
+                      <span dir="rtl">العميل: <strong className="uppercase">{previewData.clientName}</strong></span>
+                    )}
                   </div>
                   {clientPhone && (
                     <div className="flex justify-between">
                       <span>Tél: <strong>{clientPhone}</strong></span>
-                      <span dir="rtl">الهاتف: <strong>{clientPhone}</strong></span>
+                      {config?.deliveryInfo?.multiLangueBon === 'arabe' && (
+                        <span dir="rtl">الهاتف: <strong>{clientPhone}</strong></span>
+                      )}
                     </div>
                   )}
                   {clientAddress && (
                     <div className="flex justify-between">
                       <span>Adresse: <strong>{clientAddress}</strong></span>
-                      <span dir="rtl">العنوان: <strong>{clientAddress}</strong></span>
+                      {config?.deliveryInfo?.multiLangueBon === 'arabe' && (
+                        <span dir="rtl">العنوان: <strong>{clientAddress}</strong></span>
+                      )}
                     </div>
                   )}
                 </div>
@@ -3489,10 +3504,18 @@ export default function SalesVoucherWindow({
                 <table className="w-full text-left font-mono text-[10px] mt-2 border-collapse">
                   <thead>
                     <tr className="border-b border-black/60 font-bold">
-                      <th className="pb-1 text-left w-[50%]">المنتج / Désignation</th>
-                      <th className="pb-1 text-center w-[12%]">الكمية</th>
-                      <th className="pb-1 text-right w-[18%]">السعر</th>
-                      <th className="pb-1 text-right w-[20%]">الإجمالي</th>
+                      <th className="pb-1 text-left w-[50%]">
+                        {config?.deliveryInfo?.multiLangueBon === 'arabe' ? 'المنتج / Désignation' : 'Désignation'}
+                      </th>
+                      <th className="pb-1 text-center w-[12%]">
+                        {config?.deliveryInfo?.multiLangueBon === 'arabe' ? 'الكمية' : 'Qté'}
+                      </th>
+                      <th className="pb-1 text-right w-[18%]">
+                        {config?.deliveryInfo?.multiLangueBon === 'arabe' ? 'السعر' : 'Prix'}
+                      </th>
+                      <th className="pb-1 text-right w-[20%]">
+                        {config?.deliveryInfo?.multiLangueBon === 'arabe' ? 'الإجمالي' : 'Total'}
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-dotted divide-black/40">
@@ -3520,16 +3543,20 @@ export default function SalesVoucherWindow({
                 {/* Total Quantity */}
                 <div className="flex justify-between text-[10px] font-bold">
                   <span>Qté totale: {totalItemsQty}</span>
-                  <span dir="rtl">إجمالي الكمية: {totalItemsQty}</span>
+                  {config?.deliveryInfo?.multiLangueBon === 'arabe' && (
+                    <span dir="rtl">إجمالي الكمية: {totalItemsQty}</span>
+                  )}
                 </div>
 
                 <div className="border-t border-dotted border-black/60 my-1.5"></div>
 
-                {/* Totals Recaps (Matching image of the bon precisely!) */}
+                {/* Totals Recaps */}
                 <div className="space-y-1 text-[10.5px] font-sans">
                   {/* Previous balance */}
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-700">R. Précédent (عليكم) :</span>
+                    <span className="text-slate-700">
+                      {config?.deliveryInfo?.multiLangueBon === 'arabe' ? 'R. Précédent (عليكم) :' : 'R. Précédent :'}
+                    </span>
                     <strong className="font-mono text-black">
                       {previousBalance.toLocaleString('fr-FR', { minimumFractionDigits: 1 })} DA
                     </strong>
@@ -3537,7 +3564,9 @@ export default function SalesVoucherWindow({
 
                   {/* Total Invoice */}
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-700">Total Facture (إجمالي ف.) :</span>
+                    <span className="text-slate-700">
+                      {config?.deliveryInfo?.multiLangueBon === 'arabe' ? 'Total Facture (إجمالي ف.) :' : 'Total Facture :'}
+                    </span>
                     <strong className="font-mono text-black">
                       {ttcVal.toLocaleString('fr-FR', { minimumFractionDigits: 1 })} DA
                     </strong>
@@ -3545,7 +3574,9 @@ export default function SalesVoucherWindow({
 
                   {/* Versement/Paid */}
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-700">Versé (المدفوع) :</span>
+                    <span className="text-slate-700">
+                      {config?.deliveryInfo?.multiLangueBon === 'arabe' ? 'Versé (المدفوع) :' : 'Versé :'}
+                    </span>
                     <strong className="font-mono text-emerald-700">
                       {paidVal.toLocaleString('fr-FR', { minimumFractionDigits: 1 })} DA
                     </strong>
@@ -3555,7 +3586,9 @@ export default function SalesVoucherWindow({
 
                   {/* Current Balance */}
                   <div className="flex justify-between items-center text-[11px] font-black">
-                    <span>N. Solde (الرصيد الحالي) :</span>
+                    <span>
+                      {config?.deliveryInfo?.multiLangueBon === 'arabe' ? 'N. Solde (الرصيد الحالي) :' : 'N. Solde :'}
+                    </span>
                     <span className="font-mono text-blue-900">
                       {currentBalance.toLocaleString('fr-FR', { minimumFractionDigits: 1 })} DA
                     </span>
@@ -3565,9 +3598,11 @@ export default function SalesVoucherWindow({
                 <div className="border-t border-dashed border-black/80 my-3"></div>
 
                 {/* Footer greeting */}
-                <div className="text-center font-sans text-[9px] space-y-0.5">
-                  <p className="font-bold">شكرا على زيارتكم / Merci de votre visite</p>
-                  <p className="text-slate-600 font-mono text-[8px]">VBI-PME - www.vbi-pme-dz.com</p>
+                <div className="text-center font-sans text-[10.5px] space-y-0.5 mt-1">
+                  <p className="font-bold">
+                    {config?.deliveryInfo?.multiLangueBon === 'arabe' ? 'شكرا على زيارتكم / ' : ''}
+                    {config?.deliveryInfo?.messageTicket || "Merci de votre visite"}
+                  </p>
                 </div>
               </div>
             </div>
