@@ -453,4 +453,28 @@ html:not(.dark) [id^="window-"] table {
   box-shadow: none !important;
 }
 
+/* ==========================================================================
+   SMOOTH THEME TRANSITION CONFIGURATION
+   Provides premium view transitions and buttery smooth fallbacks.
+   ========================================================================== */
+
+/* Custom smooth View Transitions (for supported modern browsers) */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 250ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Fallback for standard CSS theme transitions when View Transitions API is not supported */
+.theme-transition-active,
+.theme-transition-active * {
+  transition: background-color 250ms cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 250ms cubic-bezier(0.4, 0, 0.2, 1),
+              color 250ms cubic-bezier(0.4, 0, 0.2, 1),
+              fill 250ms cubic-bezier(0.4, 0, 0.2, 1),
+              stroke 250ms cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+
 

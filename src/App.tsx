@@ -454,6 +454,25 @@ export default function App() {
     if (persistentStorageReady) saveData('vbi_theme_mode', theme);
   }, [theme, persistentStorageReady]);
 
+  // Premium, buttery-smooth transition between themes
+  const toggleTheme = () => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    const doc = document as any;
+
+    if (doc.startViewTransition) {
+      doc.startViewTransition(() => {
+        setTheme(nextTheme);
+      });
+    } else {
+      const root = document.documentElement;
+      root.classList.add('theme-transition-active');
+      setTheme(nextTheme);
+      setTimeout(() => {
+        root.classList.remove('theme-transition-active');
+      }, 300);
+    }
+  };
+
   useEffect(() => {
     const updateScale = () => {
       if (persistentStorageReady) saveData('vbi_zoom_mode', zoomMode);
@@ -1365,7 +1384,7 @@ export default function App() {
                     <option value="75">75% (Petit)</option>
                   </select>
                   <button
-                    onClick={() => setTheme(prev => prev === 'dark' ? 'light' : 'dark')}
+                    onClick={toggleTheme}
                     className="h-6.5 w-6.5 shrink-0 flex items-center justify-center rounded bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white active:scale-95 transition-all cursor-pointer shadow-xs"
                     title={theme === 'dark' ? "Passer en Mode Clair" : "Passer en Mode Sombre"}
                   >
