@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Client, Supplier } from '../types';
-import { Users, Truck, Plus, Save, X, HelpCircle, Trash2, MapPin, Phone, Edit, AlertTriangle } from 'lucide-react';
+import { Users, Truck, Plus, Save, X, HelpCircle, Trash2, MapPin, Phone, Edit, AlertTriangle, Search } from 'lucide-react';
 
 interface ClientsSuppliersWindowProps {
   mode: 'clients' | 'suppliers';
@@ -34,6 +34,20 @@ export default function ClientsSuppliersWindow({
   const [editingItem, setEditingItem] = useState<Client | Supplier | null>(null);
   const [deletingItem, setDeletingItem] = useState<Client | Supplier | null>(null);
   
+  // Search state
+  const [searchTerm, setSearchTerm] = useState('');
+  const [displayLimit, setDisplayLimit] = useState(100);
+  
+  // Reset search term and display limit when changing mode
+  useEffect(() => {
+    setSearchTerm('');
+    setDisplayLimit(100);
+  }, [mode]);
+
+  useEffect(() => {
+    setDisplayLimit(100);
+  }, [searchTerm]);
+
   // Form input states
   const [code, setCode] = useState('');
   const [name, setName] = useState('');
@@ -147,10 +161,26 @@ export default function ClientsSuppliersWindow({
     setDeletingItem(null);
   };
 
+  const recordsList = useMemo(() => {
+    return mode === 'clients' 
+      ? clients.filter(c => c.name.toLowerCase() !== 'anonyme' && c.id !== 'client-anonyme') 
+      : suppliers;
+  }, [mode, clients, suppliers]);
+
+  const filteredRecords = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+    if (!q) return recordsList;
+    return recordsList.filter(item => 
+      item.name.toLowerCase().includes(q) || 
+      item.code.toLowerCase().includes(q)
+    );
+  }, [recordsList, searchTerm]);
+
+  const visibleRecords = useMemo(() => {
+    return filteredRecords.slice(0, displayLimit);
+  }, [filteredRecords, displayLimit]);
+
   const titleText = mode === 'clients' ? 'Fichier Clients' : 'Fichier Fournisseurs';
-  const recordsList = mode === 'clients' 
-    ? clients.filter(c => c.name.toLowerCase() !== 'anonyme' && c.id !== 'client-anonyme') 
-    : suppliers;
 
   return (
     <div className="flex-1 flex flex-col gap-4 font-sans text-xs text-slate-800 dark:text-slate-100 h-full overflow-hidden relative">
@@ -166,7 +196,7 @@ export default function ClientsSuppliersWindow({
               {titleText}
             </h2>
             <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 font-semibold leading-none">
-              Gestion et suivi du grand livre ({recordsList.length} enregistrements)
+              Gestion et suivi du grand livre ({filteredRecords.length} / {recordsList.length} enregistrements)
             </p>
           </div>
         </div>
@@ -183,10 +213,31 @@ export default function ClientsSuppliersWindow({
 
       {/* Main Table View */}
       <div className="flex-1 flex flex-col border border-m3-outline-variant/15 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 overflow-hidden shadow-xs">
-        <div className="bg-slate-50 dark:bg-slate-950/65 font-bold px-4 py-3 border-b border-slate-100 dark:border-slate-800 text-slate-800 dark:text-slate-200 select-none flex items-center justify-between font-display">
-          <span className="flex items-center gap-2">
-            📊 Registre Comptable {mode === 'clients' ? 'des Clients' : 'des Fournisseurs'}
-          </span>
+        <div className="bg-slate-50 dark:bg-slate-950/65 font-bold px-4 py-2 border-b border-slate-100 dark:border-slate-800 text-slate-800 dark:text-slate-200 select-none flex flex-wrap gap-2 items-center justify-between font-display">
+          <div className="flex items-center gap-3 flex-1 min-w-[200px]">
+            <span className="text-xs truncate shrink-0">
+              📊 {mode === 'clients' ? 'Clients' : 'Fournisseurs'}
+            </span>
+            <div className="relative flex-1 max-w-xs">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={13} />
+              <input
+                type="text"
+                placeholder="Rechercher par nom ou code..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full h-7 pl-8 pr-7 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-normal outline-none focus:border-m3-primary dark:focus:border-sky-500 transition-all placeholder:text-slate-450 text-slate-800 dark:text-slate-100"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                  type="button"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+          </div>
           <span className="text-[10px] bg-slate-200/60 dark:bg-slate-850 px-2 py-0.5 rounded-md font-mono text-slate-600 dark:text-slate-200">
             Total Encours: {recordsList.reduce((acc, curr) => acc + (curr.balance ?? 0), 0).toLocaleString('fr-FR')} DA
           </span>
@@ -205,8 +256,8 @@ export default function ClientsSuppliersWindow({
               </tr>
             </thead>
             <tbody className="font-mono text-slate-700 dark:text-slate-200 divide-y divide-slate-100 dark:divide-slate-800">
-              {recordsList.length > 0 ? (
-                recordsList.map(item => {
+              {visibleRecords.length > 0 ? (
+                visibleRecords.map(item => {
                   const isClient = mode === 'clients';
                   const balanceVal = item.balance ?? 0;
                   const isPositive = balanceVal > 0;
@@ -271,6 +322,23 @@ export default function ClientsSuppliersWindow({
                 <tr>
                   <td colSpan={6} className="px-4 py-12 text-center text-slate-400 dark:text-slate-600 font-sans italic">
                     Aucun enregistrement trouvé dans ce fichier.
+                  </td>
+                </tr>
+              )}
+              {filteredRecords.length > visibleRecords.length && (
+                <tr>
+                  <td colSpan={6} className="text-center p-3 bg-slate-50/50 dark:bg-slate-900/50">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        setDisplayLimit(prev => prev + 150);
+                      }}
+                      className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                    >
+                      Afficher plus ({filteredRecords.length - visibleRecords.length} restants)
+                    </button>
                   </td>
                 </tr>
               )}

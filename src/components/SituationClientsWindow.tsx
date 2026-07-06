@@ -288,6 +288,26 @@ export default function SituationClientsWindow({
     return result;
   }, [ledgerWithBalances, searchDate, searchRemark]);
 
+  const [ledgerLimit, setLedgerLimit] = useState(100);
+
+  useEffect(() => {
+    setLedgerLimit(100);
+  }, [selectedClientId, searchDate, searchRemark]);
+
+  const visibleLedger = useMemo(() => {
+    return filteredLedger.slice(0, ledgerLimit);
+  }, [filteredLedger, ledgerLimit]);
+
+  const filteredChooserClients = useMemo(() => {
+    const search = chooserSearch.toLowerCase().trim();
+    if (!search) return activeClients.slice(0, 100);
+    return activeClients.filter(c => 
+      c.name.toLowerCase().includes(search) ||
+      c.code.toLowerCase().includes(search) ||
+      (c.contact && c.contact.toLowerCase().includes(search))
+    ).slice(0, 100);
+  }, [activeClients, chooserSearch]);
+
   // Unfiltered Ledger Metrics (Bottom totals) - completely consistent!
   const ledgerMetrics = useMemo(() => {
     const soldeFinal = Number(currentClient?.balance) || 0;
@@ -673,7 +693,7 @@ export default function SituationClientsWindow({
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-mono text-[11px] font-bold">
                 
-                {filteredLedger.map((item, index) => {
+                {visibleLedger.map((item, index) => {
                   const isSelected = selectedRowId === item.rowId;
                   const isNegativeSolde = item.solde < 0;
 
@@ -750,6 +770,24 @@ export default function SituationClientsWindow({
                     </tr>
                   );
                 })}
+
+                {filteredLedger.length > visibleLedger.length && (
+                  <tr>
+                    <td colSpan={7} className="text-center p-3 bg-slate-50/50 dark:bg-slate-900/50">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          setLedgerLimit(prev => prev + 150);
+                        }}
+                        className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-750 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                      >
+                        Afficher plus de transactions ({filteredLedger.length - visibleLedger.length} restantes)
+                      </button>
+                    </td>
+                  </tr>
+                )}
 
                 {filteredLedger.length === 0 && (
                   <tr>
@@ -1174,17 +1212,7 @@ export default function SituationClientsWindow({
 
               {/* List Container */}
               <div className="flex-1 max-h-[350px] overflow-y-auto pr-1 flex flex-col gap-1.5 min-h-0">
-                {activeClients
-                  .filter(c => {
-                    const search = chooserSearch.toLowerCase().trim();
-                    if (!search) return true;
-                    return (
-                      c.name.toLowerCase().includes(search) ||
-                      c.code.toLowerCase().includes(search) ||
-                      (c.contact && c.contact.toLowerCase().includes(search))
-                    );
-                  })
-                  .map(c => {
+                {filteredChooserClients.map(c => {
                     const isSelected = c.id === selectedClientId;
                     return (
                       <div
@@ -1253,15 +1281,7 @@ export default function SituationClientsWindow({
                       </div>
                     );
                   })}
-                {activeClients.filter(c => {
-                  const search = chooserSearch.toLowerCase().trim();
-                  if (!search) return true;
-                  return (
-                    c.name.toLowerCase().includes(search) ||
-                    c.code.toLowerCase().includes(search) ||
-                    (c.contact && c.contact.toLowerCase().includes(search))
-                  );
-                }).length === 0 && (
+                {filteredChooserClients.length === 0 && (
                   <div className="text-center py-8 text-slate-400 font-bold">
                     Aucun client ne correspond à votre recherche.
                   </div>

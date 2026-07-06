@@ -283,6 +283,26 @@ export default function SituationFournisseursWindow({
     return result;
   }, [ledgerWithBalances, searchDate, searchRemark]);
 
+  const [ledgerLimit, setLedgerLimit] = useState(100);
+
+  useEffect(() => {
+    setLedgerLimit(100);
+  }, [selectedSupplierId, searchDate, searchRemark]);
+
+  const visibleLedger = useMemo(() => {
+    return filteredLedger.slice(0, ledgerLimit);
+  }, [filteredLedger, ledgerLimit]);
+
+  const filteredChooserSuppliers = useMemo(() => {
+    const search = chooserSearch.toLowerCase().trim();
+    if (!search) return suppliers.slice(0, 100);
+    return suppliers.filter(s => 
+      s.name.toLowerCase().includes(search) ||
+      s.code.toLowerCase().includes(search) ||
+      (s.contact && s.contact.toLowerCase().includes(search))
+    ).slice(0, 100);
+  }, [suppliers, chooserSearch]);
+
   // Unfiltered Ledger Metrics (Bottom totals) - completely consistent!
   const ledgerMetrics = useMemo(() => {
     const soldeFinal = currentSupplier?.balance || 0;
@@ -730,7 +750,7 @@ export default function SituationFournisseursWindow({
               </thead>
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-mono text-[11px] font-bold">
                 
-                {filteredLedger.map((item, index) => {
+                {visibleLedger.map((item, index) => {
                   const isSelected = selectedRowId === item.rowId;
                   const isNegativeSolde = item.solde < 0;
 
@@ -807,6 +827,24 @@ export default function SituationFournisseursWindow({
                     </tr>
                   );
                 })}
+
+                {filteredLedger.length > visibleLedger.length && (
+                  <tr>
+                    <td colSpan={7} className="text-center p-3 bg-slate-50/50 dark:bg-slate-900/50">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          e.preventDefault();
+                          setLedgerLimit(prev => prev + 150);
+                        }}
+                        className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-755 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                      >
+                        Afficher plus de transactions ({filteredLedger.length - visibleLedger.length} restantes)
+                      </button>
+                    </td>
+                  </tr>
+                )}
 
                 {filteredLedger.length === 0 && (
                   <tr>
@@ -1231,17 +1269,7 @@ export default function SituationFournisseursWindow({
 
               {/* List Container */}
               <div className="flex-1 max-h-[350px] overflow-y-auto pr-1 flex flex-col gap-1.5 min-h-0">
-                {suppliers
-                  .filter(s => {
-                    const search = chooserSearch.toLowerCase().trim();
-                    if (!search) return true;
-                    return (
-                      s.name.toLowerCase().includes(search) ||
-                      s.code.toLowerCase().includes(search) ||
-                      (s.contact && s.contact.toLowerCase().includes(search))
-                    );
-                  })
-                  .map(s => {
+                {filteredChooserSuppliers.map(s => {
                     const isSelected = s.id === selectedSupplierId;
                     return (
                       <div
@@ -1310,15 +1338,7 @@ export default function SituationFournisseursWindow({
                       </div>
                     );
                   })}
-                {suppliers.filter(s => {
-                  const search = chooserSearch.toLowerCase().trim();
-                  if (!search) return true;
-                  return (
-                    s.name.toLowerCase().includes(search) ||
-                    s.code.toLowerCase().includes(search) ||
-                    (s.contact && s.contact.toLowerCase().includes(search))
-                  );
-                }).length === 0 && (
+                {filteredChooserSuppliers.length === 0 && (
                   <div className="text-center py-8 text-slate-400 font-bold">
                     Aucun fournisseur ne correspond à votre recherche.
                   </div>
