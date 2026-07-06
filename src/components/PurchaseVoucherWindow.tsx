@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Product, Supplier, PurchaseVoucher, VoucherItem } from '../types';
 import { getStorageJson, getStorageString, saveData, saveJson } from '../services/localDb';
 
@@ -3402,16 +3403,36 @@ export default function PurchaseVoucherWindow({
       )}
 
       {/* -------------------- PURCHASE VOUCHER PRINT PREVIEW MODAL (A4 PAPER SPECIFICATION) -------------------- */}
-      {isPrintPreviewOpen && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex justify-center items-start overflow-y-auto z-[100200] py-8 select-none print:p-0 print:bg-white print:backdrop-blur-none">
+      {isPrintPreviewOpen && createPortal(
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex justify-center items-start overflow-y-auto z-[100200] py-8 select-none print:p-0 print:bg-white print:backdrop-blur-none print-portal-container">
           {/* Inject print-specific CSS dynamically when this modal is open */}
           <style dangerouslySetInnerHTML={{ __html: `
             @media print {
-              body * {
-                visibility: hidden !important;
+              html, body {
+                overflow: visible !important;
+                height: auto !important;
+                background: white !important;
               }
-              #print-purchase-invoice-sheet, #print-purchase-invoice-sheet * {
-                visibility: visible !important;
+              #root {
+                display: none !important;
+              }
+              body > *:not(.print-portal-container) {
+                display: none !important;
+              }
+              .print-portal-container {
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                width: 100% !important;
+                height: auto !important;
+                background: white !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                display: block !important;
+                overflow: visible !important;
+              }
+              .print-portal-container > div {
+                gap: 0 !important;
               }
               #print-purchase-invoice-sheet {
                 position: absolute !important;
@@ -3419,8 +3440,10 @@ export default function PurchaseVoucherWindow({
                 top: 0 !important;
                 width: 100% !important;
                 margin: 0 !important;
-                padding: 0 !important;
+                padding: 1.5cm !important;
                 box-shadow: none !important;
+                background: white !important;
+                min-height: 0 !important;
               }
             }
           ` }} />
@@ -3647,7 +3670,8 @@ export default function PurchaseVoucherWindow({
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>
