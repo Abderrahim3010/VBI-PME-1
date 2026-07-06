@@ -137,6 +137,18 @@ export default function SalesVoucherWindow({
   // Product chooser dialogue states
   const [isProductChooserOpen, setIsProductChooserOpen] = useState(false);
   const [chooserSearchQuery, setChooserSearchQuery] = useState('');
+  
+  const filteredChooserProducts = useMemo(() => {
+    const query = chooserSearchQuery.trim().toLowerCase();
+    if (!query) {
+      return products.slice(0, 100);
+    }
+    return products.filter(p => 
+      p.designation.toLowerCase().includes(query) || 
+      p.code.toLowerCase().includes(query)
+    ).slice(0, 150);
+  }, [products, chooserSearchQuery]);
+
   const [selectedProductInChooser, setSelectedProductInChooser] = useState<Product | null>(null);
   const [chooserQty, setChooserQty] = useState<number | ''>(1);
   const [selectedPriceType, setSelectedPriceType] = useState<'prixVente1' | 'prixVente2' | 'prixVente3'>('prixVente1');
@@ -152,6 +164,19 @@ export default function SalesVoucherWindow({
   // Client Selection and Creation Modal states
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [clientSearchQuery, setClientSearchQuery] = useState('');
+
+  const filteredClients = useMemo(() => {
+    const trimmed = clientSearchQuery.trim().toLowerCase();
+    const activeClients = clients.filter(c => c.name.toLowerCase() !== 'anonyme');
+    if (!trimmed) {
+      return activeClients.slice(0, 100);
+    }
+    return activeClients.filter(c => 
+      c.name.toLowerCase().includes(trimmed) ||
+      c.code.toLowerCase().includes(trimmed)
+    ).slice(0, 155);
+  }, [clients, clientSearchQuery]);
+
   const [clientFormName, setClientFormName] = useState('');
   const [clientFormPhone, setClientFormPhone] = useState('');
   const [clientFormAddress, setClientFormAddress] = useState('');
@@ -2051,22 +2076,14 @@ export default function SalesVoucherWindow({
                     </tr>
                   </thead>
                   <tbody>
-                    {products.filter(p => {
-                      if (!chooserSearchQuery.trim()) return true;
-                      const s = chooserSearchQuery.toLowerCase();
-                      return p.designation.toLowerCase().includes(s) || p.code.includes(s);
-                    }).length === 0 ? (
+                    {filteredChooserProducts.length === 0 ? (
                       <tr>
                         <td colSpan={6} className="text-center py-12 text-slate-400 italic">
                           Aucun produit trouvé dans votre base.
                         </td>
                       </tr>
                     ) : (
-                      products.filter(p => {
-                        if (!chooserSearchQuery.trim()) return true;
-                        const s = chooserSearchQuery.toLowerCase();
-                        return p.designation.toLowerCase().includes(s) || p.code.includes(s);
-                      }).map((p) => {
+                      filteredChooserProducts.map((p) => {
                         const isChosenTmp = selectedProductInChooser?.code === p.code;
                         const liveStock = effectiveStockMap.get(p.code) ?? p.stock;
                         return (
@@ -2407,42 +2424,33 @@ export default function SalesVoucherWindow({
                   )}
 
                   {/* Filtered Clients list */}
-                  {clients
-                    .filter(c => c.name.toLowerCase() !== 'anonyme')
-                    .filter(c => 
-                      c.name.toLowerCase().includes(clientSearchQuery.toLowerCase()) ||
-                      c.code.toLowerCase().includes(clientSearchQuery.toLowerCase())
-                    )
-                    .map(c => (
-                      <div
-                        key={c.id}
-                        onClick={() => handleSelectClient(c.name)}
-                        className={`p-3 flex items-center justify-between cursor-pointer transition-colors ${
-                          newClientName === c.name
-                            ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-400 font-extrabold border-l-4 border-emerald-500'
-                            : 'hover:bg-slate-100 dark:hover:bg-slate-900'
-                        }`}
-                      >
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-6 h-6 rounded-full bg-slate-150 dark:bg-slate-800 flex items-center justify-center text-xs">👤</div>
-                          <div>
-                            <div className="font-bold">{c.name}</div>
-                            <div className="text-[9px] text-slate-400 font-mono">{c.code} {c.contact ? `• ${c.contact}` : ''}</div>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <span className={`text-[10px] font-bold font-mono ${(c.balance ?? 0) > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
-                            {(c.balance ?? 0).toLocaleString('fr-FR')} DA
-                          </span>
+                  {filteredClients.map(c => (
+                    <div
+                      key={c.id}
+                      onClick={() => handleSelectClient(c.name)}
+                      className={`p-3 flex items-center justify-between cursor-pointer transition-colors ${
+                        newClientName === c.name
+                          ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-400 font-extrabold border-l-4 border-emerald-500'
+                          : 'hover:bg-slate-100 dark:hover:bg-slate-900'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-6 h-6 rounded-full bg-slate-150 dark:bg-slate-800 flex items-center justify-center text-xs">👤</div>
+                        <div>
+                          <div className="font-bold">{c.name}</div>
+                          <div className="text-[9px] text-slate-400 font-mono">{c.code} {c.contact ? `• ${c.contact}` : ''}</div>
                         </div>
                       </div>
-                    ))}
+                      <div className="text-right">
+                        <span className={`text-[10px] font-bold font-mono ${(c.balance ?? 0) > 0 ? 'text-rose-600' : 'text-emerald-600'}`}>
+                          {(c.balance ?? 0).toLocaleString('fr-FR')} DA
+                        </span>
+                      </div>
+                    </div>
+                  ))}
 
                   {/* Empty state */}
-                  {clients.filter(c => c.name.toLowerCase() !== 'anonyme').filter(c => 
-                    c.name.toLowerCase().includes(clientSearchQuery.toLowerCase()) ||
-                    c.code.toLowerCase().includes(clientSearchQuery.toLowerCase())
-                  ).length === 0 && !'Anonyme'.toLowerCase().includes(clientSearchQuery.toLowerCase()) && (
+                  {filteredClients.length === 0 && !'Anonyme'.toLowerCase().includes(clientSearchQuery.toLowerCase()) && (
                     <div className="p-8 text-center text-slate-400">
                       Aucun client trouvé pour "{clientSearchQuery}"
                     </div>

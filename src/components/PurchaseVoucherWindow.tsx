@@ -466,12 +466,12 @@ export default function PurchaseVoucherWindow({
   // Filters the list of catalog items dynamically for insert dialog
   const filteredProductsToInsert = useMemo(() => {
     const q = insertSearchQuery.trim().toLowerCase();
-    if (!q) return localProducts;
+    if (!q) return localProducts.slice(0, 100);
     return localProducts.filter(p => 
       p.code.toLowerCase().includes(q) || 
       p.designation.toLowerCase().includes(q) ||
       (p.category || '').toLowerCase().includes(q)
-    );
+    ).slice(0, 150);
   }, [localProducts, insertSearchQuery]);
 
   const navigableVouchers = useMemo(() => {
@@ -2263,16 +2263,9 @@ export default function PurchaseVoucherWindow({
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.preventDefault();
-                      const queryText = insertSearchQuery.toLowerCase().trim();
-                      const matched = localProducts.filter(p => {
-                        if (!queryText) return true;
-                        return p.code.toLowerCase().includes(queryText) ||
-                               p.designation.toLowerCase().includes(queryText) ||
-                               (p.category || '').toLowerCase().includes(queryText);
-                      });
-                      const bestItem = selectedSearchProduct && matched.some(p => p.code === selectedSearchProduct.code)
+                      const bestItem = selectedSearchProduct && filteredProductsToInsert.some(p => p.code === selectedSearchProduct.code)
                         ? selectedSearchProduct
-                        : matched[0];
+                        : filteredProductsToInsert[0];
                       if (bestItem) {
                         handleSelectCatalogProduct(bestItem);
                       }
@@ -2296,21 +2289,13 @@ export default function PurchaseVoucherWindow({
                 {/* Table Body */}
                 <div className="max-h-[220px] overflow-y-auto bg-white dark:bg-slate-900 flex flex-col font-mono text-[11px] text-slate-700 dark:text-slate-300 divide-y divide-slate-100 dark:divide-slate-850">
                   {(() => {
-                    const queryText = insertSearchQuery.toLowerCase().trim();
-                    const matched = localProducts.filter(p => {
-                      if (!queryText) return true;
-                      return p.code.toLowerCase().includes(queryText) ||
-                             p.designation.toLowerCase().includes(queryText) ||
-                             (p.category || '').toLowerCase().includes(queryText);
-                    });
-
-                    const activeItem = selectedSearchProduct && matched.some(p => p.code === selectedSearchProduct.code)
+                    const activeItem = selectedSearchProduct && filteredProductsToInsert.some(p => p.code === selectedSearchProduct.code)
                       ? selectedSearchProduct
-                      : (matched[0] || null);
+                      : (filteredProductsToInsert[0] || null);
 
                     return (
                       <>
-                        {matched.map((p) => {
+                        {filteredProductsToInsert.map((p) => {
                           const isActive = activeItem && activeItem.code === p.code;
                           return (
                             <div 
@@ -2337,7 +2322,7 @@ export default function PurchaseVoucherWindow({
                             </div>
                           );
                         })}
-                        {matched.length === 0 && (
+                        {filteredProductsToInsert.length === 0 && (
                           <div className="p-8 text-center text-slate-400 dark:text-slate-500 italic font-sans">
                             Aucun produit correspondant trouvé dans votre stock.
                           </div>
@@ -2350,16 +2335,9 @@ export default function PurchaseVoucherWindow({
 
               {/* Bottom selection footer */}
               {(() => {
-                const queryText = insertSearchQuery.toLowerCase().trim();
-                const matched = localProducts.filter(p => {
-                  if (!queryText) return true;
-                  return p.code.toLowerCase().includes(queryText) ||
-                         p.designation.toLowerCase().includes(queryText) ||
-                         (p.category || '').toLowerCase().includes(queryText);
-                });
-                const activeItem = selectedSearchProduct && matched.some(p => p.code === selectedSearchProduct.code)
+                const activeItem = selectedSearchProduct && filteredProductsToInsert.some(p => p.code === selectedSearchProduct.code)
                   ? selectedSearchProduct
-                  : (matched[0] || null);
+                  : (filteredProductsToInsert[0] || null);
 
                 return (
                   <>

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Product } from '../types';
 import { getStorageJson, saveJson } from '../services/localDb';
 import { 
@@ -166,6 +166,12 @@ export default function ProductListWindow({
   const [formPrixVente3, setFormPrixVente3] = useState(0);       // Prix de Vente Tarif 3 (Détail)
   const [formDetail, setFormDetail] = useState('');
 
+  const [displayLimit, setDisplayLimit] = useState(100);
+
+  useEffect(() => {
+    setDisplayLimit(100);
+  }, [searchTermName, searchTermCode]);
+
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
       const matchName = p.designation.toLowerCase().includes(searchTermName.toLowerCase());
@@ -173,6 +179,12 @@ export default function ProductListWindow({
       return matchName && matchCode;
     });
   }, [products, searchTermName, searchTermCode]);
+
+  const visibleProducts = useMemo(() => {
+    const mapped = filteredProducts.map((p, idx) => ({ ...p, originalIndex: idx }));
+    const limit = Math.max(displayLimit, selectedIndex + 1);
+    return mapped.slice(0, limit);
+  }, [filteredProducts, displayLimit, selectedIndex]);
 
   const selectedProduct = filteredProducts[selectedIndex] || null;
 
@@ -426,8 +438,8 @@ export default function ProductListWindow({
             </tr>
           </thead>
           <tbody className="text-xs font-mono text-slate-700 dark:text-slate-200 divide-y divide-slate-100 dark:divide-slate-800">
-            {filteredProducts.map((p, index) => {
-              const reqSelected = index === selectedIndex;
+            {visibleProducts.map((p) => {
+              const reqSelected = p.originalIndex === selectedIndex;
               
               // Map pricing properties dynamically
               const displayPrixAchat = p.prixAchat ?? p.prixDeRevient ?? 0;
@@ -437,7 +449,7 @@ export default function ProductListWindow({
               return (
                 <tr
                   key={p.code}
-                  onClick={() => setSelectedIndex(index)}
+                  onClick={() => setSelectedIndex(p.originalIndex)}
                   onDoubleClick={startEdit}
                   className={`cursor-pointer transition-colors ${
                     reqSelected 
@@ -482,6 +494,22 @@ export default function ProductListWindow({
                 </tr>
               );
             })}
+            {filteredProducts.length > visibleProducts.length && (
+              <tr>
+                <td colSpan={8} className="text-center p-3 bg-slate-50/50 dark:bg-slate-900/50">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      e.preventDefault();
+                      setDisplayLimit(prev => prev + 150);
+                    }}
+                    className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                  >
+                    Afficher plus de produits ({filteredProducts.length - visibleProducts.length} restants)
+                  </button>
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
