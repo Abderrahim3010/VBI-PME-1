@@ -42,7 +42,7 @@ const yyyymmddToDdmmyyyy = (str: string) => {
   return str;
 };
 
-export default function ProductListWindow({
+function ProductListWindow({
   products,
   onAddProduct,
   onEditProduct,
@@ -1090,3 +1090,10 @@ export default function ProductListWindow({
     </div>
   );
 }
+
+export default React.memo(ProductListWindow, (prev, next) => {
+  return prev.products === next.products &&
+         prev.createdFamilles === next.createdFamilles &&
+         prev.config === next.config;
+});
+

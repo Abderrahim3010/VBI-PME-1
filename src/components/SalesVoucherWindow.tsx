@@ -33,7 +33,7 @@ interface SalesVoucherWindowProps {
   currentUser?: User | null;
 }
 
-export default function SalesVoucherWindow({
+function SalesVoucherWindow({
   products,
   clients,
   sales,
@@ -3793,3 +3793,13 @@ function amountToWordsFR(amount: number): string {
   }
   return words;
 }
+
+export default React.memo(SalesVoucherWindow, (prev, next) => {
+  return prev.isOpen === next.isOpen &&
+         prev.products === next.products &&
+         prev.clients === next.clients &&
+         prev.sales === next.sales &&
+         prev.config === next.config &&
+         prev.currentUser === next.currentUser;
+});
+

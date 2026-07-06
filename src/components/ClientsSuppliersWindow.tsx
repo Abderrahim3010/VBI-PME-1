@@ -16,7 +16,7 @@ interface ClientsSuppliersWindowProps {
   config?: any;
 }
 
-export default function ClientsSuppliersWindow({
+function ClientsSuppliersWindow({
   mode,
   clients,
   suppliers,
@@ -508,3 +508,11 @@ export default function ClientsSuppliersWindow({
     </div>
   );
 }
+
+export default React.memo(ClientsSuppliersWindow, (prev, next) => {
+  return prev.mode === next.mode &&
+         prev.clients === next.clients &&
+         prev.suppliers === next.suppliers &&
+         prev.config === next.config;
+});
+

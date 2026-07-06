@@ -23,7 +23,7 @@ interface SituationFournisseursWindowProps {
   onClose: () => void;
 }
 
-export default function SituationFournisseursWindow({
+function SituationFournisseursWindow({
   suppliers,
   purchases,
   payments,
@@ -1366,3 +1366,10 @@ export default function SituationFournisseursWindow({
     </div>
   );
 }
+
+export default React.memo(SituationFournisseursWindow, (prev, next) => {
+  return prev.suppliers === next.suppliers &&
+         prev.purchases === next.purchases &&
+         prev.payments === next.payments;
+});
+

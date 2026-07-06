@@ -19,7 +19,7 @@ interface PurchaseVoucherWindowProps {
   config?: any;
 }
 
-export default function PurchaseVoucherWindow({
+function PurchaseVoucherWindow({
   products,
   suppliers,
   purchases,
@@ -3755,3 +3755,13 @@ function amountToWordsFR(amount: number): string {
   }
   return words;
 }
+
+export default React.memo(PurchaseVoucherWindow, (prev, next) => {
+  return prev.isOpen === next.isOpen &&
+         prev.products === next.products &&
+         prev.suppliers === next.suppliers &&
+         prev.purchases === next.purchases &&
+         prev.createdFamilles === next.createdFamilles &&
+         prev.config === next.config;
+});
+

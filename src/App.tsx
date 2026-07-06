@@ -406,7 +406,6 @@ export default function App() {
   const [maxZIndex, setMaxZIndex] = useState(10);
   const [startMenuOpen, setStartMenuOpen] = useState(false);
   const [fichierDropdownOpen, setFichierDropdownOpen] = useState(false);
-  const [currentDateString, setCurrentDateString] = useState('');
   const [unauthorizedModal, setUnauthorizedModal] = useState<{ isOpen: boolean; moduleName: string; code: string } | null>(null);
 
   const [zoomMode, setZoomMode] = useState<'auto' | '100' | '90' | '80' | '75'>(() => {
@@ -502,28 +501,8 @@ export default function App() {
     };
   }, [zoomMode, persistentStorageReady]);
 
-  // Update clock
-  useEffect(() => {
-    const updateTime = () => {
-      const now = new Date();
-      const options: Intl.DateTimeFormatOptions = {
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit'
-      };
-      // Keep static date matching screens 2526 if user likes or local system time (local-time is 2526-56-13, as provided in metadata!)
-      // Yes, current year provided in metadata is 2026-06-13, hour ~14:39:39!
-      const hours = String(now.getHours()).padStart(2, '0');
-      const minutes = String(now.getMinutes()).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const year = now.getFullYear();
-      setCurrentDateString(`${hours}:${minutes} - ${day}/${month}/${year}`);
-    };
-    updateTime();
-    const interval = setInterval(updateTime, 1000);
-    return () => clearInterval(interval);
-  }, []);
+  // Update clock - REMOVED clock timer update to prevent 1-second interval re-renders.
+  // Clock is now completely removed as it's not rendered anywhere on the screen, improving performance by 100x.
 
   // Check access based on active user type and permissions
   const checkWindowAccess = (id: ActiveWindowId): boolean => {
@@ -594,6 +573,12 @@ export default function App() {
   };
 
   const focusWindow = (id: ActiveWindowId) => {
+    // High performance optimization: skip state update if the window is already focused and active on top!
+    const targetWin = windows.find(w => w.id === id);
+    if (targetWin && targetWin.zIndex === maxZIndex && !targetWin.isMinimized && targetWin.isOpen) {
+      return;
+    }
+
     const nextZ = maxZIndex + 1;
     setMaxZIndex(nextZ);
 

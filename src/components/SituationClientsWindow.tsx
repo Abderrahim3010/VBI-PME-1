@@ -23,7 +23,7 @@ interface SituationClientsWindowProps {
   onClose: () => void;
 }
 
-export default function SituationClientsWindow({
+function SituationClientsWindow({
   clients,
   sales,
   payments,
@@ -1309,3 +1309,10 @@ export default function SituationClientsWindow({
     </div>
   );
 }
+
+export default React.memo(SituationClientsWindow, (prev, next) => {
+  return prev.clients === next.clients &&
+         prev.sales === next.sales &&
+         prev.payments === next.payments;
+});
+
