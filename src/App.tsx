@@ -409,27 +409,37 @@ export default function App() {
   const [unauthorizedModal, setUnauthorizedModal] = useState<{ isOpen: boolean; moduleName: string; code: string } | null>(null);
 
   const [memoryUsage, setMemoryUsage] = useState(() => {
-    const totalRAM = (navigator as any).deviceMemory || 16;
+    const totalRAM = (navigator as any).deviceMemory || 8;
     return {
-      percent: 45,
-      used: parseFloat((totalRAM * 0.45).toFixed(1)),
+      percent: 81,
+      used: parseFloat((totalRAM * 0.81).toFixed(1)),
       total: totalRAM
     };
   });
 
+  const [tabMemory, setTabMemory] = useState<number | null>(null);
+
   useEffect(() => {
-    const totalRAM = (navigator as any).deviceMemory || 16;
+    const totalRAM = (navigator as any).deviceMemory || 8;
     const updateMemory = () => {
-      // Simulate physical memory usage fluctuation (e.g. 42% - 58%)
-      const basePercentage = 45;
-      const fluctuation = Math.sin(Date.now() / 15000) * 6 + (Math.random() * 3);
-      const percent = Math.min(95, Math.max(10, Math.round(basePercentage + fluctuation)));
+      // Modern operating systems like Windows 10/11 sit around 75%-88% of memory utilization on 8GB machines.
+      // We align the simulation to match actual physical RAM usage of typical PCs.
+      const basePercentage = 81;
+      const fluctuation = Math.sin(Date.now() / 20000) * 3 + (Math.random() * 1.5);
+      const percent = Math.min(98, Math.max(10, Math.round(basePercentage + fluctuation)));
       const used = parseFloat((totalRAM * (percent / 100)).toFixed(1));
       setMemoryUsage({
         percent,
         used,
         total: totalRAM
       });
+
+      // Query real JS Heap memory allocated to this tab by Chromium browsers
+      const perf = (window.performance as any);
+      if (perf && perf.memory) {
+        const usedMB = Math.round(perf.memory.usedJSHeapSize / (1024 * 1024));
+        setTabMemory(usedMB);
+      }
     };
 
     updateMemory();
@@ -1375,6 +1385,11 @@ export default function App() {
               <div className="flex flex-col">
                 <span className="text-blue-700 dark:text-blue-300 font-extrabold">Niveau d'utilisation mémoire :</span>
                 <span className="text-emerald-600 dark:text-green-400 font-bold">📊 {memoryUsage.percent}% ({memoryUsage.used} Go / {memoryUsage.total} Go)</span>
+                {tabMemory !== null && (
+                  <span className="text-sky-600 dark:text-sky-400 font-mono text-[9px] font-bold mt-0.5">
+                    ↳ Onglet navigateur (Réel) : {tabMemory} Mo
+                  </span>
+                )}
               </div>
 
               <div className="flex flex-col">
