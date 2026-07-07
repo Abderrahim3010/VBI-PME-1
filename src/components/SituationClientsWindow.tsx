@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Client, SalesVoucher } from '../types';
 import { Plus, Edit, Trash2, Printer, RefreshCw, X, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 
@@ -75,40 +75,33 @@ function SituationClientsWindow({
   const [formPaymentSource, setFormPaymentSource] = useState('COFFRE N°1');
   const [formUser, setFormUser] = useState('admin');
 
-  // Interactive Resizers Heights (matching the custom grabber handles)
-  const [ledgerHeight, setLedgerHeight] = useState(280);
-  const [detailHeight, setDetailHeight] = useState(160);
+  // Interactive Resizers split percentage (starts at 50% / 50% split)
+  const [splitPercentage, setSplitPercentage] = useState(50);
+  const splitContainerRef = useRef<HTMLDivElement>(null);
 
-  const startResizeLedger = (e: React.PointerEvent<HTMLDivElement>) => {
+  const startResizeSplit = (e: React.PointerEvent<HTMLDivElement>) => {
     e.preventDefault();
-    const startY = e.clientY;
-    const startHeight = ledgerHeight;
+    const container = splitContainerRef.current;
+    if (!container) return;
+
+    // Use pointer capture to keep dragging smooth even if the mouse cursor goes off the splitter
+    try {
+      e.currentTarget.setPointerCapture(e.pointerId);
+    } catch (err) {}
+
+    const rect = container.getBoundingClientRect();
 
     const onPointerMove = (moveEvent: PointerEvent) => {
-      const deltaY = moveEvent.clientY - startY;
-      setLedgerHeight(Math.max(120, Math.min(600, startHeight + deltaY)));
+      const relativeY = moveEvent.clientY - rect.top;
+      const percentage = (relativeY / rect.height) * 100;
+      // Clamp between 15% and 85% so both top (ledger) and bottom (details) sections remain visible and usable
+      setSplitPercentage(Math.max(15, Math.min(85, percentage)));
     };
 
-    const onPointerUp = () => {
-      window.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerup', onPointerUp);
-    };
-
-    window.addEventListener('pointermove', onPointerMove);
-    window.addEventListener('pointerup', onPointerUp);
-  };
-
-  const startResizeDetail = (e: React.PointerEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const startY = e.clientY;
-    const startHeight = detailHeight;
-
-    const onPointerMove = (moveEvent: PointerEvent) => {
-      const deltaY = moveEvent.clientY - startY;
-      setDetailHeight(Math.max(90, Math.min(450, startHeight - deltaY)));
-    };
-
-    const onPointerUp = () => {
+    const onPointerUp = (upEvent: PointerEvent) => {
+      try {
+        (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+      } catch (err) {}
       window.removeEventListener('pointermove', onPointerMove);
       window.removeEventListener('pointerup', onPointerUp);
     };
@@ -481,431 +474,480 @@ function SituationClientsWindow({
     : modalAncienSolde - formAmount;
 
   return (
-    <div className="flex flex-col h-full bg-slate-50 dark:bg-slate-950 font-sans leading-none overflow-hidden text-xs select-none">
+    <div id="client-situation-window" className="flex-1 flex flex-col font-sans text-xs bg-[#f4f7fc] dark:bg-slate-950 text-slate-800 dark:text-slate-100 h-full overflow-hidden select-text">
       
-      {/* 1. TOP CONTROL BAR (Suppliers Search Dropdown, navigation, refresh, addition) */}
-      <div className="bg-[#f0f4f9] dark:bg-slate-900 border-b border-slate-300 dark:border-slate-800 p-2 flex flex-wrap gap-2 items-center justify-between shrink-0 shadow-xs">
+      <div className="flex-1 p-2.5 flex flex-col gap-2 overflow-hidden min-h-0">
         
-        <div className="flex flex-wrap items-center gap-2">
+        {/* 2. Top Grid: Selected client & Date/Remark Filters */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 shrink-0">
           
-          {/* Sélectionner un client Button */}
-          <button 
-            type="button"
-            onClick={() => setIsClientChooserOpen(true)}
-            className="flex items-center gap-1.5 px-2.5 h-8 bg-emerald-50 dark:bg-slate-800 border border-emerald-100 dark:border-slate-700 text-emerald-800 dark:text-emerald-355 rounded-lg hover:bg-emerald-100 dark:hover:bg-slate-750 font-extrabold text-[10px] uppercase select-none cursor-pointer hover:scale-103 transition-all"
-            title="Sélectionner un client"
-          >
-            <span className="text-sm">👥</span>
-            <span>Sélectionner un client</span>
-          </button>
-
-          <div className="h-5 w-[1px] bg-slate-300 dark:bg-slate-800 mx-1" />
-
-          {/* Label selector */}
-          <span className="font-extrabold text-slate-700 dark:text-slate-300 tracking-tight select-none">
-            Client actif :
-          </span>
-
-          {/* Supplier Search Picker Dropdown */}
-          <div className="relative">
-            <select
-              value={selectedClientId}
-              onChange={(e) => {
-                setSelectedClientId(e.target.value);
-                setSelectedRowId(null);
-              }}
-              style={{ fontSize: '12px', fontFamily: 'Arial' }}
-              className="h-8 pl-2 pr-8 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 border border-slate-350 dark:border-slate-800 rounded font-bold shadow-xs focus:outline-none focus:border-emerald-600 appearance-none min-w-[210px] cursor-pointer"
+          {/* Upper Left Box: Nom ou raison social */}
+          <div className="lg:col-span-7 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg p-3 shadow-sm flex gap-4">
+            
+            <button 
+              onClick={() => setIsClientChooserOpen(true)}
+              className="flex flex-col items-center justify-center bg-emerald-50 dark:bg-slate-800/60 border border-emerald-100 dark:border-slate-800 p-2 rounded-lg w-24 shrink-0 select-none hover:bg-emerald-100 cursor-pointer transition-all hover:scale-105"
             >
-              {activeClients.map(c => (
-                <option key={c.id} value={c.id}>
-                  {c.name} — [Solde: {(c.balance ?? 0).toLocaleString('fr-FR')} DA]
-                </option>
-              ))}
-            </select>
-            {/* Native dropdown custom blue chevron */}
-            <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none text-emerald-600 dark:text-emerald-400">
-              ▼
+              <span className="text-3xl">👥</span>
+              <span className="text-[9px] text-emerald-700 dark:text-emerald-400 font-extrabold text-center leading-tight mt-2 uppercase">
+                Sélectionner un<br/>client
+              </span>
+            </button>
+
+            <div className="flex-1 flex flex-col gap-2">
+              <div>
+                <label className="block text-[10px] font-black text-slate-500 dark:text-slate-400 uppercase mb-1 leading-none">Nom ou raison social</label>
+                <select
+                  value={selectedClientId}
+                  onChange={(e) => {
+                    setSelectedClientId(e.target.value);
+                    setSelectedRowId(null);
+                  }}
+                  className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 focus:border-emerald-500 rounded p-1.5 font-bold text-xs text-slate-800 dark:text-slate-100"
+                >
+                  {activeClients.map(c => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} ({c.code})
+                    </option>
+                  ))}
+                  {activeClients.length === 0 && (
+                    <option value="">Aucun client disponible</option>
+                  )}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-1 leading-none">Téléphones</label>
+                  <input
+                    type="text"
+                    readOnly
+                    value={currentClient?.contact || 'Non spécifié'}
+                    className="w-full bg-slate-100 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800 px-2 py-1 rounded text-slate-600 dark:text-slate-400 text-xs font-mono font-bold"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-1 leading-none">Adresse d'établissement</label>
+                  <input
+                    type="text"
+                    readOnly
+                    value={currentClient?.address || 'Non spécifiée'}
+                    className="w-full bg-slate-100 dark:bg-slate-950/40 border border-slate-300 dark:border-slate-800 px-2 py-1 rounded text-slate-600 dark:text-slate-400 text-xs font-bold"
+                  />
+                </div>
+              </div>
             </div>
+
           </div>
 
-          <div className="h-5 w-[1px] bg-slate-300 dark:bg-slate-800 mx-1" />
+          {/* Upper Right Box: Recherche par date and remarque */}
+          <div className="lg:col-span-5 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg p-3 shadow-sm flex flex-col justify-between">
+            <h3 className="text-[10px] font-black text-slate-400 dark:text-slate-400 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-1 mb-2">
+              🔍 MOTEUR DE RECHERCHE FILTRE
+            </h3>
 
-          {/* Records moving pointers panel */}
-          <div className="flex items-center gap-1 bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded p-0.5 shadow-inner">
+            <div className="flex flex-col gap-2">
+              <div className="flex gap-2 items-center">
+                <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 w-28 uppercase">Recherche par Date</span>
+                <div className="flex-1 flex gap-1 items-center">
+                  <input
+                    type="date"
+                    value={searchDate || ''}
+                    onChange={(e) => setSearchDate(e.target.value)}
+                    className="flex-1 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-800 px-2 py-1 text-xs font-mono font-bold rounded"
+                  />
+                  <button
+                    onClick={() => {
+                      if (!searchDate) {
+                        const today = new Date();
+                        const yyyy = today.getFullYear();
+                        const mm = String(today.getMonth() + 1).padStart(2, '0');
+                        const dd = String(today.getDate()).padStart(2, '0');
+                        setSearchDate(`${yyyy}-${mm}-${dd}`);
+                      } else {
+                        const current = new Date(searchDate);
+                        current.setDate(current.getDate() - 1);
+                        const yyyy = current.getFullYear();
+                        const mm = String(current.getMonth() + 1).padStart(2, '0');
+                        const dd = String(current.getDate()).padStart(2, '0');
+                        setSearchDate(`${yyyy}-${mm}-${dd}`);
+                      }
+                    }}
+                    className="p-1 px-[7px] bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 border border-slate-300 dark:border-slate-700 rounded font-bold text-slate-700 dark:text-slate-200"
+                    title="Jour précédent"
+                  >
+                     « 
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (!searchDate) {
+                        const today = new Date();
+                        const yyyy = today.getFullYear();
+                        const mm = String(today.getMonth() + 1).padStart(2, '0');
+                        const dd = String(today.getDate()).padStart(2, '0');
+                        setSearchDate(`${yyyy}-${mm}-${dd}`);
+                      } else {
+                        const current = new Date(searchDate);
+                        current.setDate(current.getDate() + 1);
+                        const yyyy = current.getFullYear();
+                        const mm = String(current.getMonth() + 1).padStart(2, '0');
+                        const dd = String(current.getDate()).padStart(2, '0');
+                        setSearchDate(`${yyyy}-${mm}-${dd}`);
+                      }
+                    }}
+                    className="p-1 px-[7px] bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 border border-slate-300 dark:border-slate-700 rounded font-bold text-slate-700 dark:text-slate-200"
+                    title="Jour suivant"
+                  >
+                     » 
+                  </button>
+                  {searchDate && (
+                    <button onClick={() => setSearchDate('')} className="bg-rose-50 text-rose-700 hover:bg-rose-100 p-1 px-1.5 rounded font-black text-[10px]" title="Effacer">✕</button>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-2 items-center">
+                <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 w-28 uppercase">Par Remarque</span>
+                <div className="flex-1 flex gap-1 items-center">
+                  <input
+                    type="text"
+                    placeholder="Filtrer par texte, N° de vente, etc."
+                    value={searchRemark}
+                    onChange={(e) => setSearchRemark(e.target.value)}
+                    className="flex-1 bg-white dark:bg-slate-950 text-slate-800 dark:text-slate-100 border border-slate-300 dark:border-slate-800 px-2 py-1 text-xs font-bold rounded"
+                  />
+                  {searchRemark && (
+                    <button onClick={() => setSearchRemark('')} className="bg-rose-50 text-rose-700 hover:bg-rose-100 p-1 px-1.5 rounded font-black text-[10px]" title="Effacer">✕</button>
+                  )}
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+
+        {/* 3. Action toolbar button row */}
+        <div className="bg-slate-200/95 dark:bg-slate-900 border border-slate-300 dark:border-slate-800/80 p-1.5 rounded-lg flex items-center justify-between gap-1.5 flex-nowrap overflow-x-auto shrink-0 shadow-sm select-none scrollbar-none">
+          
+          {/* Navigation record buttons (|<, <, >, >|) */}
+          <div className="flex items-center bg-white dark:bg-slate-950 border border-slate-350 dark:border-slate-850 rounded p-0.5 gap-0.5 shadow-sm shrink-0">
             <button
               onClick={() => handleNavigate('first')}
-              className="hover:bg-slate-150 dark:hover:bg-slate-800 p-1 text-slate-650 dark:text-slate-300 rounded cursor-pointer transition-colors active:scale-90"
-              title="Premier client"
+              disabled={activeClients.length === 0}
+              className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-600 dark:hover:text-white px-2 py-1 rounded font-bold disabled:opacity-40 transition-colors cursor-pointer shrink-0"
+              title="Premier client (Début)"
             >
-              <ChevronsLeft size={15} />
+              <ChevronsLeft size={13} className="stroke-[2.5]" />
+              <span className="text-[8.5px] font-black uppercase">Début</span>
             </button>
             <button
               onClick={() => handleNavigate('prev')}
-              className="hover:bg-slate-150 dark:hover:bg-slate-800 p-1 text-[#059669] dark:text-emerald-400 font-black rounded cursor-pointer transition-colors active:scale-90"
-              title="Client précédent"
+              disabled={activeClients.length === 0}
+              className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-600 dark:hover:text-white px-2 py-1 rounded font-bold disabled:opacity-40 transition-colors cursor-pointer shrink-0"
+              title="Client précédent (Préc.)"
             >
-              <ChevronLeft size={15} />
+              <ChevronLeft size={13} className="stroke-[2.5]" />
+              <span className="text-[8.5px] font-black uppercase">Préc.</span>
             </button>
-            
-            <div className="text-[10px] font-mono font-black px-1.5 text-slate-500 dark:text-slate-400 min-w-[50px] text-center select-none">
-              {activeClients.length > 0 
-                ? `${activeClients.findIndex(c => c.id === selectedClientId) + 1} / ${activeClients.length}`
-                : '0 / 0'
-              }
-            </div>
-
             <button
               onClick={() => handleNavigate('next')}
-              className="hover:bg-slate-150 dark:hover:bg-slate-800 p-1 text-[#059669] dark:text-emerald-400 font-black rounded cursor-pointer transition-colors active:scale-90"
-              title="Client suivant"
+              disabled={activeClients.length === 0}
+              className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-600 dark:hover:text-white px-2 py-1 rounded font-bold disabled:opacity-40 transition-colors cursor-pointer shrink-0"
+              title="Client suivant (Suivant)"
             >
-              <ChevronRight size={15} />
+              <span className="text-[8.5px] font-black uppercase">Suivant</span>
+              <ChevronRight size={13} className="stroke-[2.5]" />
             </button>
             <button
               onClick={() => handleNavigate('last')}
-              className="hover:bg-slate-150 dark:hover:bg-slate-800 p-1 text-slate-650 dark:text-slate-300 rounded cursor-pointer transition-colors active:scale-90"
-              title="Dernier client"
+              disabled={activeClients.length === 0}
+              className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 hover:bg-emerald-600 hover:text-white dark:hover:bg-emerald-600 dark:hover:text-white px-2 py-1 rounded font-bold disabled:opacity-40 transition-colors cursor-pointer shrink-0"
+              title="Dernier client (Fin)"
             >
-              <ChevronsRight size={15} />
+              <span className="text-[8.5px] font-black uppercase">Fin</span>
+              <ChevronsRight size={13} className="stroke-[2.5]" />
             </button>
+          </div>
+
+          {/* Ledger modifiers & Actions (Ajouter, Modifier, Supprimer versement) */}
+          <div className="flex items-center gap-1.5 flex-nowrap shrink-0">
+            
+            <button
+              onClick={handleOpenAddPayment}
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded border border-emerald-750 shadow-sm transition-colors text-[9.5px] uppercase cursor-pointer shrink-0"
+            >
+              <Plus size={13} className="stroke-[3]" />
+              <span>Ajouter versement</span>
+            </button>
+
+            <button
+              onClick={handleOpenEditPayment}
+              disabled={!selectedRowId || selectedRowId.startsWith('sale-')}
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-[#3ea729] hover:bg-[#318b1f] text-white font-black rounded border border-[#2c7d1c] shadow-sm transition-colors text-[9.5px] uppercase cursor-pointer disabled:bg-[#3ea729]/15 disabled:text-[#2c7d1c] disabled:border-[#2c7d1c]/40 disabled:dark:bg-emerald-950/30 disabled:dark:text-emerald-400 disabled:dark:border-emerald-800/60 disabled:opacity-100 hover:disabled:bg-[#3ea729]/15 shrink-0"
+              title={selectedRowId?.startsWith('sale-') ? "Versement lié au bon de livraison, modifiez-le d'abord en F2" : "Modifier le versement sélectionné"}
+            >
+              <Edit size={13} />
+              <span>Modifier versement</span>
+            </button>
+
+            <button
+              onClick={handleDeleteSelected}
+              disabled={!selectedRowId || selectedRowId.startsWith('sale-')}
+              className="flex items-center gap-1 px-2.5 py-1.5 bg-[#ff0404] hover:bg-[#d40303] text-white font-black rounded border border-[#bf0303] shadow-sm transition-colors text-[9.5px] uppercase cursor-pointer disabled:bg-[#ff0404]/10 disabled:text-[#bf0303] disabled:border-[#bf0303]/40 disabled:dark:bg-rose-950/30 disabled:dark:text-rose-400 disabled:dark:border-rose-800/60 disabled:opacity-100 hover:disabled:bg-[#ff0404]/10 shrink-0"
+            >
+              <Trash2 size={13} />
+              <span>Supprimer versement</span>
+            </button>
+
+            <div className="h-5 w-[1px] bg-slate-350 dark:bg-slate-800 mx-0.5 shrink-0" />
+
+            <button
+              onClick={handleActualiser}
+              className="flex items-center gap-1 px-2 py-1.5 bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-350 dark:border-slate-700 font-extrabold rounded shadow-inner text-[9.5px] uppercase cursor-pointer shrink-0"
+            >
+              <RefreshCw size={12} className={`text-emerald-600 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span>Actualiser le solde</span>
+            </button>
+
+            <button
+              onClick={handlePrint}
+              className="flex items-center gap-1 px-2 py-1.5 bg-white hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 border border-slate-350 dark:border-slate-700 font-extrabold rounded shadow-inner text-[9.5px] uppercase shrink-0"
+            >
+              <Printer size={12} className="text-slate-500" />
+              <span>Imprimer la situation</span>
+            </button>
+
           </div>
 
         </div>
 
-        {/* Action Panel Buttons (Add payment, Edit, Print, Reset, Delete) */}
-        <div className="flex items-center gap-2">
+        {/* Split Container for Ledger (Master) and Detail (Child) */}
+        <div ref={splitContainerRef} className="flex-1 flex flex-col min-h-0 gap-1.5 overflow-hidden">
           
-          <button
-            onClick={handleOpenAddPayment}
-            className="flex items-center gap-1.5 px-3 h-8 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold rounded shadow-sm border border-emerald-700 hover:scale-102 transition-all cursor-pointer"
+          {/* Section 1: Transaction Ledger Table + Metrics Summary */}
+          <div 
+            className="flex flex-col min-h-0 gap-1.5 shrink-0 overflow-hidden"
+            style={{ height: `${splitPercentage}%` }}
           >
-            <Plus size={14} className="stroke-[3]" />
-            <span>Versement (Credit)</span>
-          </button>
-
-          <button
-            onClick={handleOpenEditPayment}
-            disabled={!selectedRowId || selectedRowId.startsWith('sale-')}
-            className="flex items-center gap-1.5 px-2.5 h-8 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 hover:border-slate-400 hover:bg-slate-100 text-slate-750 dark:text-slate-200 font-bold rounded shadow-xs disabled:opacity-50 disabled:pointer-events-none transition-colors cursor-pointer"
-          >
-            <Edit size={13} />
-            <span>Modifier</span>
-          </button>
-
-          <button
-            onClick={handleDeleteSelected}
-            disabled={!selectedRowId || selectedRowId.startsWith('sale-')}
-            className="flex items-center gap-1.5 px-2.5 h-8 bg-white dark:bg-slate-900 border border-red-200 dark:border-red-950/60 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-650 dark:text-red-400 font-bold rounded shadow-xs disabled:opacity-50 disabled:pointer-events-none transition-colors cursor-pointer"
-          >
-            <Trash2 size={13} />
-            <span>Supprimer</span>
-          </button>
-
-          <div className="h-5 w-[1px] bg-slate-300 dark:bg-slate-800 mx-0.5" />
-
-          <button
-            onClick={handlePrint}
-            className="flex items-center gap-1.5 px-2.5 h-8 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-200 font-bold rounded shadow-xs transition-colors cursor-pointer"
-          >
-            <Printer size={13} />
-            <span>Imprimer</span>
-          </button>
-
-          <button
-            onClick={handleActualiser}
-            className="flex items-center justify-center w-8 h-8 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 hover:bg-slate-100 text-slate-600 dark:text-slate-300 rounded shadow-xs transition-colors cursor-pointer"
-            title="Actualiser grand livre"
-          >
-            <RefreshCw size={13} className={isRefreshing ? 'animate-spin' : ''} />
-          </button>
-
-        </div>
-
-      </div>
-
-      {/* 2. FILTERS AND RANGE PICKERS (Date picker and remarks text query search) */}
-      <div className="bg-slate-100 dark:bg-slate-900/40 p-2 border-b border-slate-250 dark:border-slate-800 flex flex-wrap items-center gap-3 select-none text-[10.5px]">
-        
-        {/* Date Filter Input */}
-        <div className="flex items-center gap-1.5">
-          <label className="font-extrabold text-slate-650 dark:text-slate-400">Date unique :</label>
-          <input
-            type="date"
-            value={searchDate}
-            onChange={(e) => setSearchDate(e.target.value)}
-            className="bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded px-2 py-1 focus:outline-none focus:border-emerald-600 font-mono font-bold text-slate-850 dark:text-slate-150 h-7"
-          />
-          {searchDate && (
-            <button 
-              onClick={() => setSearchDate('')}
-              className="text-red-500 hover:text-red-700 font-black px-1.5 py-0.5 bg-white border border-slate-250 dark:border-slate-800 dark:bg-slate-900 rounded"
-            >
-              Effacer
-            </button>
-          )}
-        </div>
-
-        <div className="h-4 w-[1px] bg-slate-300 dark:bg-slate-800" />
-
-        {/* Text Filter Search */}
-        <div className="flex items-center gap-1.5 flex-1 max-w-sm">
-          <Search size={13} className="text-slate-400" />
-          <input
-            type="text"
-            placeholder="Filtrer les écritures par remarque ou utilisateur..."
-            value={searchRemark}
-            onChange={(e) => setSearchRemark(e.target.value)}
-            className="bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded px-2 py-1 focus:outline-none focus:border-emerald-600 form-sans font-medium text-slate-850 dark:text-slate-150 h-7 flex-1"
-          />
-          {searchRemark && (
-            <button 
-              onClick={() => setSearchRemark('')}
-              className="text-red-500 hover:text-red-700 font-black px-1.5 py-0.5 bg-white border border-slate-250 dark:border-slate-800 dark:bg-slate-900 rounded"
-            >
-              ×
-            </button>
-          )}
-        </div>
-
-      </div>
-
-      {/* 3. WORKING AREA: TABLE AND BOTTOM COMPONENT INFO SUMMARY STATS */}
-      <div className="flex-1 min-h-0 p-2.5 flex flex-col gap-2.5 overflow-hidden">
-        
-        {/* 4. MAIN CHRONOLOGICAL GRAND LIVRE TABLE CONTAINER */}
-        <div 
-          className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg flex flex-col overflow-hidden shadow-sm flex-1 min-h-[150px]"
-          style={{ height: `${ledgerHeight}px` }}
-        >
-          <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0">
-            <table className="w-full text-left border-collapse min-w-[750px]">
-              <thead>
-                <tr className="bg-slate-100 dark:bg-slate-800 sticky top-0 border-b border-slate-300 dark:border-slate-800 select-none text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">
-                  <th className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 w-24 text-center">Date</th>
-                  <th className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 w-20 text-center">Heure</th>
-                  <th className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 w-28 text-right">Ventes</th>
-                  <th className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 w-28 text-right">Versements</th>
-                  <th className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 w-32 text-right">Solde</th>
-                  <th className="py-2 px-3 border-r border-slate-200 dark:border-slate-800">Remarques</th>
-                  <th className="py-2 px-3 w-24 text-center">Utilisateur</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-mono text-[11px] font-bold">
-                
-                {visibleLedger.map((item, index) => {
-                  const isSelected = selectedRowId === item.rowId;
-                  const isNegativeSolde = item.solde < 0;
-
-                  return (
-                    <tr
-                      key={item.rowId}
-                      onClick={() => setSelectedRowId(item.rowId)}
-                      className={`cursor-pointer hover:bg-[#ebfbf3] dark:hover:bg-emerald-950/20 transition-all ${
-                        isSelected 
-                          ? 'bg-emerald-650 text-white hover:bg-emerald-650 dark:bg-emerald-800' 
-                          : index % 2 === 0 
-                            ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100' 
-                            : 'bg-[#fafdfc] dark:bg-slate-900/40 text-slate-800 dark:text-slate-100'
-                      }`}
-                    >
-                      {/* Date */}
-                      <td className={`py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap text-center ${isSelected ? 'text-white' : 'text-slate-600 dark:text-slate-300'}`}>
-                        {item.date}
-                      </td>
-
-                      {/* Time */}
-                      <td className={`py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap text-center ${isSelected ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`}>
-                        {item.time}
-                      </td>
-
-                      {/* Ventes (DA) */}
-                      <td className={`py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-right leading-tight ${
-                        isSelected 
-                          ? 'text-white' 
-                          : item.ventes > 0 
-                            ? 'text-orange-700 dark:text-orange-400' 
-                            : 'text-slate-400'
-                      }`}>
-                        {item.ventes > 0 
-                          ? item.ventes.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                          : '0,00'
-                        }
-                      </td>
-
-                      {/* Versements (DA) */}
-                      <td className={`py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-right leading-tight ${
-                        isSelected 
-                          ? 'text-white' 
-                          : item.versements > 0 
-                            ? 'text-emerald-700 dark:text-emerald-400 font-extrabold' 
-                            : 'text-slate-400'
-                      }`}>
-                        {item.versements > 0 
-                          ? item.versements.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                          : '0,00'
-                        }
-                      </td>
-
-                      {/* Solde Running progressive */}
-                      <td className={`py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-right text-[11.5px] leading-tight ${
-                        isSelected 
-                          ? 'text-white' 
-                          : isNegativeSolde 
-                            ? 'text-emerald-600 dark:text-emerald-500 font-normal' 
-                            : 'text-red-700 dark:text-red-400'
-                      }`}>
-                        {item.solde.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </td>
-
-                      {/* Remarks */}
-                      <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 truncate max-w-xs font-sans text-xs">
-                        {item.remarks}
-                      </td>
-
-                      {/* User */}
-                      <td className={`py-1.5 px-3 font-sans font-semibold uppercase text-center ${isSelected ? 'text-white' : 'text-purple-600 dark:text-purple-400'}`}>
-                        {item.user}
-                      </td>
+            {/* 4. MASTER: Transaction ledger table */}
+            <div className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg shadow-inner flex flex-col overflow-hidden min-h-0">
+              <div className="overflow-x-auto overflow-y-auto flex-1 min-h-0">
+                <table className="w-full text-left border-collapse min-w-[750px]">
+                  <thead>
+                    <tr className="bg-slate-100 dark:bg-slate-800 sticky top-0 border-b border-slate-300 dark:border-slate-800 select-none text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">
+                      <th className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 w-24 text-center">Date</th>
+                      <th className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 w-20 text-center">Heure</th>
+                      <th className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 w-28 text-right">Ventes</th>
+                      <th className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 w-28 text-right">Versements</th>
+                      <th className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 w-32 text-right">Solde</th>
+                      <th className="py-2 px-3 border-r border-slate-200 dark:border-slate-800">Remarques</th>
+                      <th className="py-2 px-3 w-24 text-center">Utilisateur</th>
                     </tr>
-                  );
-                })}
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-mono text-[11px] font-bold">
+                    
+                    {visibleLedger.map((item, index) => {
+                      const isSelected = selectedRowId === item.rowId;
+                      const isNegativeSolde = item.solde < 0;
 
-                {filteredLedger.length > visibleLedger.length && (
-                  <tr>
-                    <td colSpan={7} className="text-center p-3 bg-slate-50/50 dark:bg-slate-900/50">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          e.preventDefault();
-                          setLedgerLimit(prev => prev + 150);
-                        }}
-                        className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-750 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors cursor-pointer"
-                      >
-                        Afficher plus de transactions ({filteredLedger.length - visibleLedger.length} restantes)
-                      </button>
-                    </td>
-                  </tr>
+                      return (
+                        <tr
+                          key={item.rowId}
+                          onClick={() => setSelectedRowId(item.rowId)}
+                          className={`cursor-pointer hover:bg-[#ebfbf3] dark:hover:bg-emerald-950/20 transition-all ${
+                            isSelected 
+                              ? 'bg-[#059669] text-white hover:bg-[#059669] dark:bg-emerald-800' 
+                              : index % 2 === 0 
+                                ? 'bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100' 
+                                : 'bg-[#fafdfc] dark:bg-slate-900/40 text-slate-800 dark:text-slate-100'
+                          }`}
+                        >
+                          {/* Date */}
+                          <td className={`py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap text-center ${isSelected ? 'text-white' : 'text-slate-600 dark:text-slate-300'}`}>
+                            {item.date}
+                          </td>
+
+                          {/* Time */}
+                          <td className={`py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 whitespace-nowrap text-center ${isSelected ? 'text-white' : 'text-slate-500 dark:text-slate-400'}`}>
+                            {item.time}
+                          </td>
+
+                          {/* Ventes (DA) */}
+                          <td className={`py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-right leading-tight ${
+                            isSelected 
+                              ? 'text-white' 
+                              : item.ventes > 0 
+                                ? 'text-orange-700 dark:text-orange-400' 
+                                : 'text-slate-400'
+                          }`}>
+                            {item.ventes > 0 
+                              ? item.ventes.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                              : '0,00'
+                            }
+                          </td>
+
+                          {/* Versements (DA) */}
+                          <td className={`py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-right leading-tight ${
+                            isSelected 
+                              ? 'text-white' 
+                              : item.versements > 0 
+                                ? 'text-emerald-700 dark:text-emerald-400 font-extrabold' 
+                                : 'text-slate-400'
+                          }`}>
+                            {item.versements > 0 
+                              ? item.versements.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                              : '0,00'
+                            }
+                          </td>
+
+                          {/* Solde Running progressive */}
+                          <td className={`py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 text-right text-[11.5px] leading-tight ${
+                            isSelected 
+                              ? 'text-white' 
+                              : isNegativeSolde 
+                                ? 'text-emerald-600 dark:text-emerald-500 font-normal' 
+                                : 'text-red-700 dark:text-red-400'
+                          }`}>
+                            {item.solde.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </td>
+
+                          {/* Remarks */}
+                          <td className="py-1.5 px-3 border-r border-slate-200 dark:border-slate-800 truncate max-w-xs font-sans text-xs">
+                            {item.remarks}
+                          </td>
+
+                          {/* User */}
+                          <td className={`py-1.5 px-3 font-sans font-semibold uppercase text-center ${isSelected ? 'text-white' : 'text-purple-600 dark:text-purple-400'}`}>
+                            {item.user}
+                          </td>
+                        </tr>
+                      );
+                    })}
+
+                    {filteredLedger.length > visibleLedger.length && (
+                      <tr>
+                        <td colSpan={7} className="text-center p-3 bg-slate-50/50 dark:bg-slate-900/50">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              setLedgerLimit(prev => prev + 150);
+                            }}
+                            className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-750 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors cursor-pointer"
+                          >
+                            Afficher plus de transactions ({filteredLedger.length - visibleLedger.length} restantes)
+                          </button>
+                        </td>
+                      </tr>
+                    )}
+
+                    {filteredLedger.length === 0 && (
+                      <tr>
+                        <td colSpan={7} className="py-8 text-center text-slate-450 dark:text-slate-500 font-sans italic text-xs">
+                          Aucune transaction trouvée pour cet état de compte client.
+                        </td>
+                      </tr>
+                    )}
+
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* 5. METRICS Summary Row */}
+            <div className="bg-[#e4ebd5] dark:bg-slate-900 border border-slate-300 dark:border-slate-800 p-2 rounded-lg flex flex-nowrap overflow-x-auto scrollbar-none gap-x-5 gap-y-2 items-center justify-between shrink-0 select-none shadow-sm">
+              <div className="flex flex-nowrap gap-x-5 gap-y-2 items-center shrink-0">
+                {/* Solde Initial */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">Solde initial :</span>
+                  <div className="bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded px-2.5 py-1 text-xs font-mono font-black min-w-[90px] text-right text-slate-700 dark:text-slate-200 shadow-inner">
+                    {(ledgerMetrics.soldeInitial ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                </div>
+
+                {/* Total des Ventes */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">Total des Ventes :</span>
+                  <div className="bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded px-2.5 py-1 text-xs font-mono font-black min-w-[110px] text-right text-orange-700 dark:text-orange-400 shadow-inner">
+                    {(ledgerMetrics.totalVentes ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                </div>
+
+                {/* Total des Versements */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">Total des Versements :</span>
+                  <div className="bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded px-2.5 py-1 text-xs font-mono font-black min-w-[110px] text-right text-emerald-700 dark:text-emerald-400 shadow-inner">
+                    {(ledgerMetrics.totalVersements ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </div>
+                </div>
+
+                {/* Current Solde */}
+                <div className="flex items-center gap-1.5">
+                  {ledgerMetrics.soldeFinal > 0 ? (
+                    <>
+                      <span className="text-[10px] font-black uppercase text-red-700 dark:text-red-400 bg-red-50 dark:bg-slate-850 px-1.5 py-0.5 rounded">Solde :</span>
+                      <div className="bg-red-50/50 dark:bg-red-950/20 border border-red-300 dark:border-red-900 rounded px-3 py-1 text-xs font-mono font-black min-w-[110px] text-right text-red-700 dark:text-red-400 shadow-sm leading-none flex items-center justify-end">
+                        {(ledgerMetrics.soldeFinal ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                    </>
+                  ) : ledgerMetrics.soldeFinal < 0 ? (
+                    <>
+                      <span className="text-[10px] font-black uppercase text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-slate-850 px-1.5 py-0.5 rounded">Solde :</span>
+                      <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-900 rounded px-3 py-1 text-xs font-mono font-black min-w-[110px] text-right text-emerald-700 dark:text-emerald-400 shadow-sm leading-none flex items-center justify-end">
+                        {Math.abs(ledgerMetrics.soldeFinal ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} CR
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-[10px] font-black uppercase text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-850 px-1.5 py-0.5 rounded">Solde :</span>
+                      <div className="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded px-3 py-1 text-xs font-mono font-black min-w-[110px] text-right text-slate-700 dark:text-slate-355 shadow-sm leading-none flex items-center justify-end">
+                        0,00
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* SPLITTER BAR BETWEEN SECTION 1 AND SECTION 2 */}
+          <div 
+            onPointerDown={startResizeSplit}
+            className="h-3 cursor-row-resize flex items-center justify-center select-none active:bg-slate-100/10 dark:active:bg-slate-950/10 group shrink-0"
+            title="Faites glisser pour redimensionner"
+          >
+            <div className="w-full h-[1px] bg-slate-350 dark:bg-slate-800/85 flex items-center justify-center">
+              <div className="w-20 h-1.5 bg-slate-400 dark:bg-slate-600 rounded-full group-hover:bg-emerald-550 dark:group-hover:bg-emerald-500 group-active:bg-emerald-600 transition-all shadow-xs" />
+            </div>
+          </div>
+
+          {/* Section 2: Detail of selected bill products list ("Détail du bon") */}
+          <div 
+            className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg p-2 flex flex-col overflow-hidden shadow-sm flex-1 min-h-0"
+          >
+            <div className="border-b border-slate-200 dark:border-slate-800 pb-1 mb-1 flex items-center justify-between shrink-0">
+              <h4 className="text-[11px] font-black text-emerald-800 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
+                <span>📰 Détail du bon</span>
+                {selectedVoucherDetails ? (
+                  <span className="bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded text-[10px] normal-case">
+                    N° {selectedVoucherDetails.id} — {selectedVoucherDetails.client} ({selectedVoucherDetails.date})
+                  </span>
+                ) : (
+                  <span className="text-[9.5px] text-slate-450 dark:text-slate-500 normal-case font-normal">
+                    (Rédigez un bon en F2 ou cliquez sur une ligne de vente dans le tableau ci-dessus pour inspecter ses articles)
+                  </span>
                 )}
-
-                {filteredLedger.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="py-8 text-center text-slate-450 dark:text-slate-500 font-sans italic text-xs">
-                      Aucune transaction trouvée pour cet état de compte client.
-                    </td>
-                  </tr>
-                )}
-
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* 4.5 ledger resizer splitter bar styled with centered capsule handle */}
-        <div 
-          onPointerDown={startResizeLedger}
-          className="h-3 cursor-row-resize flex items-center justify-center select-none active:bg-slate-100/10 dark:active:bg-slate-950/10 group shrink-0"
-          title="Faites glisser pour redimensionner"
-        >
-          <div className="w-full h-[1px] bg-slate-350 dark:bg-slate-800/85 flex items-center justify-center">
-            <div className="w-20 h-1.5 bg-slate-400 dark:bg-slate-600 rounded-full group-hover:bg-emerald-600 dark:group-hover:bg-emerald-500 group-active:bg-emerald-700 transition-all shadow-xs" />
-          </div>
-        </div>
-
-        {/* 5. METRICS Summary Row */}
-        <div className="bg-[#e4ebd5] dark:bg-slate-900 border border-slate-300 dark:border-slate-800 p-2 rounded-lg flex flex-wrap gap-x-5 gap-y-2 items-center justify-between shrink-0 select-none shadow-sm">
-          
-          <div className="flex flex-wrap gap-x-5 gap-y-2 items-center">
-            {/* Solde Initial */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">Solde initial :</span>
-              <div className="bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded px-2.5 py-1 text-xs font-mono font-black min-w-[90px] text-right text-slate-700 dark:text-slate-200 shadow-inner">
-                {(ledgerMetrics.soldeInitial ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </div>
+              </h4>
             </div>
 
-            {/* Total des Ventes */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">Total des Ventes :</span>
-              <div className="bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded px-2.5 py-1 text-xs font-mono font-black min-w-[110px] text-right text-orange-700 dark:text-orange-400 shadow-inner">
-                {(ledgerMetrics.totalVentes ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </div>
-            </div>
-
-            {/* Total des Versements */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">Total des Versements :</span>
-              <div className="bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded px-2.5 py-1 text-xs font-mono font-black min-w-[110px] text-right text-emerald-700 dark:text-emerald-400 shadow-inner">
-                {(ledgerMetrics.totalVersements ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </div>
-            </div>
-
-            {/* Current Solde */}
-            <div className="flex items-center gap-1.5">
-              {ledgerMetrics.soldeFinal > 0 ? (
-                <>
-                  <span className="text-[10px] font-black uppercase text-red-700 dark:text-red-400 bg-red-50 dark:bg-slate-850 px-1.5 py-0.5 rounded">Solde :</span>
-                  <div className="bg-red-50/50 dark:bg-red-950/20 border border-red-300 dark:border-red-900 rounded px-3 py-1 text-xs font-mono font-black min-w-[110px] text-right text-red-700 dark:text-red-400 shadow-sm leading-none flex items-center justify-end">
-                    {(ledgerMetrics.soldeFinal ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                  </div>
-                </>
-              ) : ledgerMetrics.soldeFinal < 0 ? (
-                <>
-                  <span className="text-[10px] font-black uppercase text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-slate-850 px-1.5 py-0.5 rounded">Solde :</span>
-                  <div className="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-300 dark:border-emerald-900 rounded px-3 py-1 text-xs font-mono font-black min-w-[110px] text-right text-emerald-700 dark:text-emerald-400 shadow-sm leading-none flex items-center justify-end">
-                    {Math.abs(ledgerMetrics.soldeFinal ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} CR
-                  </div>
-                </>
-              ) : (
-                <>
-                  <span className="text-[10px] font-black uppercase text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-850 px-1.5 py-0.5 rounded">Solde :</span>
-                  <div className="bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded px-3 py-1 text-xs font-mono font-black min-w-[110px] text-right text-slate-700 dark:text-slate-350 shadow-sm leading-none flex items-center justify-end">
-                    0,00
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-
-        </div>
-
-        {/* 5.5 detail resizer splitter bar styled with centered capsule handle */}
-        <div 
-          onPointerDown={startResizeDetail}
-          className="h-3 cursor-row-resize flex items-center justify-center select-none active:bg-slate-100/10 dark:active:bg-slate-950/10 group shrink-0"
-          title="Faites glisser pour redimensionner"
-        >
-          <div className="w-full h-[1px] bg-slate-350 dark:bg-slate-800/85 flex items-center justify-center">
-            <div className="w-20 h-1.5 bg-slate-400 dark:bg-slate-600 rounded-full group-hover:bg-emerald-605 dark:group-hover:bg-emerald-500 group-active:bg-emerald-700 transition-all shadow-xs" />
-          </div>
-        </div>
-
-        {/* 6. DETAIL: Detail of selected bill products list ("Détail du bon") */}
-        <div 
-          className="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg p-2 flex flex-col overflow-hidden shadow-sm shrink-0"
-          style={{ height: `${detailHeight}px` }}
-        >
-          <div className="border-b border-slate-200 dark:border-slate-800 pb-1 mb-1 flex items-center justify-between shrink-0">
-            <h4 className="text-[11px] font-black text-emerald-800 dark:text-emerald-400 uppercase tracking-wider flex items-center gap-1.5">
-              <span>📰 Détail du bon</span>
-              {selectedVoucherDetails ? (
-                <span className="bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded text-[10px] normal-case">
-                  N° {selectedVoucherDetails.id} — {selectedVoucherDetails.client} ({selectedVoucherDetails.date})
-                </span>
-              ) : (
-                <span className="text-[9.5px] text-slate-450 dark:text-slate-500 normal-case font-normal">
-                  (Rédigez un bon en F2 ou cliquez sur une ligne de vente dans le tableau ci-dessus pour inspecter ses articles)
-                </span>
-              )}
-            </h4>
-          </div>
-
-          <div className="flex-1 min-h-0 overflow-y-auto border border-slate-200 dark:border-slate-800 rounded shadow-inner bg-slate-50/50 dark:bg-slate-950/30">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-100 dark:bg-slate-800 sticky top-0 border-b border-slate-200 dark:border-slate-800 select-none text-[9px] font-extrabold uppercase text-slate-500 dark:text-slate-400">
-                  <th className="py-1.5 px-2.5 border-r border-slate-200 dark:border-slate-800 w-36">Code à barre</th>
+            <div className="flex-1 min-h-0 overflow-y-auto border border-slate-200 dark:border-slate-800 rounded shadow-inner bg-slate-50/50 dark:bg-slate-950/30">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="bg-slate-100 dark:bg-slate-800 sticky top-0 border-b border-slate-200 dark:border-slate-800 select-none text-[9px] font-extrabold uppercase text-slate-500 dark:text-slate-400">
+                    <th className="py-1.5 px-2.5 border-r border-slate-200 dark:border-slate-800 w-36">Code à barre</th>
                   <th className="py-1.5 px-2.5 border-r border-slate-200 dark:border-slate-800">Produit</th>
                   <th className="py-1.5 px-2.5 border-r border-slate-200 dark:border-slate-800 w-20 text-center">Colis</th>
                   <th className="py-1.5 px-2.5 border-r border-slate-200 dark:border-slate-800 w-24 text-center">Colissage</th>
@@ -960,6 +1002,7 @@ function SituationClientsWindow({
           </div>
         </div>
 
+      </div>
       </div>
 
       {/* 8. Beautiful "RECOUVREMENT CLIENT" Dialog modal */}

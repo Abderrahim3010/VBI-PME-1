@@ -1476,10 +1476,10 @@ function PurchaseVoucherWindow({
     <div id="purchases-root-container" className="flex-1 flex flex-col font-sans text-xs bg-slate-50 dark:bg-slate-900/40 text-slate-800 dark:text-slate-100 h-full overflow-hidden select-none outline-none relative">
       
       {/* 1. Header Toolbar Ribbon - Modernized with Material 3 styling */}
-      <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200/50 dark:border-slate-800/85 gap-2 flex-wrap select-none shadow-xs mb-2">
+      <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200/50 dark:border-slate-800/85 gap-2 flex-nowrap overflow-x-auto scrollbar-none select-none shadow-xs mb-2 shrink-0">
         
         {/* Navigation Pager controls */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <div className="flex bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200/20 gap-1 shadow-inner">
             <button
               onClick={handleFirst}
@@ -1522,7 +1522,7 @@ function PurchaseVoucherWindow({
           <div className="h-7 w-[1px] bg-slate-200 dark:bg-slate-800 mx-1" />
 
           {/* Action Buttons styled like SalesVoucherWindow */}
-          <div className="flex items-center gap-1.5 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-nowrap shrink-0">
             <button
               onClick={handleNewVoucher}
               className="px-3.5 h-10 flex items-center justify-center gap-2 bg-gradient-to-br from-emerald-500 to-teal-600 hover:to-teal-700 text-white rounded-xl shadow-md cursor-pointer transition-transform duration-100 active:scale-95"
@@ -1718,7 +1718,7 @@ function PurchaseVoucherWindow({
           style={{ width: `${topSplitWidth}%` }} 
           className="flex flex-col rounded-2xl border border-slate-200/50 dark:border-slate-800/85 bg-white dark:bg-slate-950 h-full min-w-[200px] overflow-hidden shadow-xs"
         >
-          <div className="bg-slate-50 dark:bg-slate-900 font-bold px-4 py-1.5 border-b border-slate-150 dark:border-slate-850/60 text-slate-700 dark:text-slate-300 font-sans select-none flex justify-between items-center shrink-0 gap-2 flex-wrap md:flex-nowrap">
+          <div className="bg-slate-50 dark:bg-slate-900 font-bold px-4 py-1.5 border-b border-slate-150 dark:border-slate-850/60 text-slate-700 dark:text-slate-300 font-sans select-none flex justify-between items-center shrink-0 gap-2 flex-nowrap overflow-x-auto scrollbar-none">
             <span className="flex items-center gap-1.5 font-display text-xs font-extrabold whitespace-nowrap">
               <span className="text-indigo-500">📋</span> Registre des Bons d'Achat
             </span>

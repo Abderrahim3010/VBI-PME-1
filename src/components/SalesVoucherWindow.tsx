@@ -1205,11 +1205,11 @@ function SalesVoucherWindow({
       {/* 1. Header Toolbar Ribbon - Modernized with Material 3 styling */}
       <div 
         style={{ marginTop: '0px', marginBottom: '3px', width: '100%' }}
-        className="flex items-center justify-between bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200/50 dark:border-slate-800/85 gap-2 select-none shadow-xs h-[57px] shrink-0"
+        className="flex items-center justify-between bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200/50 dark:border-slate-800/85 gap-2 select-none shadow-xs h-[57px] shrink-0 flex-nowrap overflow-x-auto scrollbar-none"
       >
         
         {/* Media Buttons: Deb, Prec, Suiv, Fin grouped together */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-nowrap shrink-0">
           <div className="flex bg-slate-105 dark:bg-slate-950 p-1 rounded-xl border border-slate-200/20 gap-1 dev-pager-group shadow-inner">
             <button
               onClick={handleFirst}

@@ -213,7 +213,7 @@ function ClientsSuppliersWindow({
 
       {/* Main Table View */}
       <div className="flex-1 flex flex-col border border-m3-outline-variant/15 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 overflow-hidden shadow-xs">
-        <div className="bg-slate-50 dark:bg-slate-950/65 font-bold px-4 py-2 border-b border-slate-100 dark:border-slate-800 text-slate-800 dark:text-slate-200 select-none flex flex-wrap gap-2 items-center justify-between font-display">
+        <div className="bg-slate-50 dark:bg-slate-950/65 font-bold px-4 py-2 border-b border-slate-100 dark:border-slate-800 text-slate-800 dark:text-slate-200 select-none flex flex-nowrap overflow-x-auto scrollbar-none gap-2 items-center justify-between font-display shrink-0">
           <div className="flex items-center gap-3 flex-1 min-w-[200px]">
             <span className="text-xs truncate shrink-0">
               📊 {mode === 'clients' ? 'Clients' : 'Fournisseurs'}
