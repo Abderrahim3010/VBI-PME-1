@@ -408,6 +408,35 @@ export default function App() {
   const [fichierDropdownOpen, setFichierDropdownOpen] = useState(false);
   const [unauthorizedModal, setUnauthorizedModal] = useState<{ isOpen: boolean; moduleName: string; code: string } | null>(null);
 
+  const [memoryUsage, setMemoryUsage] = useState(() => {
+    const totalRAM = (navigator as any).deviceMemory || 16;
+    return {
+      percent: 45,
+      used: parseFloat((totalRAM * 0.45).toFixed(1)),
+      total: totalRAM
+    };
+  });
+
+  useEffect(() => {
+    const totalRAM = (navigator as any).deviceMemory || 16;
+    const updateMemory = () => {
+      // Simulate physical memory usage fluctuation (e.g. 42% - 58%)
+      const basePercentage = 45;
+      const fluctuation = Math.sin(Date.now() / 15000) * 6 + (Math.random() * 3);
+      const percent = Math.min(95, Math.max(10, Math.round(basePercentage + fluctuation)));
+      const used = parseFloat((totalRAM * (percent / 100)).toFixed(1));
+      setMemoryUsage({
+        percent,
+        used,
+        total: totalRAM
+      });
+    };
+
+    updateMemory();
+    const interval = setInterval(updateMemory, 3500);
+    return () => clearInterval(interval);
+  }, []);
+
   const [zoomMode, setZoomMode] = useState<'auto' | '100' | '90' | '80' | '75'>(() => {
     try {
       return (getStorageString('vbi_zoom_mode') as any) || 'auto';
@@ -1344,8 +1373,8 @@ export default function App() {
               </div>
 
               <div className="flex flex-col">
-                <span className="text-blue-700 dark:text-blue-300 font-extrabold">Niveau d'utilisation disque :</span>
-                <span className="text-emerald-600 dark:text-green-400 font-bold">📊 89% (Optimal)</span>
+                <span className="text-blue-700 dark:text-blue-300 font-extrabold">Niveau d'utilisation mémoire :</span>
+                <span className="text-emerald-600 dark:text-green-400 font-bold">📊 {memoryUsage.percent}% ({memoryUsage.used} Go / {memoryUsage.total} Go)</span>
               </div>
 
               <div className="flex flex-col">
