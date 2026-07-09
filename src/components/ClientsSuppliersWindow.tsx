@@ -186,8 +186,8 @@ function ClientsSuppliersWindow({
     <div className="flex-1 flex flex-col gap-4 font-sans text-xs text-slate-800 dark:text-slate-100 h-full overflow-hidden relative">
       
       {/* Title block with M3 styling */}
-      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pt-2 pb-3 px-1.5 select-none shrink-0">
-        <div className="flex items-center gap-2.5">
+      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 pt-2 pb-3 px-1.5 select-none shrink-0 flex-nowrap overflow-x-auto scrollbar-none gap-2">
+        <div className="flex items-center gap-2.5 shrink-0">
           <div className="p-2 bg-m3-primary/10 dark:bg-sky-500/10 text-m3-primary dark:text-sky-400 rounded-xl flex items-center justify-center">
             {mode === 'clients' ? <Users size={16} className="shrink-0" /> : <Truck size={16} className="shrink-0" />}
           </div>
@@ -201,10 +201,10 @@ function ClientsSuppliersWindow({
           </div>
         </div>
 
-        <div className="flex items-center">
+        <div className="flex items-center shrink-0">
           <button
             onClick={handleStartAdd}
-            className="h-9 px-4 bg-m3-primary hover:bg-m3-primary/90 text-white font-bold rounded-xl text-xs active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm shrink-0"
+            className="h-9 px-4 bg-m3-primary hover:bg-m3-primary/90 text-white font-bold rounded-xl text-xs active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer shadow-sm shrink-0 whitespace-nowrap"
           >
             <Plus size={15} /> {mode === 'clients' ? 'Ajouter Client' : 'Ajouter Fournisseur'}
           </button>

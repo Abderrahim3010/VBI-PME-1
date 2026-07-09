@@ -1252,10 +1252,10 @@ function SalesVoucherWindow({
           <div className="h-7 w-[1px] bg-slate-300 dark:bg-slate-700 mx-1.5 shrink-0" />
 
           {/* Action Buttons: F1, F2, F3... */}
-          <div className="flex items-center gap-1.5 flex-nowrap">
+          <div className="flex items-center gap-1.5 flex-nowrap shrink-0">
             <button
               onClick={startCreateMode}
-              className="px-3.5 h-10 flex items-center justify-center gap-2 bg-gradient-to-br from-emerald-500 to-teal-600 hover:to-teal-700 text-white rounded-xl shadow-md cursor-pointer transition-transform duration-100 active:scale-95"
+              className="px-3.5 h-10 flex items-center justify-center gap-2 bg-gradient-to-br from-emerald-500 to-teal-600 hover:to-teal-700 text-white rounded-xl shadow-md cursor-pointer transition-transform duration-100 active:scale-95 whitespace-nowrap shrink-0"
             >
               <span className="text-base">📄</span>
               <div className="flex flex-col text-left">
@@ -1269,7 +1269,7 @@ function SalesVoucherWindow({
             <button
               onClick={handleFermerLeBon}
               disabled={mode !== 'create'}
-              className={`px-3.5 h-10 flex items-center justify-center gap-2 rounded-xl shadow-sm transition-transform duration-100 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed ${
+              className={`px-3.5 h-10 flex items-center justify-center gap-2 rounded-xl shadow-sm transition-transform duration-100 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap shrink-0 ${
                 mode === 'create'
                   ? 'bg-gradient-to-br from-[#1e293b] to-slate-800 text-white cursor-pointer'
                   : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-950 cursor-default'
@@ -1290,7 +1290,7 @@ function SalesVoucherWindow({
               type="button"
               disabled={mode === 'create'}
               onClick={() => setIsBonPreviewOpen(true)}
-              className="px-3.5 h-10 flex items-center justify-center gap-2 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-950 shadow-xs cursor-pointer transition-transform duration-100 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="px-3.5 h-10 flex items-center justify-center gap-2 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-950 shadow-xs cursor-pointer transition-transform duration-100 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap shrink-0"
             >
               <span className="text-base">🖨️</span>
               <div className="flex flex-col text-left">
@@ -1305,7 +1305,7 @@ function SalesVoucherWindow({
               onClick={handleEditVoucher}
               disabled={mode === 'create' || !selectedSale}
               style={{ fontSize: '12px' }}
-              className="px-3.5 h-10 flex items-center justify-center gap-2 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-950 shadow-xs cursor-pointer disabled:opacity-40 transition-transform duration-100 active:scale-95"
+              className="px-3.5 h-10 flex items-center justify-center gap-2 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-950 shadow-xs cursor-pointer disabled:opacity-40 transition-transform duration-100 active:scale-95 whitespace-nowrap shrink-0"
             >
               <span className="text-base">✏️</span>
               <div className="flex flex-col text-left">
@@ -1322,7 +1322,7 @@ function SalesVoucherWindow({
                 setTvaRate(nextTva);
                 showRetroAlert(`TVA changé à ${nextTva}%`, "Configuration");
               }}
-              className="px-3.5 h-10 flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-950/60 text-slate-700 dark:text-slate-300 rounded-xl hover:opacity-90 shadow-xs cursor-pointer transition-transform duration-100 active:scale-95"
+              className="px-3.5 h-10 flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-950/60 text-slate-700 dark:text-slate-300 rounded-xl hover:opacity-90 shadow-xs cursor-pointer transition-transform duration-100 active:scale-95 whitespace-nowrap shrink-0"
             >
               <span className="text-base">🔄</span>
               <div className="flex flex-col text-left">

@@ -527,33 +527,33 @@ function ProductListWindow({
       </div>
 
       {/* Action buttons */}
-      <div className="flex justify-between items-center gap-2 mt-0.5 select-none shrink-0 border-t border-slate-100 dark:border-slate-800/80 pt-3">
-        <div className="flex gap-2">
+      <div className="flex justify-between items-center gap-2 mt-0.5 select-none shrink-0 border-t border-slate-100 dark:border-slate-800/80 pt-3 flex-nowrap overflow-x-auto scrollbar-none">
+        <div className="flex gap-2 shrink-0 flex-nowrap">
           <button
             onClick={startAddNew}
-            className="h-9.5 px-4.5 bg-m3-primary hover:bg-m3-primary/95 text-white font-bold text-xs rounded-xl border border-transparent shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+            className="h-9.5 px-4.5 bg-m3-primary hover:bg-m3-primary/95 text-white font-bold text-xs rounded-xl border border-transparent shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all whitespace-nowrap shrink-0"
           >
             <Plus size={14} /> Nouveau
           </button>
           <button
             onClick={startEdit}
             disabled={!selectedProduct}
-            className="h-9.5 px-4.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl border border-transparent shadow-xs flex items-center justify-center gap-1.5 disabled:opacity-45 disabled:pointer-events-none cursor-pointer active:scale-95 transition-all"
+            className="h-9.5 px-4.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl border border-transparent shadow-xs flex items-center justify-center gap-1.5 disabled:opacity-45 disabled:pointer-events-none cursor-pointer active:scale-95 transition-all whitespace-nowrap shrink-0"
           >
             <Edit3 size={14} /> Modifier
           </button>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 shrink-0 flex-nowrap">
           <button
             onClick={onClose}
-            className="h-9.5 w-28 text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-full flex items-center justify-center gap-1 hover:opacity-90 transition-all cursor-pointer border border-transparent shadow-xs"
+            className="h-9.5 w-28 text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-full flex items-center justify-center gap-1 hover:opacity-90 transition-all cursor-pointer border border-transparent shadow-xs whitespace-nowrap shrink-0"
           >
             Annuler
           </button>
           <button
             onClick={selectAndConfirm}
-            className="h-9.5 w-32 text-xs font-black bg-m3-primary text-white rounded-full shadow-md flex items-center justify-center gap-1 hover:opacity-95 transition-all cursor-pointer"
+            className="h-9.5 w-32 text-xs font-black bg-m3-primary text-white rounded-full shadow-md flex items-center justify-center gap-1 hover:opacity-95 transition-all cursor-pointer whitespace-nowrap shrink-0"
           >
             <Check size={14} /> OK
           </button>

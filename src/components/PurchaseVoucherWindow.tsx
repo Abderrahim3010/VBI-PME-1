@@ -1525,7 +1525,7 @@ function PurchaseVoucherWindow({
           <div className="flex items-center gap-1.5 flex-nowrap shrink-0">
             <button
               onClick={handleNewVoucher}
-              className="px-3.5 h-10 flex items-center justify-center gap-2 bg-gradient-to-br from-emerald-500 to-teal-600 hover:to-teal-700 text-white rounded-xl shadow-md cursor-pointer transition-transform duration-100 active:scale-95"
+              className="px-3.5 h-10 flex items-center justify-center gap-2 bg-gradient-to-br from-emerald-500 to-teal-600 hover:to-teal-700 text-white rounded-xl shadow-md cursor-pointer transition-transform duration-100 active:scale-95 whitespace-nowrap shrink-0"
             >
               <span className="text-base">📄</span>
               <div className="flex flex-col text-left font-sans">
@@ -1537,7 +1537,7 @@ function PurchaseVoucherWindow({
             {mode === 'create' ? (
               <button
                 onClick={handleSaveVoucher}
-                className="px-3.5 h-10 flex items-center justify-center gap-2 bg-gradient-to-br from-emerald-600 to-teal-700 hover:to-teal-800 text-white rounded-xl shadow-md cursor-pointer transition-transform duration-100 active:scale-95"
+                className="px-3.5 h-10 flex items-center justify-center gap-2 bg-gradient-to-br from-emerald-600 to-teal-700 hover:to-teal-800 text-white rounded-xl shadow-md cursor-pointer transition-transform duration-100 active:scale-95 whitespace-nowrap shrink-0"
               >
                 <span className="text-base">🔒</span>
                 <div className="flex flex-col text-left font-sans">
@@ -1549,7 +1549,7 @@ function PurchaseVoucherWindow({
               <button
                 onClick={() => setIsPrintPreviewOpen(true)}
                 disabled={!selectedVoucher}
-                className="px-3.5 h-10 flex items-center justify-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-950 shadow-xs cursor-pointer transition-transform duration-100 active:scale-95 disabled:opacity-40"
+                className="px-3.5 h-10 flex items-center justify-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-950 shadow-xs cursor-pointer transition-transform duration-100 active:scale-95 disabled:opacity-40 whitespace-nowrap shrink-0"
               >
                 <span className="text-base">🖨️</span>
                 <div className="flex flex-col text-left font-sans">
@@ -1562,7 +1562,7 @@ function PurchaseVoucherWindow({
             <button
               onClick={handleEditVoucher}
               disabled={mode === 'create' || !selectedVoucher}
-              className="px-3.5 h-10 flex items-center justify-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-950 shadow-xs cursor-pointer disabled:opacity-40 transition-transform duration-100 active:scale-95"
+              className="px-3.5 h-10 flex items-center justify-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-950 shadow-xs cursor-pointer disabled:opacity-40 transition-transform duration-100 active:scale-95 whitespace-nowrap shrink-0"
             >
               <span className="text-base">✏️</span>
               <div className="flex flex-col text-left font-sans">
@@ -1581,7 +1581,7 @@ function PurchaseVoucherWindow({
                 if (date) setNewDate(date);
               }}
               disabled={mode !== 'create'}
-              className="px-3.5 h-10 flex items-center justify-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-950 shadow-xs cursor-pointer disabled:opacity-40 transition-transform duration-100 active:scale-95"
+              className="px-3.5 h-10 flex items-center justify-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-950 shadow-xs cursor-pointer disabled:opacity-40 transition-transform duration-100 active:scale-95 whitespace-nowrap shrink-0"
             >
               <span className="text-base">✒️</span>
               <div className="flex flex-col text-left font-sans">
@@ -1651,7 +1651,7 @@ function PurchaseVoucherWindow({
                       );
                     }
                   }}
-                  className="px-3.5 h-10 flex items-center justify-center gap-2 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 text-rose-700 dark:text-rose-300 rounded-xl hover:bg-rose-100 dark:hover:bg-rose-950 cursor-pointer transition-transform duration-100 active:scale-95 shadow-xs"
+                  className="px-3.5 h-10 flex items-center justify-center gap-2 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 text-rose-700 dark:text-rose-300 rounded-xl hover:bg-rose-100 dark:hover:bg-rose-950 cursor-pointer transition-transform duration-100 active:scale-95 shadow-xs whitespace-nowrap shrink-0"
                 >
                   <span className="text-base">🗑️</span>
                   <div className="flex flex-col text-left font-sans">
@@ -1668,7 +1668,7 @@ function PurchaseVoucherWindow({
                     setMode('view');
                     setEditingVoucherId(null);
                   }}
-                  className="px-3.5 h-10 flex items-center justify-center gap-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 text-amber-700 dark:text-amber-300 rounded-xl hover:bg-amber-100 dark:hover:bg-amber-950 cursor-pointer transition-transform duration-100 active:scale-95 shadow-xs"
+                  className="px-3.5 h-10 flex items-center justify-center gap-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 text-amber-700 dark:text-amber-300 rounded-xl hover:bg-amber-100 dark:hover:bg-amber-950 cursor-pointer transition-transform duration-100 active:scale-95 shadow-xs whitespace-nowrap shrink-0"
                 >
                   <span className="text-base">✕</span>
                   <div className="flex flex-col text-left font-sans">
@@ -1681,7 +1681,7 @@ function PurchaseVoucherWindow({
               <button
                 onClick={handleDeleteVoucher}
                 disabled={!selectedVoucher}
-                className="px-3.5 h-10 flex items-center justify-center gap-2 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 text-rose-700 dark:text-rose-300 rounded-xl hover:bg-rose-100 dark:hover:bg-rose-950 cursor-pointer disabled:opacity-40 transition-transform duration-100 active:scale-95 shadow-xs"
+                className="px-3.5 h-10 flex items-center justify-center gap-2 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 text-rose-700 dark:text-rose-300 rounded-xl hover:bg-rose-100 dark:hover:bg-rose-950 cursor-pointer disabled:opacity-40 transition-transform duration-100 active:scale-95 shadow-xs whitespace-nowrap shrink-0"
               >
                 <span className="text-base">🗑️</span>
                 <div className="flex flex-col text-left font-sans">

@@ -476,5 +476,42 @@ html:not(.dark) [id^="window-"] table {
               box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
+/* ==========================================================================
+   UNIVERSAL NON-STACKING AND NON-WRAPPING POLICIES
+   Ensures that no elements or text blocks wrap or stack upon window resizing.
+   All flex layouts remain row/column single-line and overflow-x scrollable if needed.
+   ========================================================================== */
+
+/* Force all flex containers to never wrap */
+.flex, [class*="flex-"] {
+  flex-wrap: nowrap !important;
+}
+
+/* Ensure no text wraps or stacks on top of itself across all native text containers */
+span:not(.allow-wrap),
+label:not(.allow-wrap),
+button:not(.allow-wrap),
+h1:not(.allow-wrap),
+h2:not(.allow-wrap),
+h3:not(.allow-wrap),
+h4:not(.allow-wrap),
+h5:not(.allow-wrap),
+h6:not(.allow-wrap),
+th:not(.allow-wrap),
+td:not(.allow-wrap),
+option:not(.allow-wrap),
+p:not(.whitespace-pre-wrap):not(.allow-wrap),
+li:not(.allow-wrap) {
+  white-space: nowrap !important;
+}
+
+/* Enable smooth scrolling for overflowed rows to keep user navigation flawless */
+.overflow-x-auto {
+  scrollbar-width: none; /* Hide scrollbars for clean look on Firefox */
+}
+.overflow-x-auto::-webkit-scrollbar {
+  display: none; /* Hide scrollbars for clean look on Webkit */
+}
+
 
 

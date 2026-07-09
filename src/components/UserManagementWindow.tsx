@@ -241,50 +241,50 @@ export const UserManagementWindow: React.FC<UserManagementWindowProps> = ({
             <button
               onClick={handleGoFirst}
               disabled={selectedUserIndex <= 0}
-              className="px-2.5 py-1.5 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850 font-bold text-[10px] uppercase border border-slate-200 dark:border-slate-800/80 rounded-lg text-slate-700 dark:text-slate-300 disabled:opacity-45 transition-all cursor-pointer"
+              className="px-2.5 py-1.5 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850 font-bold text-[10px] uppercase border border-slate-200 dark:border-slate-800/80 rounded-lg text-slate-700 dark:text-slate-300 disabled:opacity-45 transition-all cursor-pointer whitespace-nowrap shrink-0"
             >
               ⏮ Début
             </button>
             <button
               onClick={handleGoPrev}
               disabled={selectedUserIndex <= 0}
-              className="px-2.5 py-1.5 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850 font-bold text-[10px] uppercase border border-slate-200 dark:border-slate-800/80 rounded-lg text-slate-700 dark:text-slate-300 disabled:opacity-45 transition-all cursor-pointer"
+              className="px-2.5 py-1.5 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850 font-bold text-[10px] uppercase border border-slate-200 dark:border-slate-800/80 rounded-lg text-slate-700 dark:text-slate-300 disabled:opacity-45 transition-all cursor-pointer whitespace-nowrap shrink-0"
             >
               ◀ Préc.
             </button>
-            <button
+             <button
               onClick={handleGoNext}
               disabled={selectedUserIndex >= users.length - 1}
-              className="px-2.5 py-1.5 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850 font-bold text-[10px] uppercase border border-slate-200 dark:border-slate-800/80 rounded-lg text-slate-700 dark:text-slate-300 disabled:opacity-45 transition-all cursor-pointer"
+              className="px-2.5 py-1.5 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850 font-bold text-[10px] uppercase border border-slate-200 dark:border-slate-800/80 rounded-lg text-slate-700 dark:text-slate-300 disabled:opacity-45 transition-all cursor-pointer whitespace-nowrap shrink-0"
             >
               Suivant ▶
             </button>
             <button
               onClick={handleGoLast}
               disabled={selectedUserIndex >= users.length - 1}
-              className="px-2.5 py-1.5 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850 font-bold text-[10px] uppercase border border-slate-200 dark:border-slate-800/80 rounded-lg text-slate-700 dark:text-slate-300 disabled:opacity-45 transition-all cursor-pointer"
+              className="px-2.5 py-1.5 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850 font-bold text-[10px] uppercase border border-slate-200 dark:border-slate-800/80 rounded-lg text-slate-700 dark:text-slate-300 disabled:opacity-45 transition-all cursor-pointer whitespace-nowrap shrink-0"
             >
               Fin ⏭
             </button>
 
-            <div className="h-4 w-[1px] bg-slate-250 dark:bg-slate-800 mx-1" />
+             <div className="h-4 w-[1px] bg-slate-250 dark:bg-slate-800 mx-1 shrink-0" />
 
             {/* Insert, Modify, Delete */}
             <button
               onClick={openInsertModal}
-              className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100/80 dark:bg-indigo-950/30 dark:hover:bg-indigo-900/40 font-bold text-[10px] uppercase border border-indigo-200/50 dark:border-indigo-900/30 rounded-lg text-indigo-700 dark:text-indigo-300 flex items-center gap-1 transition-all cursor-pointer"
+              className="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100/80 dark:bg-indigo-950/30 dark:hover:bg-indigo-900/40 font-bold text-[10px] uppercase border border-indigo-200/50 dark:border-indigo-900/30 rounded-lg text-indigo-700 dark:text-indigo-300 flex items-center gap-1 transition-all cursor-pointer whitespace-nowrap shrink-0"
             >
               <span className="text-indigo-650 dark:text-indigo-400 font-black">+</span> Insérer
             </button>
             <button
               onClick={openEditModal}
-              className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-850 font-bold text-[10px] uppercase border border-slate-200 dark:border-slate-800 rounded-lg text-slate-800 dark:text-slate-300 flex items-center gap-1 transition-all cursor-pointer"
+              className="px-3 py-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-900 dark:hover:bg-slate-850 font-bold text-[10px] uppercase border border-slate-200 dark:border-slate-800 rounded-lg text-slate-800 dark:text-slate-300 flex items-center gap-1 transition-all cursor-pointer whitespace-nowrap shrink-0"
             >
               <span className="text-amber-500 font-black">✏️</span> Modifier
             </button>
             <button
               onClick={handleDelete}
-              className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-900/40 font-bold text-[10px] uppercase border border-rose-200/50 dark:border-rose-900/30 rounded-lg text-rose-700 dark:text-rose-300 flex items-center gap-1 transition-all cursor-pointer"
+              className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-900/40 font-bold text-[10px] uppercase border border-rose-200/50 dark:border-rose-900/30 rounded-lg text-rose-700 dark:text-rose-300 flex items-center gap-1 transition-all cursor-pointer whitespace-nowrap shrink-0"
             >
               <span className="text-rose-600 font-black">-</span> Supprimer
             </button>

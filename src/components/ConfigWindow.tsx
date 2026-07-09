@@ -1045,7 +1045,7 @@ export default function ConfigWindow({
                 <span className="text-[9px] font-black text-indigo-950 dark:text-indigo-400 uppercase tracking-wider">
                   💡 Codes de Test Disponibles :
                 </span>
-                <div className="flex flex-wrap gap-1.5 mt-0.5">
+                <div className="flex flex-nowrap overflow-x-auto scrollbar-none gap-1.5 mt-0.5 shrink-0">
                   {['VBI-PME-2026', '123456', '777'].map(code => (
                     <button
                       key={code}
