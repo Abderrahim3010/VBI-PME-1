@@ -12,6 +12,20 @@ export interface Product {
   prixDeRevient?: number;
   prixAchat?: number;
   date?: string;
+  blocked?: boolean;
+  expirationDate?: string;
+  hasExpiration?: boolean;
+  alertDays?: number;
+  stockMin?: number;
+  colissage?: string;
+  unitOfMeasure?: string;
+  tva?: number;
+  priceLimit?: number;
+  productType?: string;
+  destockBarcode?: string;
+  destockQtyDeduced?: number;
+  destockSur?: number;
+  destockQtyToDestock?: number;
 }
 
 export interface Client {

@@ -1095,6 +1095,10 @@ function SalesVoucherWindow({
       return false;
     }
 
+    if (product.blocked) {
+      showRetroAlert(`⚠️ Attention : Le produit "${product.designation}" est BLOQUÉ ! Son code barre sera affiché en rouge.`, "Article Bloqué");
+    }
+
     const currentStock = effectiveStockMap.get(product.code) ?? product.stock;
 
     if (currentStock <= 0) {
@@ -1820,6 +1824,8 @@ function SalesVoucherWindow({
                 ) : (
                   displayedItems.map((item) => {
                     const isSelected = selectedItemIndex === item.originalIndex;
+                    const matchingProduct = products.find(p => p.code === item.code);
+                    const isBlocked = matchingProduct?.blocked === true;
                     return (
                       <tr
                         key={item.id}
@@ -1840,8 +1846,11 @@ function SalesVoucherWindow({
                           {item.originalIndex + 1}
                         </td>
                         <td 
-                          style={item.originalIndex === 0 || item.originalIndex === 1 ? { fontSize: '13px', fontFamily: 'Arial' } : undefined}
-                          className="px-3 py-2 font-mono text-[11px] truncate select-all"
+                          style={{
+                            ...(item.originalIndex === 0 || item.originalIndex === 1 ? { fontSize: '13px', fontFamily: 'Arial' } : {}),
+                            ...(isBlocked ? { color: '#e11d48', fontWeight: 'bold' } : {})
+                          }}
+                          className={`px-3 py-2 font-mono text-[11px] truncate select-all ${isBlocked ? 'text-rose-600 dark:text-rose-400 bg-rose-50/30 dark:bg-rose-950/20 border-l-2 border-rose-500' : ''}`}
                         >
                           {item.code}
                         </td>

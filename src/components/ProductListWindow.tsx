@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Product } from '../types';
+import { Product, PurchaseVoucher } from '../types';
 import { getStorageJson, saveJson } from '../services/localDb';
 import { 
   ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, 
-  Search, Plus, Edit3, Check, X, Tag, Trash2, Calendar, 
+  Search, Plus, Edit3, Edit, Check, X, Tag, Trash2, Calendar, 
   Sparkles, AlertTriangle, ArrowRight, FolderPlus
 } from 'lucide-react';
 
@@ -166,6 +166,37 @@ function ProductListWindow({
   const [formPrixVente3, setFormPrixVente3] = useState(0);       // Prix de Vente Tarif 3 (Détail)
   const [formDetail, setFormDetail] = useState('');
 
+  // Tabbed form and advanced product states
+  const [activeFormTab, setActiveFormTab] = useState<'general' | 'plusInfo' | 'photo'>('general');
+  const [formBlocked, setFormBlocked] = useState(false);
+  const [formExpirationDate, setFormExpirationDate] = useState('');
+  const [formHasExpiration, setFormHasExpiration] = useState(false);
+  const [formAlertDays, setFormAlertDays] = useState(0);
+  const [formStockMin, setFormStockMin] = useState<number | ''>('');
+  const [formColissage, setFormColissage] = useState('');
+  const [formUnitOfMeasure, setFormUnitOfMeasure] = useState('U');
+  const [formTva, setFormTva] = useState(19);
+  const [formPriceLimit, setFormPriceLimit] = useState<number | ''>('');
+  const [formProductType, setFormProductType] = useState('Normal');
+  const [formDestockBarcode, setFormDestockBarcode] = useState('');
+  const [formDestockQtyDeduced, setFormDestockQtyDeduced] = useState<number | ''>('');
+  const [formDestockSur, setFormDestockSur] = useState<number | ''>('');
+  const [formDestockQtyToDestock, setFormDestockQtyToDestock] = useState<number | ''>('');
+  const [formImage, setFormImage] = useState('');
+  const [isCodeReadOnly, setIsCodeReadOnly] = useState(true);
+  const [showCodeMenu, setShowCodeMenu] = useState(false);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setFormImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const [displayLimit, setDisplayLimit] = useState(100);
 
   useEffect(() => {
@@ -228,7 +259,7 @@ function ProductListWindow({
   };
 
   const startAddNew = () => {
-    generateRandomCode();
+    setFormCode(generateRandomCode());
     setFormDesignation('');
     setFormCategory(familles[0] || '');
     setFormStock(0);
@@ -243,29 +274,72 @@ function ProductListWindow({
     setFormPrixVente2(0);
     setFormPrixVente3(0);
     setFormDetail('');
+
+    // Reset advanced product fields
+    setActiveFormTab('general');
+    setFormBlocked(false);
+    setFormExpirationDate('');
+    setFormHasExpiration(false);
+    setFormAlertDays(0);
+    setFormStockMin('');
+    setFormColissage('');
+    setFormUnitOfMeasure('U');
+    setFormTva(19);
+    setFormPriceLimit('');
+    setFormProductType('Normal');
+    setFormDestockBarcode('');
+    setFormDestockQtyDeduced('');
+    setFormDestockSur('');
+    setFormDestockQtyToDestock('');
+    setFormImage('');
+    setIsCodeReadOnly(false); // Editable for new products
+    setShowCodeMenu(false);
+
     setIsAddingNew(true);
   };
 
-  const startEdit = () => {
-    if (!selectedProduct) return;
-    setFormCode(selectedProduct.code);
-    setFormDesignation(selectedProduct.designation);
-    setFormCategory(selectedProduct.category || familiasDefault());
-    setFormStock(selectedProduct.stock);
+  const startEdit = (productToEdit?: Product) => {
+    const target = productToEdit || selectedProduct;
+    if (!target) return;
+    setFormCode(target.code);
+    setFormDesignation(target.designation);
+    setFormCategory(target.category || familiasDefault());
+    setFormStock(target.stock);
 
     // Get date or fallback to today
-    const currentISO = selectedProduct.date 
-      ? ddmmyyyyToYyyymmdd(selectedProduct.date) 
+    const currentISO = target.date 
+      ? ddmmyyyyToYyyymmdd(target.date) 
       : ddmmyyyyToYyyymmdd(new Date().toLocaleDateString('fr-FR'));
     setFormDate(currentISO);
 
     // Set prices with correct fallbacks
-    setFormPrixAchat(selectedProduct.prixAchat !== undefined ? selectedProduct.prixAchat : (selectedProduct.prixDeRevient ?? 0));
-    setFormPrixDeRevient(selectedProduct.prixDeRevient !== undefined ? selectedProduct.prixDeRevient : (selectedProduct.prixAchat ?? 0));
-    setFormPrixVente1(selectedProduct.prixVente1);
-    setFormPrixVente2(selectedProduct.prixVente2);
-    setFormPrixVente3(selectedProduct.prixVente3);
-    setFormDetail(selectedProduct.detail || '');
+    setFormPrixAchat(target.prixAchat !== undefined ? target.prixAchat : (target.prixDeRevient ?? 0));
+    setFormPrixDeRevient(target.prixDeRevient !== undefined ? target.prixDeRevient : (target.prixAchat ?? 0));
+    setFormPrixVente1(target.prixVente1);
+    setFormPrixVente2(target.prixVente2);
+    setFormPrixVente3(target.prixVente3);
+    setFormDetail(target.detail || '');
+
+    // Reset advanced product fields
+    setActiveFormTab('general');
+    setFormBlocked(target.blocked || false);
+    setFormExpirationDate(target.expirationDate ? ddmmyyyyToYyyymmdd(target.expirationDate) : '');
+    setFormHasExpiration(target.hasExpiration || false);
+    setFormAlertDays(target.alertDays || 0);
+    setFormStockMin(target.stockMin !== undefined ? target.stockMin : '');
+    setFormColissage(target.colissage || '');
+    setFormUnitOfMeasure(target.unitOfMeasure || 'U');
+    setFormTva(target.tva !== undefined ? target.tva : 19);
+    setFormPriceLimit(target.priceLimit !== undefined ? target.priceLimit : '');
+    setFormProductType(target.productType || 'Normal');
+    setFormDestockBarcode(target.destockBarcode || '');
+    setFormDestockQtyDeduced(target.destockQtyDeduced !== undefined ? target.destockQtyDeduced : '');
+    setFormDestockSur(target.destockSur !== undefined ? target.destockSur : '');
+    setFormDestockQtyToDestock(target.destockQtyToDestock !== undefined ? target.destockQtyToDestock : '');
+    setFormImage(target.image || '');
+    setIsCodeReadOnly(true); // Read-only by default for edited products, unlocked via Action menu
+    setShowCodeMenu(false);
+
     setIsEditing(true);
   };
 
@@ -316,7 +390,22 @@ function ProductListWindow({
       prixVente1: Number(formPrixVente1),
       prixVente2: Number(formPrixVente2),
       prixVente3: Number(formPrixVente3),
-      detail: formDetail.trim() || undefined
+      detail: formDetail.trim() || undefined,
+      blocked: formBlocked,
+      expirationDate: formExpirationDate ? yyyymmddToDdmmyyyy(formExpirationDate) : undefined,
+      hasExpiration: formHasExpiration,
+      alertDays: formAlertDays,
+      stockMin: formStockMin !== '' ? Number(formStockMin) : undefined,
+      colissage: formColissage.trim() || undefined,
+      unitOfMeasure: formUnitOfMeasure || undefined,
+      tva: formTva,
+      priceLimit: formPriceLimit !== '' ? Number(formPriceLimit) : undefined,
+      productType: formProductType || undefined,
+      destockBarcode: formDestockBarcode.trim() || undefined,
+      destockQtyDeduced: formDestockQtyDeduced !== '' ? Number(formDestockQtyDeduced) : undefined,
+      destockSur: formDestockSur !== '' ? Number(formDestockSur) : undefined,
+      destockQtyToDestock: formDestockQtyToDestock !== '' ? Number(formDestockQtyToDestock) : undefined,
+      image: formImage || undefined,
     };
 
     if (isAddingNew && !config?.isActivated && products.length >= 1) {
@@ -474,19 +563,39 @@ function ProductListWindow({
                       {p.stock} U
                     </span>
                   </td>
-                  <td className="px-3 py-2 text-center h-10 select-none font-sans">
+                  <td className="px-3 py-2 text-center flex items-center justify-center gap-1.5 h-10 select-none">
+                    {/* Modify Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        startEdit(p);
+                      }}
+                      className={`p-1.5 rounded-lg active:scale-90 transition-all cursor-pointer inline-flex items-center justify-center ${
+                        reqSelected 
+                          ? 'hover:bg-white/25 text-white' 
+                          : 'hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300'
+                      }`}
+                      title="Modifier la fiche produit"
+                      type="button"
+                    >
+                      <Edit size={13} />
+                    </button>
+
+                    {/* Delete Button */}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         e.preventDefault();
                         setDeletingProduct(p);
                       }}
-                      className={`p-1.5 rounded-lg active:scale-90 transition-all ${
+                      className={`p-1.5 rounded-lg active:scale-90 transition-all cursor-pointer inline-flex items-center justify-center ${
                         reqSelected 
                           ? 'hover:bg-white/25 text-white' 
                           : 'hover:bg-rose-50 dark:hover:bg-rose-950/30 text-rose-600 dark:text-rose-400'
                       }`}
                       title="Supprimer définitivement du catalogue"
+                      type="button"
                     >
                       <Trash2 size={13} />
                     </button>
@@ -521,8 +630,59 @@ function ProductListWindow({
         </label>
         <textarea
           readOnly
-          value={selectedProduct ? `${selectedProduct.designation} (${selectedProduct.category || 'DIVERS'}) ${selectedProduct.date ? `| Créé le: ${selectedProduct.date}` : ''}\n${selectedProduct.detail || ''}` : ''}
-          className="h-10 w-full resize-none p-2 rounded-xl text-xs outline-none font-sans bg-slate-50 dark:bg-slate-950/40 border border-slate-250 dark:border-slate-850 text-slate-600 dark:text-slate-400 select-all"
+          value={(() => {
+            if (!selectedProduct) return '';
+            
+            // Get purchases from local storage
+            const purchases = getStorageJson<PurchaseVoucher[]>('compos_purchases', []);
+            
+            // Find all purchase vouchers containing this product
+            const productVouchers = purchases.filter(p => 
+              p.items && p.items.some(item => item.code === selectedProduct.code)
+            );
+
+            // Sort vouchers chronologically from oldest to newest
+            const sortedVouchers = [...productVouchers].sort((a, b) => {
+              const parseDateTime = (dStr: string, tStr?: string) => {
+                try {
+                  const [d, m, y] = dStr.split('/').map(Number);
+                  const [hr, min, sec] = (tStr || '00:00:00').split(':').map(Number);
+                  return new Date(y, m - 1, d, hr, min, sec).getTime();
+                } catch {
+                  return 0;
+                }
+              };
+              return parseDateTime(a.date, a.time) - parseDateTime(b.date, b.time);
+            });
+
+            // Extract unique suppliers in order of appearance
+            const supplierSequence: string[] = [];
+            for (const v of sortedVouchers) {
+              if (v.supplier) {
+                const supplierName = v.supplier.trim();
+                if (supplierName && !supplierSequence.includes(supplierName)) {
+                  supplierSequence.push(supplierName);
+                }
+              }
+            }
+
+            // Construct chronological suppliers text
+            let supplierText = '';
+            if (supplierSequence.length === 1) {
+              supplierText = supplierSequence[0];
+            } else if (supplierSequence.length > 1) {
+              supplierText = supplierSequence.map((sup, index) => `${sup} (${index + 1})`).join(', ');
+            } else {
+              supplierText = 'Aucun achat enregistré';
+            }
+
+            const headerLine = `${selectedProduct.designation} (${selectedProduct.category || 'DIVERS'}) ${selectedProduct.date ? `| Créé le: ${selectedProduct.date}` : ''}`;
+            const supplierLine = `Fournisseur(s): ${supplierText}`;
+            const detailsLine = selectedProduct.detail || '';
+
+            return `${headerLine}\n${supplierLine}${detailsLine ? `\n${detailsLine}` : ''}`;
+          })()}
+          className="h-16 w-full resize-none p-2 rounded-xl text-xs outline-none font-sans bg-slate-50 dark:bg-slate-950/40 border border-slate-250 dark:border-slate-850 text-slate-600 dark:text-slate-400 select-all"
         />
       </div>
 
@@ -563,7 +723,7 @@ function ProductListWindow({
       {/* Add / Edit Dialog overlay */}
       {(isAddingNew || isEditing) && (
         <div className="absolute inset-0 bg-slate-950/40 dark:bg-slate-950/65 backdrop-blur-xs flex items-center justify-center z-[100] p-4 select-none">
-          <div className="w-[480px] bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 relative max-h-[95%]">
+          <div className="w-[520px] bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150 relative max-h-[95%]">
             
             {/* Header */}
             <div className="bg-slate-50/50 dark:bg-slate-950/20 px-5 py-4 text-slate-800 dark:text-slate-100 text-xs font-bold flex justify-between select-none border-b border-slate-150 dark:border-slate-800/80">
@@ -576,235 +736,535 @@ function ProductListWindow({
                   setIsAddingNew(false);
                   setIsEditing(false);
                 }}
-                className="hover:bg-slate-200 dark:hover:bg-slate-800 w-6 h-6 rounded-lg flex items-center justify-center cursor-pointer transition-colors text-slate-400 hover:text-slate-650"
+                className="hover:bg-slate-200 dark:hover:bg-slate-800 w-6 h-6 rounded-lg flex items-center justify-center cursor-pointer transition-colors text-slate-400 hover:text-slate-655"
               >
                 <X size={15} />
+              </button>
+            </div>
+
+            {/* Tabs Header */}
+            <div className="flex bg-slate-100/80 dark:bg-slate-950 p-1 gap-1 border-b border-slate-200 dark:border-slate-800 shrink-0">
+              <button
+                type="button"
+                onClick={() => setActiveFormTab('general')}
+                className={`flex-1 h-11 rounded-2xl flex items-center justify-center gap-2 text-xs font-black transition-all cursor-pointer ${
+                  activeFormTab === 'general'
+                    ? 'bg-white dark:bg-slate-900 text-m3-primary dark:text-sky-400 shadow-sm'
+                    : 'text-slate-500 hover:bg-white/40 dark:hover:bg-slate-900/30'
+                }`}
+              >
+                <span className="text-base">📁</span>
+                <div className="flex flex-col text-left">
+                  <span className="leading-tight">Général</span>
+                  <span className="text-[8px] font-sans opacity-60 font-medium">F1</span>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveFormTab('plusInfo')}
+                className={`flex-1 h-11 rounded-2xl flex items-center justify-center gap-2 text-xs font-black transition-all cursor-pointer ${
+                  activeFormTab === 'plusInfo'
+                    ? 'bg-white dark:bg-slate-900 text-m3-primary dark:text-sky-400 shadow-sm'
+                    : 'text-slate-500 hover:bg-white/40 dark:hover:bg-slate-900/30'
+                }`}
+              >
+                <span className="text-base">ℹ️</span>
+                <div className="flex flex-col text-left">
+                  <span className="leading-tight">Plus d'info.</span>
+                  <span className="text-[8px] font-sans opacity-60 font-medium">F2</span>
+                </div>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveFormTab('photo')}
+                className={`flex-1 h-11 rounded-2xl flex items-center justify-center gap-2 text-xs font-black transition-all cursor-pointer ${
+                  activeFormTab === 'photo'
+                    ? 'bg-white dark:bg-slate-900 text-m3-primary dark:text-sky-400 shadow-sm'
+                    : 'text-slate-500 hover:bg-white/40 dark:hover:bg-slate-900/30'
+                }`}
+              >
+                <span className="text-base">📷</span>
+                <div className="flex flex-col text-left">
+                  <span className="leading-tight">Photo Produit</span>
+                  <span className="text-[8px] font-sans opacity-60 font-medium">F3</span>
+                </div>
               </button>
             </div>
             
             {/* Form */}
             <form onSubmit={handleSave} className="p-5 flex flex-col gap-4 overflow-y-auto max-h-[460px]">
               
-              {/* Product barcode reference code */}
-              <div className="flex flex-col gap-1">
-                <span className="font-extrabold text-slate-400 dark:text-slate-500 text-[9px] uppercase tracking-wide">Code unique / Référence produit</span>
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    required
-                    placeholder="Saisissez ou générez un code unique..."
-                    value={formCode}
-                    onChange={(e) => setFormCode(e.target.value)}
-                    readOnly={isEditing}
-                    className={`flex-1 h-9 bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-xl px-3 font-mono text-xs outline-none focus:border-m3-primary focus:ring-1 focus:ring-m3-primary/10 ${isEditing ? 'opacity-60 cursor-not-allowed' : ''}`}
-                  />
-                  {!isEditing && (
-                    <button
-                      type="button"
-                      onClick={generateRandomCode}
-                      className="h-9 px-3 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 font-extrabold text-xs rounded-xl flex items-center gap-1 border border-indigo-200/20 active:scale-95 transition-all cursor-pointer"
-                      title="Générer un code à barres aléatoire"
-                    >
-                      <Sparkles size={12} /> Aléatoire
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Designation Name */}
-              <div className="flex flex-col gap-1">
-                <span className="font-extrabold text-slate-500 dark:text-slate-400 text-[9px] uppercase tracking-wide">Désignation / Article</span>
-                <input
-                  type="text"
-                  required
-                  autoFocus={isAddingNew}
-                  placeholder="EX. HUILE DE TOURNESOL ELIO 1L"
-                  value={formDesignation}
-                  onChange={(e) => setFormDesignation(e.target.value)}
-                  className="h-9 w-full bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-800 rounded-xl px-3 text-xs font-bold outline-none focus:border-m3-primary focus:ring-1 focus:ring-m3-primary/10"
-                />
-              </div>
-
-              {/* Family / Category block */}
-              <div className="flex flex-col gap-1.5 relative">
-                <span className="font-extrabold text-slate-500 dark:text-slate-400 text-[9px] uppercase tracking-wide">Famille / Catégorie de l'article</span>
-                
-                {isCreatingCategory ? (
-                  <div className="flex gap-2 animate-in slide-in-from-top-1 duration-150">
+              {/* Reference and Block fields (Always visible at the top of the form) */}
+              <div className="grid grid-cols-3 gap-3 items-end border-b border-slate-100 dark:border-slate-800/60 pb-3">
+                <div className="col-span-2 flex flex-col gap-1 relative">
+                  <span className="font-extrabold text-slate-400 dark:text-slate-500 text-[9px] uppercase tracking-wide">Code unique / Référence</span>
+                  <div className="flex gap-2">
                     <input
                       type="text"
                       required
-                      autoFocus
-                      placeholder="Nom de la nouvelle famille..."
-                      value={newCategoryName}
-                      onChange={(e) => setNewCategoryName(e.target.value)}
-                      className="flex-1 h-9 bg-slate-50 dark:bg-slate-950 border border-emerald-350 dark:border-emerald-600/40 rounded-xl px-3 text-xs outline-none"
+                      placeholder="Code unique de l'article"
+                      value={formCode}
+                      onChange={(e) => setFormCode(e.target.value)}
+                      readOnly={isCodeReadOnly}
+                      className={`flex-1 h-9 bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-xl px-3 font-mono text-xs outline-none focus:border-m3-primary focus:ring-1 focus:ring-m3-primary/10 ${isCodeReadOnly ? 'opacity-70 bg-slate-100/50 dark:bg-slate-900/40 cursor-not-allowed' : ''}`}
                     />
                     <button
                       type="button"
-                      onClick={handleAddNewCategory}
-                      className="h-9 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center justify-center cursor-pointer active:scale-95"
+                      onClick={() => setShowCodeMenu(!showCodeMenu)}
+                      className="h-9 px-3 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 font-extrabold text-xs rounded-xl flex items-center gap-1 border border-indigo-200/20 active:scale-95 transition-all cursor-pointer relative"
+                      title="Modifier ou générer un code"
                     >
-                      Ajouter
+                      <Sparkles size={12} /> Action
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setIsCreatingCategory(false)}
-                      className="h-9 px-2.5 bg-slate-100 hover:bg-slate-150 text-slate-605 text-xs rounded-xl border border-transparent"
-                    >
-                      <X size={14} />
-                    </button>
+                    {showCodeMenu && (
+                      <div className="absolute top-full left-0 mt-1 bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 p-1 flex flex-col gap-0.5 w-48 text-left animate-in fade-in duration-100">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsCodeReadOnly(false);
+                            setShowCodeMenu(false);
+                          }}
+                          className="px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 cursor-pointer text-left w-full"
+                        >
+                          ✏️ Saisir manuellement
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            generateRandomCode();
+                            setShowCodeMenu(false);
+                          }}
+                          className="px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 cursor-pointer text-left w-full"
+                        >
+                          🔄 Générer code aléatoire
+                        </button>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div className="flex gap-2">
-                    <select
-                      value={formCategory}
-                      onChange={(e) => setFormCategory(e.target.value)}
-                      className="flex-1 h-9 bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-800 rounded-xl px-3 text-xs font-sans font-bold outline-none focus:border-m3-primary"
-                    >
-                      {familles.map((fam) => (
-                        <option key={fam} value={fam}>{fam}</option>
-                      ))}
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setNewCategoryName('');
-                        setIsCreatingCategory(true);
-                      }}
-                      className="h-9 px-3 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-400 text-xs font-bold rounded-xl flex items-center gap-1 transition-all cursor-pointer shrink-0"
-                      title="Créer une nouvelle famille"
-                    >
-                      <FolderPlus size={13} /> Créer
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsManagingFamilies(true);
-                      }}
-                      className="h-9 px-3 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-400 text-xs font-bold rounded-xl flex items-center gap-1 transition-all cursor-pointer shrink-0"
-                      title="Gérer les familles (Modifier / Supprimer)"
-                    >
-                      <FolderPlus size={13} /> Gérer
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Stock row */}
-              <div className="flex flex-col gap-1">
-                <span className="font-extrabold text-slate-500 dark:text-slate-400 text-[9px] uppercase tracking-wide">Quantité en Stock</span>
-                <input
-                  type="number"
-                  min="0"
-                  placeholder="0"
-                  value={formStock || ''}
-                  onChange={(e) => setFormStock(Number(e.target.value))}
-                  className="h-9 w-full bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-800 rounded-xl px-3 font-mono text-xs outline-none text-center focus:border-m3-primary"
-                />
-              </div>
-
-              {/* Date Input */}
-              <div className="flex flex-col gap-1">
-                <span className="font-extrabold text-slate-500 dark:text-slate-400 text-[9px] uppercase tracking-wide flex items-center gap-1">
-                  <Calendar size={11} /> Date d'Entrée / Fiche
-                </span>
-                <input
-                  type="date"
-                  required
-                  value={formDate}
-                  onChange={(e) => setFormDate(e.target.value)}
-                  className="h-9 w-full bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-800 rounded-xl px-3 font-mono text-xs outline-none focus:border-m3-primary"
-                />
-              </div>
-
-              {/* Pricing section: Prix Achat & Prix Revient */}
-              <div className="grid grid-cols-2 gap-3.5 pt-1.5 border-t border-slate-100 dark:border-slate-800">
-                <div className="flex flex-col gap-1">
-                  <span className="font-extrabold text-blue-600 dark:text-blue-400 text-[9px] uppercase tracking-wide">💰 Prix d'Achat (DA)</span>
-                  <input
-                    type="number"
-                    required
-                    min="0"
-                    step="any"
-                    value={formPrixAchat || ''}
-                    onChange={(e) => setFormPrixAchat(Number(e.target.value))}
-                    className="h-9 w-full bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-850 rounded-xl px-3 font-mono text-xs outline-none text-right focus:border-blue-500 font-bold"
-                  />
                 </div>
 
-                <div className="flex flex-col gap-1">
-                  <span className="font-extrabold text-amber-600 dark:text-amber-400 text-[9px] uppercase tracking-wide">📦 Prix de Revient (DA)</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="any"
-                    value={formPrixDeRevient || ''}
-                    onChange={(e) => setFormPrixDeRevient(Number(e.target.value))}
-                    className="h-9 w-full bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-850 rounded-xl px-3 font-mono text-xs outline-none text-right focus:border-amber-500 font-bold"
-                  />
-                </div>
-              </div>
-
-              {/* Sales Pricing section: Prix Vente 1, 2, 3 */}
-              <div className="flex flex-col gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
-                <span className="font-extrabold text-emerald-600 dark:text-emerald-400 text-[9.5px] uppercase tracking-wide">📈 Grille Tarifs de Vente (M3)</span>
-                
-                <div className="grid grid-cols-3 gap-2.5">
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[8.5px] text-slate-400 dark:text-slate-500 uppercase tracking-widest text-center font-bold">Tarif Gros (V1)</span>
+                {/* Blocked checkbox */}
+                <div className="col-span-1 h-9 flex items-center justify-end">
+                  <label className="flex items-center gap-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 cursor-pointer border border-rose-200/40 dark:border-rose-900/30 px-3 h-full rounded-xl bg-rose-50/30 dark:bg-rose-950/10 hover:bg-rose-50 dark:hover:bg-rose-950/20 select-none transition-all">
                     <input
-                      type="number"
+                      type="checkbox"
+                      checked={formBlocked}
+                      onChange={(e) => setFormBlocked(e.target.checked)}
+                      className="rounded border-rose-300 text-rose-600 focus:ring-rose-500 w-3.5 h-3.5"
+                    />
+                    Bloquer
+                  </label>
+                </div>
+              </div>
+
+              {/* TAB CONTENT: GENERAL */}
+              {activeFormTab === 'general' && (
+                <div className="flex flex-col gap-4 animate-in fade-in duration-150">
+                  {/* Designation */}
+                  <div className="flex flex-col gap-1">
+                    <span className="font-extrabold text-slate-500 dark:text-slate-400 text-[9px] uppercase tracking-wide">Désignation / Article</span>
+                    <input
+                      type="text"
                       required
-                      min="0"
-                      step="any"
-                      placeholder="0.0"
-                      value={formPrixVente1 || ''}
-                      onChange={(e) => setFormPrixVente1(Number(e.target.value))}
-                      className="h-9 w-full bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-850 rounded-xl px-2 font-mono text-xs outline-none text-right focus:border-emerald-500 font-bold"
+                      autoFocus={isAddingNew}
+                      placeholder="EX. HUILE DE TOURNESOL ELIO 1L"
+                      value={formDesignation}
+                      onChange={(e) => setFormDesignation(e.target.value)}
+                      className="h-9 w-full bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-800 rounded-xl px-3 text-xs font-bold outline-none focus:border-m3-primary focus:ring-1 focus:ring-m3-primary/10"
                     />
                   </div>
 
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[8.5px] text-slate-400 dark:text-slate-500 uppercase tracking-widest text-center font-bold">Tarif Demi (V2)</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="any"
-                      placeholder="0.0"
-                      value={formPrixVente2 || ''}
-                      onChange={(e) => setFormPrixVente2(Number(e.target.value))}
-                      className="h-9 w-full bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-850 rounded-xl px-2 font-mono text-xs outline-none text-right focus:border-emerald-500 font-bold"
-                    />
+                  {/* Category Selection */}
+                  <div className="flex flex-col gap-1.5 relative">
+                    <span className="font-extrabold text-slate-500 dark:text-slate-400 text-[9px] uppercase tracking-wide">Famille / Catégorie de l'article</span>
+                    {isCreatingCategory ? (
+                      <div className="flex gap-2 animate-in slide-in-from-top-1 duration-150">
+                        <input
+                          type="text"
+                          required
+                          autoFocus
+                          placeholder="Nom de la nouvelle famille..."
+                          value={newCategoryName}
+                          onChange={(e) => setNewCategoryName(e.target.value)}
+                          className="flex-1 h-9 bg-slate-50 dark:bg-slate-950 border border-emerald-350 dark:border-emerald-600/40 rounded-xl px-3 text-xs outline-none"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleAddNewCategory}
+                          className="h-9 px-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl flex items-center justify-center cursor-pointer active:scale-95"
+                        >
+                          Ajouter
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsCreatingCategory(false)}
+                          className="h-9 px-2.5 bg-slate-100 hover:bg-slate-150 text-slate-600 text-xs rounded-xl border border-transparent"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <select
+                          value={formCategory}
+                          onChange={(e) => setFormCategory(e.target.value)}
+                          className="flex-1 h-9 bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-800 rounded-xl px-3 text-xs font-sans font-bold outline-none focus:border-m3-primary"
+                        >
+                          {familles.map((fam) => (
+                            <option key={fam} value={fam}>{fam}</option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewCategoryName('');
+                            setIsCreatingCategory(true);
+                          }}
+                          className="h-9 px-3 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-400 text-xs font-bold rounded-xl flex items-center gap-1 transition-all cursor-pointer shrink-0"
+                          title="Créer une nouvelle famille"
+                        >
+                          <FolderPlus size={13} /> Créer
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsManagingFamilies(true);
+                          }}
+                          className="h-9 px-3 bg-slate-50 hover:bg-slate-100 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 text-slate-650 dark:text-slate-400 text-xs font-bold rounded-xl flex items-center gap-1 transition-all cursor-pointer shrink-0"
+                          title="Gérer les familles (Modifier / Supprimer)"
+                        >
+                          Gérer
+                        </button>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="flex flex-col gap-1">
-                    <span className="text-[8.5px] text-slate-400 dark:text-slate-500 uppercase tracking-widest text-center font-bold">Détail (V3)</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="any"
-                      placeholder="0.0"
-                      value={formPrixVente3 || ''}
-                      onChange={(e) => setFormPrixVente3(Number(e.target.value))}
-                      className="h-9 w-full bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-850 rounded-xl px-2 font-mono text-xs outline-none text-right focus:border-emerald-500 font-bold"
-                    />
+                  {/* Stock and Date */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1">
+                      <span className="font-extrabold text-slate-500 dark:text-slate-400 text-[9px] uppercase tracking-wide">Quantité en Stock</span>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={formStock || ''}
+                        onChange={(e) => setFormStock(Number(e.target.value))}
+                        className="h-9 w-full bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-800 rounded-xl px-3 font-mono text-xs outline-none text-center focus:border-m3-primary"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <span className="font-extrabold text-slate-500 dark:text-slate-400 text-[9px] uppercase tracking-wide flex items-center gap-1">
+                        <Calendar size={11} /> Date d'Entrée / Fiche
+                      </span>
+                      <input
+                        type="date"
+                        required
+                        value={formDate}
+                        onChange={(e) => setFormDate(e.target.value)}
+                        className="h-9 w-full bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-800 rounded-xl px-3 font-mono text-xs outline-none focus:border-m3-primary"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Pricing section: Prix Achat & Prix Revient */}
+                  <div className="grid grid-cols-2 gap-3.5 pt-1.5 border-t border-slate-100 dark:border-slate-800">
+                    <div className="flex flex-col gap-1">
+                      <span className="font-extrabold text-blue-600 dark:text-blue-400 text-[9px] uppercase tracking-wide">💰 Prix d'Achat (DA)</span>
+                      <input
+                        type="number"
+                        required
+                        min="0"
+                        step="any"
+                        value={formPrixAchat || ''}
+                        onChange={(e) => setFormPrixAchat(Number(e.target.value))}
+                        className="h-9 w-full bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-850 rounded-xl px-3 font-mono text-xs outline-none text-right focus:border-blue-500 font-bold"
+                      />
+                    </div>
+
+                    <div className="flex flex-col gap-1">
+                      <span className="font-extrabold text-amber-600 dark:text-amber-400 text-[9px] uppercase tracking-wide">📦 Prix de Revient (DA)</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="any"
+                        value={formPrixDeRevient || ''}
+                        onChange={(e) => setFormPrixDeRevient(Number(e.target.value))}
+                        className="h-9 w-full bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-850 rounded-xl px-3 font-mono text-xs outline-none text-right focus:border-amber-500 font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Sales Pricing section: Prix Vente 1, 2, 3 */}
+                  <div className="flex flex-col gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+                    <span className="font-extrabold text-emerald-600 dark:text-emerald-400 text-[9.5px] uppercase tracking-wide">📈 Grille Tarifs de Vente (M3)</span>
+                    <div className="grid grid-cols-3 gap-2.5">
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[8.5px] text-slate-400 dark:text-slate-500 uppercase tracking-widest text-center font-bold">Tarif Gros (V1)</span>
+                        <input
+                          type="number"
+                          required
+                          min="0"
+                          step="any"
+                          placeholder="0.0"
+                          value={formPrixVente1 || ''}
+                          onChange={(e) => setFormPrixVente1(Number(e.target.value))}
+                          className="h-9 w-full bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-850 rounded-xl px-2 font-mono text-xs outline-none text-right focus:border-emerald-500 font-bold"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[8.5px] text-slate-400 dark:text-slate-500 uppercase tracking-widest text-center font-bold">Tarif Demi (V2)</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="any"
+                          placeholder="0.0"
+                          value={formPrixVente2 || ''}
+                          onChange={(e) => setFormPrixVente2(Number(e.target.value))}
+                          className="h-9 w-full bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-850 rounded-xl px-2 font-mono text-xs outline-none text-right focus:border-emerald-500 font-bold"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <span className="text-[8.5px] text-slate-400 dark:text-slate-500 uppercase tracking-widest text-center font-bold">Détail (V3)</span>
+                        <input
+                          type="number"
+                          min="0"
+                          step="any"
+                          placeholder="0.0"
+                          value={formPrixVente3 || ''}
+                          onChange={(e) => setFormPrixVente3(Number(e.target.value))}
+                          className="h-9 w-full bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-850 rounded-xl px-2 font-mono text-xs outline-none text-right focus:border-emerald-500 font-bold"
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* Technical detail / comments */}
-              <div className="flex flex-col gap-1">
-                <span className="font-extrabold text-slate-500 dark:text-slate-400 text-[9px] uppercase tracking-wide">Informations complémentaires / Description</span>
-                <textarea
-                  placeholder="EX. CODE COULEUR, MARQUE, FORMAT PARTICULIER, ETC."
-                  value={formDetail}
-                  onChange={(e) => setFormDetail(e.target.value)}
-                  className="h-14 w-full resize-none p-2 bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-800 rounded-xl text-xs outline-none focus:border-m3-primary"
-                />
-              </div>
+              {/* TAB CONTENT: PLUS D'INFO */}
+              {activeFormTab === 'plusInfo' && (
+                <div className="flex flex-col gap-4 animate-in fade-in duration-150">
+                  {/* Detail Produit */}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[10px] font-extrabold uppercase text-slate-500 dark:text-slate-400 tracking-wide">Détail Produit</label>
+                    <textarea
+                      value={formDetail}
+                      onChange={(e) => setFormDetail(e.target.value)}
+                      className="w-full h-20 p-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-800 rounded-xl text-xs font-mono outline-none focus:border-m3-primary resize-none"
+                      placeholder="Saisissez les détails de l'article (EX. CODE COULEUR, COMPOSITION, ETC.)"
+                    />
+                  </div>
 
-              {/* Form buttons */}
+                  {/* Expiration date block */}
+                  <div className="flex flex-col gap-2 border border-slate-100 dark:border-slate-800/80 p-2.5 rounded-2xl bg-slate-50/40 dark:bg-slate-950/20">
+                    <label className="flex items-center gap-2 text-xs font-bold text-slate-705 dark:text-slate-205 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={formHasExpiration}
+                        onChange={(e) => setFormHasExpiration(e.target.checked)}
+                        className="rounded border-slate-300 text-m3-primary focus:ring-m3-primary w-3.5 h-3.5"
+                      />
+                      Date de péremption
+                    </label>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[9px] text-slate-400 font-extrabold uppercase">Date de péremption</span>
+                        <input
+                          type="date"
+                          disabled={!formHasExpiration}
+                          value={formExpirationDate}
+                          onChange={(e) => setFormExpirationDate(e.target.value)}
+                          className="h-8.5 px-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs disabled:opacity-40"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-[9px] text-slate-400 font-extrabold uppercase">Nombre de jours d'alerte</span>
+                        <input
+                          type="number"
+                          min="0"
+                          disabled={!formHasExpiration}
+                          value={formAlertDays}
+                          onChange={(e) => setFormAlertDays(Number(e.target.value))}
+                          className="h-8.5 px-2 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs text-center disabled:opacity-40"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Horizontal parameters row */}
+                  <div className="grid grid-cols-5 gap-1.5 pt-1.5 border-t border-slate-100 dark:border-slate-800/60">
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[8.5px] font-bold text-slate-400 uppercase text-center">Stock min.</span>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={formStockMin}
+                        onChange={(e) => setFormStockMin(e.target.value === '' ? '' : Number(e.target.value))}
+                        className="h-8 w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-1 text-xs text-center font-mono font-bold"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[8.5px] font-bold text-slate-400 uppercase text-center">Colissage</span>
+                      <input
+                        type="text"
+                        placeholder="EX. 12"
+                        value={formColissage}
+                        onChange={(e) => setFormColissage(e.target.value)}
+                        className="h-8 w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-1 text-xs text-center"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[8.5px] font-bold text-slate-400 uppercase text-center">Unité</span>
+                      <select
+                        value={formUnitOfMeasure}
+                        onChange={(e) => setFormUnitOfMeasure(e.target.value)}
+                        className="h-8 w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-0.5 text-xs font-bold text-center"
+                      >
+                        <option value="U">U</option>
+                        <option value="KG">KG</option>
+                        <option value="L">L</option>
+                        <option value="PCS">PCS</option>
+                        <option value="M">M</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[8.5px] font-bold text-slate-400 uppercase text-center">TVA %</span>
+                      <select
+                        value={formTva}
+                        onChange={(e) => setFormTva(Number(e.target.value))}
+                        className="h-8 w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-0.5 text-xs font-bold text-center"
+                      >
+                        <option value={0}>0</option>
+                        <option value={9}>9</option>
+                        <option value={19}>19</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="text-[8.5px] font-bold text-slate-400 uppercase text-center">Limite PV</span>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="0"
+                        value={formPriceLimit}
+                        onChange={(e) => setFormPriceLimit(e.target.value === '' ? '' : Number(e.target.value))}
+                        className="h-8 w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-1 text-xs text-right font-mono font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Type of Product and Destockage parameters */}
+                  <div className="flex flex-col gap-2.5 border border-slate-100 dark:border-slate-800 p-2.5 rounded-2xl bg-slate-50/40 dark:bg-slate-950/20">
+                    <div className="flex flex-col gap-1">
+                      <span className="text-[10px] font-extrabold uppercase text-slate-500 dark:text-slate-400 tracking-wide">Type de produit</span>
+                      <select
+                        value={formProductType}
+                        onChange={(e) => setFormProductType(e.target.value)}
+                        className="h-8.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 text-xs font-bold"
+                      >
+                        <option value="Normal">Normal</option>
+                        <option value="Déstock un autre produit">Déstock un autre produit</option>
+                      </select>
+                    </div>
+
+                    {formProductType === 'Déstock un autre produit' && (
+                      <div className="grid grid-cols-4 gap-2 pt-2.5 border-t border-slate-200/50 dark:border-slate-800/50 items-end">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[8.5px] font-bold text-slate-400 uppercase text-center">C.Barre à déstocker</span>
+                          <input
+                            type="text"
+                            value={formDestockBarcode}
+                            onChange={(e) => setFormDestockBarcode(e.target.value)}
+                            placeholder="C.Barre"
+                            className="h-8 w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 text-xs font-mono text-center"
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[8.5px] font-bold text-slate-400 uppercase text-center">Qté déduite</span>
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="0"
+                            value={formDestockQtyDeduced}
+                            onChange={(e) => setFormDestockQtyDeduced(e.target.value === '' ? '' : Number(e.target.value))}
+                            className="h-8 w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 text-xs text-center font-mono"
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[8.5px] font-bold text-slate-400 uppercase text-center">Sur</span>
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="0"
+                            value={formDestockSur}
+                            onChange={(e) => setFormDestockSur(e.target.value === '' ? '' : Number(e.target.value))}
+                            className="h-8 w-full bg-teal-50 dark:bg-teal-950/30 border border-teal-200/30 rounded-lg px-2 text-xs text-center text-teal-700 dark:text-teal-400 font-bold font-mono"
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-0.5">
+                          <span className="text-[8.5px] font-bold text-slate-400 uppercase text-center">Qté à déstocker</span>
+                          <div className="flex items-center gap-1">
+                            <span className="text-slate-400 font-bold text-[10px]">=</span>
+                            <input
+                              type="number"
+                              min="0"
+                              placeholder="0"
+                              value={formDestockQtyToDestock}
+                              onChange={(e) => setFormDestockQtyToDestock(e.target.value === '' ? '' : Number(e.target.value))}
+                              className="h-8 w-full bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-2 text-xs text-center font-mono font-bold"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB CONTENT: PHOTO */}
+              {activeFormTab === 'photo' && (
+                <div className="flex flex-col items-center justify-center gap-4 animate-in fade-in duration-150 py-4">
+                  <div className="w-44 h-44 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950/60 overflow-hidden flex items-center justify-center relative shadow-inner group">
+                    {formImage ? (
+                      <>
+                        <img referrerPolicy="no-referrer" src={formImage} alt="Fiche produit" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setFormImage('')}
+                          className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold cursor-pointer"
+                        >
+                          ❌ Supprimer la photo
+                        </button>
+                      </>
+                    ) : (
+                      <div className="text-center p-4 flex flex-col items-center gap-1.5 text-slate-400 dark:text-slate-500">
+                        <span className="text-4xl">📷</span>
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider">Aucune photo enregistrée</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <label className="px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950 dark:hover:bg-indigo-900 border border-indigo-200 dark:border-indigo-800 rounded-xl text-indigo-700 dark:text-indigo-300 text-xs font-bold cursor-pointer transition-colors shadow-xs active:scale-95 inline-flex items-center gap-1.5">
+                    📁 Sélectionner une image
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                  </label>
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500 italic">Prise en charge locale JPG, PNG, GIF</span>
+                </div>
+              )}
+
+              {/* Form Actions footer */}
               <div className="flex justify-end gap-2.5 mt-3 pt-3 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
@@ -812,13 +1272,13 @@ function ProductListWindow({
                     setIsAddingNew(false);
                     setIsEditing(false);
                   }}
-                  className="px-5 h-10 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-300 font-bold rounded-xl active:scale-95 transition-all cursor-pointer border border-transparent"
+                  className="px-5 h-10 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 font-bold rounded-xl active:scale-95 transition-all cursor-pointer border border-transparent"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="px-6 h-10 bg-m3-primary text-white font-bold rounded-xl hover:opacity-90 active:scale-95 transition-all cursor-pointer shadow-xs flex items-center gap-1.5"
+                  className="px-6 h-10 bg-m3-primary hover:opacity-95 text-white font-bold rounded-xl active:scale-95 transition-all cursor-pointer shadow-xs flex items-center gap-1.5"
                 >
                   <Check size={14} /> Enregistrer
                 </button>
