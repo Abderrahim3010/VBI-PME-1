@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Supplier, PurchaseVoucher } from '../types';
-import { Plus, Edit, Trash2, Printer, RefreshCw, X, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Save } from 'lucide-react';
+import { Plus, Edit, Trash2, Printer, RefreshCw, X, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Save, Users, HelpCircle, Truck } from 'lucide-react';
 
 export interface SupplierPayment {
   id: string;
@@ -489,7 +489,7 @@ function SituationFournisseursWindow({
               onClick={() => setIsSupplierChooserOpen(true)}
               className="flex flex-col items-center justify-center bg-sky-50 dark:bg-slate-800/60 border border-sky-100 dark:border-slate-800 p-2 rounded-lg w-24 shrink-0 select-none hover:bg-sky-100 cursor-pointer transition-all hover:scale-105"
             >
-              <span className="text-3xl">👨‍💼</span>
+              <Truck size={28} className="text-sky-600 dark:text-sky-400" />
               <span className="text-[9px] text-sky-700 dark:text-sky-400 font-extrabold text-center leading-tight mt-2 uppercase">
                 Sélectionner un<br/>fournisseur
               </span>
@@ -1180,8 +1180,8 @@ function SituationFournisseursWindow({
 
             {/* Content body */}
             <div className="p-4 flex flex-col items-center text-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 flex items-center justify-center text-xl font-bold">
-                ❓
+              <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 flex items-center justify-center font-bold">
+                <HelpCircle size={24} className="text-red-500" />
               </div>
               <div>
                 <p className="text-xs font-bold text-slate-800 dark:text-slate-100">
@@ -1221,16 +1221,16 @@ function SituationFournisseursWindow({
             {/* Header */}
             <div className="bg-sky-600 dark:bg-slate-950 px-5 py-4 flex items-center justify-between select-none">
               <span className="text-white font-bold text-sm flex items-center gap-2">
-                👨‍💼 Sélectionner un Fournisseur
+                <Truck size={16} className="text-white" /> Sélectionner un Fournisseur
               </span>
               <button 
                 onClick={() => {
                   setIsSupplierChooserOpen(false);
                   setChooserSearch('');
                 }}
-                className="w-7 h-7 bg-white/10 text-white rounded-full flex items-center justify-center font-bold hover:bg-white/20 transition-all cursor-pointer"
+                className="w-7 h-7 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-all cursor-pointer"
               >
-                ✕
+                <X size={14} />
               </button>
             </div>
 
@@ -1288,7 +1288,7 @@ function SituationFournisseursWindow({
                             </span>
                           </div>
                           <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">
-                            📞 {s.contact || 'Aucun contact'} • 📍 {s.address || "Aucune adresse"}
+                            Tél: {s.contact || 'Aucun contact'} • Adresse: {s.address || "Aucune adresse"}
                           </div>
                         </div>
 

@@ -1476,85 +1476,85 @@ function PurchaseVoucherWindow({
     <div id="purchases-root-container" className="flex-1 flex flex-col font-sans text-xs bg-slate-50 dark:bg-slate-900/40 text-slate-800 dark:text-slate-100 h-full overflow-hidden select-none outline-none relative">
       
       {/* 1. Header Toolbar Ribbon - Modernized with Material 3 styling */}
-      <div className="flex items-center justify-between bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200/50 dark:border-slate-800/85 gap-2 flex-nowrap overflow-x-auto scrollbar-none select-none shadow-xs mb-2 shrink-0">
+      <div className="flex items-center justify-between bg-white dark:bg-slate-900 py-1 px-2 rounded-xl border border-slate-200/50 dark:border-slate-800/85 gap-1.5 flex-nowrap overflow-x-auto scrollbar-none select-none shadow-xs mb-2 shrink-0 h-[46px]">
         
         {/* Navigation Pager controls */}
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="flex bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200/20 gap-1 shadow-inner">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <div className="flex bg-slate-100 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200/20 gap-0.5 shadow-inner">
             <button
               onClick={handleFirst}
               disabled={navigableVouchers.length === 0 || activeVoucherIndex <= 0}
-              className="w-10 h-9 flex flex-col justify-center items-center rounded-lg bg-white dark:bg-slate-900 border border-slate-200/30 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer"
+              className="w-9 h-7.5 flex flex-col justify-center items-center rounded bg-white dark:bg-slate-900 border border-slate-200/30 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer"
               title="Premier Bon"
             >
-              <span className="text-sm font-sans leading-none text-slate-800 dark:text-sky-400 font-extrabold">⏮</span>
-              <span className="text-[7.5px] font-black text-slate-500 uppercase tracking-tight mt-0.5">Début</span>
+              <span className="text-xs font-sans leading-none text-slate-800 dark:text-sky-400 font-extrabold">⏮</span>
+              <span className="text-[6.5px] font-black text-slate-500 uppercase tracking-tight">Début</span>
             </button>
             <button
               onClick={handlePrev}
               disabled={navigableVouchers.length === 0 || activeVoucherIndex <= 0}
-              className="w-10 h-9 flex flex-col justify-center items-center rounded-lg bg-white dark:bg-slate-900 border border-slate-200/30 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer"
+              className="w-9 h-7.5 flex flex-col justify-center items-center rounded bg-white dark:bg-slate-900 border border-slate-200/30 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer"
               title="Bon Précédent"
             >
-              <span className="text-xs font-sans leading-none text-slate-800 dark:text-sky-400 font-extrabold">◀</span>
-              <span className="text-[7.5px] font-black text-slate-500 uppercase tracking-tight mt-0.5">Préc.</span>
+              <span className="text-[10px] font-sans leading-none text-slate-800 dark:text-sky-400 font-extrabold">◀</span>
+              <span className="text-[6.5px] font-black text-slate-500 uppercase tracking-tight">Préc.</span>
             </button>
             <button
               onClick={handleNext}
               disabled={navigableVouchers.length === 0 || activeVoucherIndex >= navigableVouchers.length - 1}
-              className="w-10 h-9 flex flex-col justify-center items-center rounded-lg bg-white dark:bg-slate-900 border border-slate-200/30 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer"
+              className="w-9 h-7.5 flex flex-col justify-center items-center rounded bg-white dark:bg-slate-900 border border-slate-200/30 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer"
               title="Bon Suivant"
             >
-              <span className="text-xs font-sans leading-none text-slate-800 dark:text-sky-400 font-extrabold">▶</span>
-              <span className="text-[7.5px] font-black text-slate-500 uppercase tracking-tight mt-0.5">Suiv.</span>
+              <span className="text-[10px] font-sans leading-none text-slate-800 dark:text-sky-400 font-extrabold">▶</span>
+              <span className="text-[6.5px] font-black text-slate-500 uppercase tracking-tight">Suiv.</span>
             </button>
             <button
               onClick={handleLast}
               disabled={navigableVouchers.length === 0 || activeVoucherIndex >= navigableVouchers.length - 1}
-              className="w-10 h-9 flex flex-col justify-center items-center rounded-lg bg-white dark:bg-slate-900 border border-slate-200/30 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer"
+              className="w-9 h-7.5 flex flex-col justify-center items-center rounded bg-white dark:bg-slate-900 border border-slate-200/30 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer"
               title="Dernier Bon"
             >
-              <span className="text-sm font-sans leading-none text-slate-800 dark:text-sky-400 font-extrabold">⏭</span>
-              <span className="text-[7.5px] font-black text-slate-500 uppercase tracking-tight mt-0.5">Fin</span>
+              <span className="text-xs font-sans leading-none text-slate-800 dark:text-sky-400 font-extrabold">⏭</span>
+              <span className="text-[6.5px] font-black text-slate-500 uppercase tracking-tight">Fin</span>
             </button>
           </div>
-
-          <div className="h-7 w-[1px] bg-slate-200 dark:bg-slate-800 mx-1" />
-
+ 
+          <div className="h-6 w-[1px] bg-slate-200 dark:bg-slate-800 mx-1 shrink-0" />
+ 
           {/* Action Buttons styled like SalesVoucherWindow */}
-          <div className="flex items-center gap-1.5 flex-nowrap shrink-0">
+          <div className="flex items-center gap-1 flex-nowrap shrink-0">
             <button
               onClick={handleNewVoucher}
-              className="px-3.5 h-10 flex items-center justify-center gap-2 bg-gradient-to-br from-emerald-500 to-teal-600 hover:to-teal-700 text-white rounded-xl shadow-md cursor-pointer transition-transform duration-100 active:scale-95 whitespace-nowrap shrink-0"
+              className="px-2.5 h-8 flex items-center justify-center gap-1.5 bg-gradient-to-br from-emerald-500 to-teal-600 hover:to-teal-700 text-white rounded-lg shadow-md cursor-pointer transition-transform duration-100 active:scale-95 whitespace-nowrap shrink-0"
             >
-              <span className="text-base">📄</span>
+              <span className="text-xs">📄</span>
               <div className="flex flex-col text-left font-sans">
-                <span className="font-extrabold text-[10px] uppercase tracking-wider leading-none">Nouveau bon</span>
-                <span className="text-[8px] font-bold text-emerald-100 tracking-wider mt-0.5">[ F1 ]</span>
+                <span style={{ fontSize: '9.5px', fontFamily: 'Arial' }} className="font-extrabold uppercase tracking-wider leading-none">Nouveau bon</span>
+                <span className="text-[7px] font-bold text-emerald-100 tracking-wider">[ F1 ]</span>
               </div>
             </button>
 
             {mode === 'create' ? (
               <button
                 onClick={handleSaveVoucher}
-                className="px-3.5 h-10 flex items-center justify-center gap-2 bg-gradient-to-br from-emerald-600 to-teal-700 hover:to-teal-800 text-white rounded-xl shadow-md cursor-pointer transition-transform duration-100 active:scale-95 whitespace-nowrap shrink-0"
+                className="px-2.5 h-8 flex items-center justify-center gap-1.5 bg-gradient-to-br from-emerald-600 to-teal-700 hover:to-teal-800 text-white rounded-lg shadow-md cursor-pointer transition-transform duration-100 active:scale-95 whitespace-nowrap shrink-0"
               >
-                <span className="text-base">🔒</span>
+                <span className="text-xs">🔒</span>
                 <div className="flex flex-col text-left font-sans">
-                  <span className="font-extrabold text-[10px] uppercase tracking-wider leading-none">Fermer le bon</span>
-                  <span className="text-[8px] font-extrabold text-emerald-150 tracking-wider mt-0.5">[ F5 ]</span>
+                  <span style={{ fontSize: '9.5px', fontFamily: 'Arial' }} className="font-extrabold uppercase tracking-wider leading-none">Fermer le bon</span>
+                  <span className="text-[7px] font-extrabold text-emerald-150 tracking-wider">[ F5 ]</span>
                 </div>
               </button>
             ) : (
               <button
                 onClick={() => setIsPrintPreviewOpen(true)}
                 disabled={!selectedVoucher}
-                className="px-3.5 h-10 flex items-center justify-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-950 shadow-xs cursor-pointer transition-transform duration-100 active:scale-95 disabled:opacity-40 whitespace-nowrap shrink-0"
+                className="px-2.5 h-8 flex items-center justify-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-950 shadow-xs cursor-pointer transition-transform duration-100 active:scale-95 disabled:opacity-40 whitespace-nowrap shrink-0"
               >
-                <span className="text-base">🖨️</span>
+                <span className="text-xs">🖨️</span>
                 <div className="flex flex-col text-left font-sans">
-                  <span className="font-extrabold text-[10px] uppercase tracking-wider leading-none">Impression</span>
-                  <span className="text-[8px] font-bold text-slate-400 tracking-wider mt-0.5">[ F3 ]</span>
+                  <span style={{ fontSize: '9.5px', fontFamily: 'Arial' }} className="font-extrabold uppercase tracking-wider leading-none">Impression</span>
+                  <span className="text-[7px] font-bold text-slate-400 tracking-wider">[ F3 ]</span>
                 </div>
               </button>
             )}
@@ -1562,12 +1562,12 @@ function PurchaseVoucherWindow({
             <button
               onClick={handleEditVoucher}
               disabled={mode === 'create' || !selectedVoucher}
-              className="px-3.5 h-10 flex items-center justify-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-950 shadow-xs cursor-pointer disabled:opacity-40 transition-transform duration-100 active:scale-95 whitespace-nowrap shrink-0"
+              className="px-2.5 h-8 flex items-center justify-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-950 shadow-xs cursor-pointer disabled:opacity-40 transition-transform duration-100 active:scale-95 whitespace-nowrap shrink-0"
             >
-              <span className="text-base">✏️</span>
+              <span className="text-xs">✏️</span>
               <div className="flex flex-col text-left font-sans">
-                <span className="font-extrabold text-[10px] uppercase tracking-wider leading-none">Modifier</span>
-                <span className="text-[8px] font-bold text-slate-400 tracking-wider mt-0.5">[ F4 ]</span>
+                <span style={{ fontSize: '9.5px', fontFamily: 'Arial' }} className="font-extrabold uppercase tracking-wider leading-none">Modifier</span>
+                <span className="text-[7px] font-bold text-slate-400 tracking-wider">[ F4 ]</span>
               </div>
             </button>
 
@@ -1581,17 +1581,17 @@ function PurchaseVoucherWindow({
                 if (date) setNewDate(date);
               }}
               disabled={mode !== 'create'}
-              className="px-3.5 h-10 flex items-center justify-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-950 shadow-xs cursor-pointer disabled:opacity-40 transition-transform duration-100 active:scale-95 whitespace-nowrap shrink-0"
+              className="px-2.5 h-8 flex items-center justify-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-950 shadow-xs cursor-pointer disabled:opacity-40 transition-transform duration-100 active:scale-95 whitespace-nowrap shrink-0"
             >
-              <span className="text-base">✒️</span>
+              <span className="text-xs">✒️</span>
               <div className="flex flex-col text-left font-sans">
-                <span className="font-extrabold text-[10px] uppercase tracking-wider leading-none">Infos Bon</span>
-                <span className="text-[8px] font-bold text-slate-400 tracking-wider mt-0.5">[ CTRL+F ]</span>
+                <span style={{ fontSize: '9.5px', fontFamily: 'Arial' }} className="font-extrabold uppercase tracking-wider leading-none">Infos Bon</span>
+                <span className="text-[7px] font-bold text-slate-400 tracking-wider">[ CTRL+F ]</span>
               </div>
             </button>
 
             {mode === 'create' ? (
-              <div className="flex gap-1.5 animate-in slide-in-from-right-3 duration-150">
+              <div className="flex gap-1 animate-in slide-in-from-right-3 duration-150">
                 <button
                   type="button"
                   onClick={() => {
@@ -1651,14 +1651,14 @@ function PurchaseVoucherWindow({
                       );
                     }
                   }}
-                  className="px-3.5 h-10 flex items-center justify-center gap-2 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 text-rose-700 dark:text-rose-300 rounded-xl hover:bg-rose-100 dark:hover:bg-rose-950 cursor-pointer transition-transform duration-100 active:scale-95 shadow-xs whitespace-nowrap shrink-0"
+                  className="px-2.5 h-8 flex items-center justify-center gap-1.5 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 text-rose-700 dark:text-rose-300 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-950 cursor-pointer transition-transform duration-100 active:scale-95 shadow-xs whitespace-nowrap shrink-0"
                 >
-                  <span className="text-base">🗑️</span>
+                  <span className="text-xs">🗑️</span>
                   <div className="flex flex-col text-left font-sans">
-                    <span className="font-extrabold text-[10px] uppercase tracking-wider leading-none">
-                      {editingVoucherId ? "Suppr. Bon d'Achat" : "Suppr. Brouillon"}
+                    <span style={{ fontSize: '9.5px', fontFamily: 'Arial' }} className="font-extrabold uppercase tracking-wider leading-none">
+                      {editingVoucherId ? "Suppr. Bon" : "Suppr. Brouillon"}
                     </span>
-                    <span className="text-[8px] font-bold text-rose-500 tracking-wider mt-0.5">Dispo</span>
+                    <span className="text-[7px] font-bold text-rose-500 tracking-wider">Dispo</span>
                   </div>
                 </button>
 
@@ -1668,12 +1668,12 @@ function PurchaseVoucherWindow({
                     setMode('view');
                     setEditingVoucherId(null);
                   }}
-                  className="px-3.5 h-10 flex items-center justify-center gap-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 text-amber-700 dark:text-amber-300 rounded-xl hover:bg-amber-100 dark:hover:bg-amber-950 cursor-pointer transition-transform duration-100 active:scale-95 shadow-xs whitespace-nowrap shrink-0"
+                  className="px-2.5 h-8 flex items-center justify-center gap-1.5 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/40 text-amber-700 dark:text-amber-300 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-950 cursor-pointer transition-transform duration-100 active:scale-95 shadow-xs whitespace-nowrap shrink-0"
                 >
-                  <span className="text-base">✕</span>
+                  <span className="text-xs">✕</span>
                   <div className="flex flex-col text-left font-sans">
-                    <span className="font-extrabold text-[10px] uppercase tracking-wider leading-none">Annuler</span>
-                    <span className="text-[8px] font-bold text-amber-500 tracking-wider mt-0.5">[ F2 ]</span>
+                    <span style={{ fontSize: '9.5px', fontFamily: 'Arial' }} className="font-extrabold uppercase tracking-wider leading-none">Annuler</span>
+                    <span className="text-[7px] font-bold text-amber-500 tracking-wider">[ F2 ]</span>
                   </div>
                 </button>
               </div>
@@ -1681,12 +1681,12 @@ function PurchaseVoucherWindow({
               <button
                 onClick={handleDeleteVoucher}
                 disabled={!selectedVoucher}
-                className="px-3.5 h-10 flex items-center justify-center gap-2 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 text-rose-700 dark:text-rose-300 rounded-xl hover:bg-rose-100 dark:hover:bg-rose-950 cursor-pointer disabled:opacity-40 transition-transform duration-100 active:scale-95 shadow-xs whitespace-nowrap shrink-0"
+                className="px-2.5 h-8 flex items-center justify-center gap-1.5 bg-rose-50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900/40 text-rose-700 dark:text-rose-300 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-950 cursor-pointer disabled:opacity-40 transition-transform duration-100 active:scale-95 shadow-xs whitespace-nowrap shrink-0"
               >
-                <span className="text-base">🗑️</span>
+                <span className="text-xs">🗑️</span>
                 <div className="flex flex-col text-left font-sans">
-                  <span className="font-extrabold text-[10px] uppercase tracking-wider leading-none">Supprimer</span>
-                  <span className="text-[8px] font-semibold text-rose-500 tracking-wider mt-0.5">[ CTRL+SUPP ]</span>
+                  <span style={{ fontSize: '9.5px', fontFamily: 'Arial' }} className="font-extrabold uppercase tracking-wider leading-none">Supprimer</span>
+                  <span className="text-[7px] font-semibold text-rose-500 tracking-wider">[ CTRL+SUPP ]</span>
                 </div>
               </button>
             )}
@@ -1701,9 +1701,9 @@ function PurchaseVoucherWindow({
             dlAnchorElem.setAttribute("download", `composes_achats_${Date.now()}.json`);
             dlAnchorElem.click();
           }}
-          className="px-3.5 h-10 mr-1 flex items-center justify-center gap-2 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-205 dark:border-slate-800 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-950 shadow-xs cursor-pointer transition-transform duration-100 active:scale-95 text-xs font-bold"
+          className="px-2.5 h-8 mr-1 flex items-center justify-center gap-1.5 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-950 shadow-xs cursor-pointer transition-transform duration-100 active:scale-95 text-[10px] font-bold"
         >
-          <span>📥 Importer des bons (JSON)</span>
+          <span>📥 Importer JSON</span>
         </button>
       </div>
 
@@ -1947,17 +1947,17 @@ function PurchaseVoucherWindow({
       </div>
 
       {/* BOTTOM ACTION BUTTONS - MODERNIZED AND COHESIVE */}
-      <div className="flex flex-nowrap items-center justify-start bg-white dark:bg-slate-900 p-2 border border-slate-200/50 dark:border-slate-800/85 rounded-2xl gap-2.5 shrink-0 select-none shadow-xs overflow-x-auto no-scrollbar">
+      <div className="flex flex-nowrap items-center justify-start bg-white dark:bg-slate-900 py-1 px-2 border border-slate-200/50 dark:border-slate-800/85 rounded-xl gap-2 shrink-0 select-none shadow-xs overflow-x-auto no-scrollbar h-10">
         
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           {/* Bottom Table Pager Navigator */}
-          <div className="flex bg-slate-100 dark:bg-slate-950 p-1 rounded-xl border border-slate-200/20 gap-1 shadow-inner shrink-0">
+          <div className="flex bg-slate-100 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200/20 gap-0.5 shadow-inner shrink-0">
             <button
               type="button"
               onClick={() => setSelectedDraftIdx(draftItems.length > 0 ? 0 : -1)}
               disabled={mode === 'view' || draftItems.length === 0}
               title="Aller au début de la liste"
-              className="w-8 h-8 flex items-center justify-center rounded-lg bg-white dark:bg-slate-900 border border-slate-200/20 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer"
+              className="w-7 h-7 flex items-center justify-center rounded-md bg-white dark:bg-slate-900 border border-slate-200/20 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer text-[10px]"
             >
               ⏮
             </button>
@@ -1966,7 +1966,7 @@ function PurchaseVoucherWindow({
               onClick={() => setSelectedDraftIdx(prev => Math.max(0, prev - 1))}
               disabled={mode === 'view' || selectedDraftIdx <= 0}
               title="Article Précédent"
-              className="w-8 h-8 flex items-center justify-center rounded-lg bg-white dark:bg-slate-900 border border-slate-200/20 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer"
+              className="w-7 h-7 flex items-center justify-center rounded-md bg-white dark:bg-slate-900 border border-slate-200/20 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer text-[10px]"
             >
               ◀
             </button>
@@ -1975,7 +1975,7 @@ function PurchaseVoucherWindow({
               onClick={() => setSelectedDraftIdx(prev => Math.min(draftItems.length - 1, prev + 1))}
               disabled={mode === 'view' || selectedDraftIdx === -1 || selectedDraftIdx >= draftItems.length - 1}
               title="Article Suivant"
-              className="w-8 h-8 flex items-center justify-center rounded-lg bg-white dark:bg-slate-900 border border-slate-200/20 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer"
+              className="w-7 h-7 flex items-center justify-center rounded-md bg-white dark:bg-slate-900 border border-slate-200/20 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer text-[10px]"
             >
               ▶
             </button>
@@ -1984,64 +1984,64 @@ function PurchaseVoucherWindow({
               onClick={() => setSelectedDraftIdx(draftItems.length > 0 ? draftItems.length - 1 : -1)}
               disabled={mode === 'view' || draftItems.length === 0}
               title="Aller à la fin de la liste"
-              className="w-8 h-8 flex items-center justify-center rounded-lg bg-white dark:bg-slate-900 border border-slate-200/20 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer"
+              className="w-7 h-7 flex items-center justify-center rounded-md bg-white dark:bg-slate-900 border border-slate-200/20 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer text-[10px]"
             >
               ⏭
             </button>
           </div>
         </div>
 
-        <div className="h-7 w-[1px] bg-slate-200 dark:bg-slate-800 shrink-0 mx-1" />
+        <div className="h-5 w-[1px] bg-slate-200 dark:bg-slate-800 shrink-0 mx-0.5" />
 
         {/* Action buttons list */}
-        <div className="flex gap-1.5 flex-nowrap shrink-0 overflow-x-auto no-scrollbar">
+        <div className="flex gap-1 flex-nowrap shrink-0 overflow-x-auto no-scrollbar items-center">
           <button
             type="button"
             onClick={() => handleOpenProductDialog('add_new')}
             disabled={mode === 'view'}
-            className="px-3.5 h-9 rounded-xl font-bold bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-xs cursor-pointer disabled:opacity-30 flex items-center gap-1.5 active:scale-95 transition-all text-[11px] shrink-0"
+            className="px-2.5 h-7.5 rounded-lg font-bold bg-gradient-to-br from-indigo-500 to-indigo-600 text-white shadow-xs cursor-pointer disabled:opacity-30 flex items-center gap-1 active:scale-95 transition-all text-[9.5px] shrink-0"
           >
             <span>➕ Nouveau</span>
-            <span className="text-[8px] opacity-80 font-mono">[Ctrl+N]</span>
+            <span className="text-[7.5px] opacity-80 font-mono">[Ctrl+N]</span>
           </button>
 
           <button
             type="button"
             onClick={() => handleOpenProductDialog('insert_existing')}
             disabled={mode === 'view'}
-            className="px-3.5 h-9 rounded-xl font-bold bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-xs cursor-pointer disabled:opacity-30 flex items-center gap-1.5 active:scale-95 transition-all text-[11px] shrink-0"
+            className="px-2.5 h-7.5 rounded-lg font-bold bg-gradient-to-br from-teal-500 to-teal-600 text-white shadow-xs cursor-pointer disabled:opacity-30 flex items-center gap-1 active:scale-95 transition-all text-[9.5px] shrink-0"
           >
             <span>📥 Insérer</span>
-            <span className="text-[8px] opacity-80 font-mono">[Entrer]</span>
+            <span className="text-[7.5px] opacity-80 font-mono">[Entrer]</span>
           </button>
 
           <button
             type="button"
             onClick={() => handleOpenProductDialog('edit_existing')}
             disabled={mode === 'view' || selectedDraftIdx === -1}
-            className="px-3.5 h-9 rounded-xl font-bold bg-white dark:bg-slate-900 text-slate-755 dark:text-slate-300 border border-slate-200 dark:border-slate-800 shadow-xs cursor-pointer disabled:opacity-30 flex items-center gap-1.5 active:scale-95 transition-all text-[11px] shrink-0"
+            className="px-2.5 h-7.5 rounded-lg font-bold bg-white dark:bg-slate-900 text-slate-755 dark:text-slate-300 border border-slate-200 dark:border-slate-800 shadow-xs cursor-pointer disabled:opacity-30 flex items-center gap-1 active:scale-95 transition-all text-[9.5px] shrink-0"
           >
             <span>✏️ Modifier</span>
-            <span className="text-[8px] opacity-80 font-mono">[F8]</span>
+            <span className="text-[7.5px] opacity-80 font-mono">[F8]</span>
           </button>
 
           <button
             type="button"
             onClick={() => handleRemoveDraftItem(selectedDraftIdx)}
             disabled={mode === 'view' || selectedDraftIdx === -1}
-            className="px-3.5 h-9 rounded-xl font-bold bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-300 border border-rose-250 dark:border-rose-900/45 shadow-xs cursor-pointer disabled:opacity-30 flex items-center gap-1.5 active:scale-95 transition-all text-[11px] shrink-0"
+            className="px-2.5 h-7.5 rounded-lg font-bold bg-rose-50 dark:bg-rose-950/20 text-rose-700 dark:text-rose-300 border border-rose-250 dark:border-rose-900/45 shadow-xs cursor-pointer disabled:opacity-30 flex items-center gap-1 active:scale-95 transition-all text-[9.5px] shrink-0"
           >
             <span>❌ Supprimer</span>
-            <span className="text-[8px] opacity-80 font-mono">[Suppr]</span>
+            <span className="text-[7.5px] opacity-80 font-mono">[Suppr]</span>
           </button>
 
           <button
             type="button"
             onClick={() => {}}
-            className="px-3.5 h-9 rounded-xl font-bold bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 shadow-xs cursor-pointer flex items-center gap-1.5 active:scale-95 transition-all text-[11px] shrink-0"
+            className="px-2.5 h-7.5 rounded-lg font-bold bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 shadow-xs cursor-pointer flex items-center gap-1 active:scale-95 transition-all text-[9.5px] shrink-0"
           >
             <span>🖨️ Étiquettes</span>
-            <span className="text-[8px] opacity-80 font-mono">[F10]</span>
+            <span className="text-[7.5px] opacity-80 font-mono">[F10]</span>
           </button>
         </div>
       </div>

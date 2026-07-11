@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Client, SalesVoucher } from '../types';
-import { Plus, Edit, Trash2, Printer, RefreshCw, X, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
+import { Plus, Edit, Trash2, Printer, RefreshCw, X, Search, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Users, HelpCircle } from 'lucide-react';
 
 export interface ClientPayment {
   id: string;
@@ -488,7 +488,7 @@ function SituationClientsWindow({
               onClick={() => setIsClientChooserOpen(true)}
               className="flex flex-col items-center justify-center bg-emerald-50 dark:bg-slate-800/60 border border-emerald-100 dark:border-slate-800 p-2 rounded-lg w-24 shrink-0 select-none hover:bg-emerald-100 cursor-pointer transition-all hover:scale-105"
             >
-              <span className="text-3xl">👥</span>
+              <Users size={28} className="text-emerald-600 dark:text-emerald-400" />
               <span className="text-[9px] text-emerald-700 dark:text-emerald-400 font-extrabold text-center leading-tight mt-2 uppercase">
                 Sélectionner un<br/>client
               </span>
@@ -1178,8 +1178,8 @@ function SituationClientsWindow({
 
             {/* Content body */}
             <div className="p-4 flex flex-col items-center text-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 flex items-center justify-center text-xl font-bold">
-                ❓
+              <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 flex items-center justify-center font-bold">
+                <HelpCircle size={24} className="text-red-500" />
               </div>
               <div>
                 <p className="text-xs font-bold text-slate-800 dark:text-slate-100">
@@ -1219,16 +1219,16 @@ function SituationClientsWindow({
             {/* Header */}
             <div className="bg-emerald-600 dark:bg-slate-950 px-5 py-4 flex items-center justify-between select-none">
               <span className="text-white font-bold text-sm flex items-center gap-2">
-                👥 Sélectionner un Client
+                <Users size={16} className="text-white" /> Sélectionner un Client
               </span>
               <button 
                 onClick={() => {
                   setIsClientChooserOpen(false);
                   setChooserSearch('');
                 }}
-                className="w-7 h-7 bg-white/10 text-white rounded-full flex items-center justify-center font-bold hover:bg-white/20 transition-all cursor-pointer"
+                className="w-7 h-7 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-all cursor-pointer"
               >
-                ✕
+                <X size={14} />
               </button>
             </div>
 
@@ -1286,7 +1286,7 @@ function SituationClientsWindow({
                             </span>
                           </div>
                           <div className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold">
-                            📞 {c.contact || 'Aucun contact'} • 📍 {c.address || "Aucune adresse"}
+                            Tél: {c.contact || 'Aucun contact'} • Adresse: {c.address || "Aucune adresse"}
                           </div>
                         </div>
 

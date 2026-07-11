@@ -1,5 +1,25 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import {
+  ShoppingBag,
+  ShoppingCart,
+  Package,
+  Truck,
+  Users,
+  BookOpen,
+  BarChart3,
+  Search,
+  Coins,
+  Folder,
+  RotateCw,
+  Save,
+  Smartphone,
+  Settings,
+  Lock,
+  Key,
+  LogOut,
+  Gem
+} from 'lucide-react';
+import {
   INITIAL_PRODUCTS,
   INITIAL_CLIENTS,
   INITIAL_SUPPLIERS,
@@ -1042,8 +1062,8 @@ export default function App() {
       {/* 1. OS Menu Bar (At the absolute top of the screen) */}
       <div className="h-8 bg-slate-200/60 dark:bg-slate-900/95 text-slate-800 dark:text-slate-100 border-b border-slate-300 dark:border-slate-800 flex items-center justify-between px-3 text-xs select-none shadow-sm z-40 relative">
         <div className="flex items-center gap-3">
-          <span className="font-sans font-black text-sky-600 dark:text-sky-400 tracking-wider flex items-center gap-1">
-            <span className="text-sm">💎</span> VBI PME BETA
+          <span className="font-sans font-black text-sky-600 dark:text-sky-400 tracking-wider flex items-center gap-1.5">
+            <Gem size={13} className="text-sky-500 animate-pulse" /> VBI PME BETA
           </span>
           
           <div className="h-4 w-[1px] bg-slate-300 dark:bg-slate-800" />
@@ -1067,31 +1087,46 @@ export default function App() {
                     onClick={() => { setFichierDropdownOpen(false); alert("Dossier chargé avec succès !"); }}
                     className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-[12px] flex items-center justify-between transition-colors cursor-pointer"
                   >
-                    <span>📁 <u>C</u>harger un dossier</span>
+                    <span className="flex items-center gap-2">
+                      <Folder size={14} className="text-amber-500" />
+                      <span><u>C</u>harger un dossier</span>
+                    </span>
                   </button>
                   <button
                     onClick={() => { setFichierDropdownOpen(false); window.location.reload(); }}
                     className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-[12px] flex items-center justify-between transition-colors cursor-pointer"
                   >
-                    <span>🔄 <u>A</u>ctualisation du tableau de bord</span>
+                    <span className="flex items-center gap-2">
+                      <RotateCw size={14} className="text-sky-500" />
+                      <span><u>A</u>ctualisation du tableau de bord</span>
+                    </span>
                   </button>
                   <button
                     onClick={() => { setFichierDropdownOpen(false); alert("Tous les registres et bons ont été enregistrés localement."); }}
                     className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-[12px] flex items-center justify-between transition-colors cursor-pointer"
                   >
-                    <span>💾 Enregistrer (<u>E</u>)</span>
+                    <span className="flex items-center gap-2">
+                      <Save size={14} className="text-emerald-500" />
+                      <span>Enregistrer (<u>E</u>)</span>
+                    </span>
                   </button>
                   <button
                     onClick={() => { setFichierDropdownOpen(false); const filename = prompt("Nom de la sauvegarde :", "sauvegarde_pme.vbi"); if (filename) alert(`Enregistré sous ${filename}`); }}
                     className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-[12px] flex items-center justify-between transition-colors cursor-pointer"
                   >
-                    <span>💾 Enregistrer <u>s</u>ous</span>
+                    <span className="flex items-center gap-2">
+                      <Save size={14} className="text-teal-500" />
+                      <span>Enregistrer <u>s</u>ous</span>
+                    </span>
                   </button>
                   <button
                     onClick={() => { setFichierDropdownOpen(false); alert("Données synchronisées avec succès ! Envoyées au Terminal Mobile."); }}
                     className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-[12px] flex items-center justify-between transition-colors cursor-pointer"
                   >
-                    <span>📱 En<u>v</u>oyer au Terminal Mobile</span>
+                    <span className="flex items-center gap-2">
+                      <Smartphone size={14} className="text-indigo-500" />
+                      <span>En<u>v</u>oyer au Terminal Mobile</span>
+                    </span>
                   </button>
                   
                   <hr className="my-1 border-slate-100 dark:border-slate-800/65" />
@@ -1100,13 +1135,19 @@ export default function App() {
                     onClick={() => { setFichierDropdownOpen(false); launchWindow('configuration'); }}
                     className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-[12px] flex items-center justify-between transition-colors cursor-pointer"
                   >
-                    <span>🔧 <u>C</u>onfiguration</span>
+                    <span className="flex items-center gap-2">
+                      <Settings size={14} className="text-slate-500" />
+                      <span><u>C</u>onfiguration</span>
+                    </span>
                   </button>
                   <button
                     onClick={() => { setFichierDropdownOpen(false); handleLockSession(); }}
                     className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-[12px] flex items-center justify-between font-bold text-indigo-650 dark:text-indigo-400 transition-colors cursor-pointer"
                   >
-                    <span>🔒 <u>V</u>errouiller session</span>
+                    <span className="flex items-center gap-2">
+                      <Lock size={14} className="text-indigo-500" />
+                      <span><u>V</u>errouiller session</span>
+                    </span>
                   </button>
                   <button
                     onClick={() => { 
@@ -1126,13 +1167,19 @@ export default function App() {
                     }}
                     className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-[12px] flex items-center justify-between transition-colors cursor-pointer"
                   >
-                    <span>🔑 Changer le <u>m</u>ot de passe</span>
+                    <span className="flex items-center gap-2">
+                      <Key size={14} className="text-amber-500" />
+                      <span>Changer le <u>m</u>ot de passe</span>
+                    </span>
                   </button>
                   <button
                     onClick={() => { setFichierDropdownOpen(false); launchWindow('user_management'); }}
                     className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-[12px] flex items-center justify-between font-extrabold text-red-650 dark:text-red-400 transition-colors cursor-pointer"
                   >
-                    <span>👥 <u>G</u>estion des utilisateurs</span>
+                    <span className="flex items-center gap-2">
+                      <Users size={14} className="text-rose-500" />
+                      <span><u>G</u>estion des utilisateurs</span>
+                    </span>
                   </button>
                   
                   <hr className="my-1 border-slate-100 dark:border-slate-800/65" />
@@ -1141,7 +1188,10 @@ export default function App() {
                     onClick={() => { setFichierDropdownOpen(false); handleLockSession(); }}
                     className="w-full text-left px-4 py-2 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-rose-650 dark:text-rose-400 rounded-xl text-[12px] flex items-center justify-between font-bold transition-colors cursor-pointer"
                   >
-                    <span>🚪 <u>Q</u>uitter</span>
+                    <span className="flex items-center gap-2">
+                      <LogOut size={14} className="text-rose-500" />
+                      <span><u>Q</u>uitter</span>
+                    </span>
                   </button>
                 </div>
               )}
@@ -1172,117 +1222,117 @@ export default function App() {
       </div>
 
       {/* 2. OS Quick Toolbar with Icons (Image 2 and 3 style) */}
-      <div className="bg-slate-205/85 dark:bg-slate-900/80 backdrop-blur-md p-2 border-b border-slate-300 dark:border-slate-800 flex items-center gap-1.5 flex-nowrap overflow-x-auto scrollbar-none shrink-0 z-30 select-none shadow-md transition-colors duration-300">
+      <div className="bg-slate-205/85 dark:bg-slate-900/80 backdrop-blur-md py-0.5 px-2 border-b border-slate-300 dark:border-slate-800 flex items-center gap-2 flex-nowrap overflow-x-auto scrollbar-none shrink-0 z-30 select-none shadow-md transition-colors duration-300">
         
         {config?.affichage?.visibleButtons?.purchases !== false && (
           <button
             onClick={() => launchWindow('purchases')}
-            className="px-2.5 py-1 flex flex-col items-center min-w-[70px] h-[52px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-lg shadow-sm transition-all duration-200"
+            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
-            <span className="text-lg">📥</span>
-            <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-1 whitespace-nowrap">Saisie Achats</span>
-            <span className="text-[7px] text-slate-500 font-bold tracking-tight">F1</span>
+            <ShoppingBag className="text-amber-500 dark:text-amber-400 shrink-0" size={26} />
+            <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Saisie Achats</span>
+            <span className="text-[8px] text-slate-500 font-bold tracking-tight mt-1">F1</span>
           </button>
         )}
- 
+  
         {config?.affichage?.visibleButtons?.sales !== false && (
           <button
             onClick={() => launchWindow('sales')}
-            className="px-2.5 py-1 flex flex-col items-center min-w-[70px] h-[52px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-lg shadow-sm transition-all duration-200"
+            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
-            <span className="text-lg">📤</span>
-            <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-1 whitespace-nowrap">Saisie Ventes</span>
-            <span className="text-[7px] text-slate-500 font-bold tracking-tight">F2</span>
+            <ShoppingCart className="text-emerald-500 dark:text-emerald-400 shrink-0" size={26} />
+            <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Saisie Ventes</span>
+            <span className="text-[8px] text-slate-500 font-bold tracking-tight mt-1">F2</span>
           </button>
         )}
- 
+  
         {config?.affichage?.visibleButtons?.products !== false && (
           <button
             onClick={() => launchWindow('products')}
-            className="px-2.5 py-1 flex flex-col items-center min-w-[70px] h-[52px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-lg shadow-sm transition-all duration-200"
+            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
-            <span className="text-lg">📦</span>
-            <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-1 whitespace-nowrap">Catalogue</span>
-            <span className="text-[7px] text-slate-500 font-bold tracking-tight">F3</span>
+            <Package className="text-orange-500 dark:text-orange-400 shrink-0" size={26} />
+            <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Catalogue</span>
+            <span className="text-[8px] text-slate-500 font-bold tracking-tight mt-1">F3</span>
           </button>
         )}
- 
+  
         {config?.affichage?.visibleButtons?.suppliers !== false && (
           <button
             onClick={() => launchWindow('suppliers')}
-            className="px-2.5 py-1 flex flex-col items-center min-w-[70px] h-[52px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-lg shadow-sm transition-all duration-200"
+            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
-            <span className="text-lg">🏢</span>
-            <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-1 whitespace-nowrap">Fournisseurs</span>
-            <span className="text-[7px] text-slate-500 font-bold tracking-tight">F4</span>
+            <Truck className="text-indigo-500 dark:text-indigo-400 shrink-0" size={26} />
+            <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Fournisseurs</span>
+            <span className="text-[8px] text-slate-500 font-bold tracking-tight mt-1">F4</span>
           </button>
         )}
- 
+  
         {config?.affichage?.visibleButtons?.clients !== false && (
           <button
             onClick={() => launchWindow('clients')}
-            className="px-2.5 py-1 flex flex-col items-center min-w-[70px] h-[52px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-lg shadow-sm transition-all duration-200"
+            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
-            <span className="text-lg">👥</span>
-            <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-1 whitespace-nowrap">Clients</span>
-            <span className="text-[7px] text-slate-500 font-bold tracking-tight">F5</span>
+            <Users className="text-teal-500 dark:text-teal-400 shrink-0" size={26} />
+            <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Clients</span>
+            <span className="text-[8px] text-slate-500 font-bold tracking-tight mt-1">F5</span>
           </button>
         )}
- 
-        <div className="h-8 w-[1px] bg-slate-350 dark:bg-slate-800 mx-1.5" />
- 
+  
+        <div className="h-10 w-[1px] bg-slate-350 dark:bg-slate-800 mx-2" />
+  
         {config?.affichage?.visibleButtons?.situation !== false && (
           <button
             onClick={() => launchWindow('situation')}
-            className="px-2.5 py-1 flex flex-col items-center min-w-[70px] h-[52px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-lg shadow-sm transition-all duration-200"
+            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
-            <span className="text-lg">📕</span>
-            <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-1 whitespace-nowrap">Situation Fourn.</span>
-            <span className="text-[7px] text-slate-500 font-bold tracking-tight">F6</span>
+            <BookOpen className="text-rose-500 dark:text-rose-400 shrink-0" size={26} />
+            <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Situation Fourn.</span>
+            <span className="text-[8px] text-slate-500 font-bold tracking-tight mt-1">F6</span>
           </button>
         )}
- 
+  
         {config?.affichage?.visibleButtons?.situation_clients !== false && (
           <button
             onClick={() => launchWindow('situation_clients')}
-            className="px-2.5 py-1 flex flex-col items-center min-w-[70px] h-[52px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-lg shadow-sm transition-all duration-200"
+            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
-            <span className="text-lg">📗</span>
-            <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-1 whitespace-nowrap">Situation Client</span>
-            <span className="text-[7px] text-slate-500 font-bold tracking-tight">F7</span>
+            <BookOpen className="text-emerald-500 dark:text-emerald-400 shrink-0" size={26} />
+            <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Situation Client</span>
+            <span className="text-[8px] text-slate-500 font-bold tracking-tight mt-1">F7</span>
           </button>
         )}
- 
+  
         {config?.affichage?.visibleButtons?.stats !== false && (
           <button
             onClick={() => launchWindow('stats')}
-            className="px-2.5 py-1 flex flex-col items-center min-w-[70px] h-[52px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-lg shadow-sm transition-all duration-200"
+            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
-            <span className="text-lg">📊</span>
-            <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-1 whitespace-nowrap">Statistiques</span>
-            <span className="text-[7px] text-slate-500 font-bold tracking-tight">F8</span>
+            <BarChart3 className="text-purple-500 dark:text-purple-400 shrink-0" size={26} />
+            <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Statistiques</span>
+            <span className="text-[8px] text-slate-500 font-bold tracking-tight mt-1">F8</span>
           </button>
         )}
- 
+  
         {config?.affichage?.visibleButtons?.inventaire !== false && (
           <button
             onClick={() => launchWindow('products')}
-            className="px-2.5 py-1 flex flex-col items-center min-w-[70px] h-[52px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-lg shadow-sm transition-all duration-200"
+            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
-            <span className="text-lg">🔍</span>
-            <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-1 whitespace-nowrap">Inventaire</span>
-            <span className="text-[7px] text-slate-500 font-bold tracking-tight">F9</span>
+            <Search className="text-cyan-500 dark:text-cyan-400 shrink-0" size={26} />
+            <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Inventaire</span>
+            <span className="text-[8px] text-slate-500 font-bold tracking-tight mt-1">F9</span>
           </button>
         )}
- 
+  
         {config?.affichage?.visibleButtons?.coffre !== false && (
           <button
             onClick={() => launchWindow('caisse')}
-            className="px-2.5 py-1 flex flex-col items-center min-w-[70px] h-[52px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-lg shadow-sm transition-all duration-200"
+            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
-            <span className="text-lg">💵</span>
-            <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-1 whitespace-nowrap">Coffre Caisse</span>
-            <span className="text-[7px] text-slate-500 font-bold tracking-tight">F10</span>
+            <Coins className="text-emerald-600 dark:text-emerald-400 shrink-0" size={26} />
+            <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Coffre Caisse</span>
+            <span className="text-[8px] text-slate-500 font-bold tracking-tight mt-1">F10</span>
           </button>
         )}
 

@@ -215,8 +215,8 @@ function ClientsSuppliersWindow({
       <div className="flex-1 flex flex-col border border-m3-outline-variant/15 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 overflow-hidden shadow-xs">
         <div className="bg-slate-50 dark:bg-slate-950/65 font-bold px-4 py-2 border-b border-slate-100 dark:border-slate-800 text-slate-800 dark:text-slate-200 select-none flex flex-nowrap overflow-x-auto scrollbar-none gap-2 items-center justify-between font-display shrink-0">
           <div className="flex items-center gap-3 flex-1 min-w-[200px]">
-            <span className="text-xs truncate shrink-0">
-              📊 {mode === 'clients' ? 'Clients' : 'Fournisseurs'}
+            <span className="text-xs truncate shrink-0 flex items-center gap-1.5">
+              {mode === 'clients' ? <Users size={13} className="text-sky-500" /> : <Truck size={13} className="text-sky-500" />} {mode === 'clients' ? 'Clients' : 'Fournisseurs'}
             </span>
             <div className="relative flex-1 max-w-xs">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" size={13} />
@@ -367,7 +367,7 @@ function ClientsSuppliersWindow({
             {/* Header */}
             <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-950/10">
               <div className="flex items-center gap-2">
-                <span className="text-base">👤</span>
+                <Users size={16} className="text-m3-primary dark:text-sky-400" />
                 <span className="font-black text-sm text-slate-900 dark:text-white font-sans">
                   {editingItem 
                     ? (mode === 'clients' ? 'Modifier le Client' : 'Modifier le Fournisseur')

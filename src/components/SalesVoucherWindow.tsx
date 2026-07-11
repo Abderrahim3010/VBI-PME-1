@@ -1,6 +1,11 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Product, Client, SalesVoucher, VoucherItem, User } from '../types';
+import { 
+  Edit, Edit3, RefreshCw, BarChart3, Printer, Plug, Search, Plus, Minus, Trash2, 
+  Package, Coins, DollarSign, User as UserIcon, Users, AlertTriangle, Lightbulb, 
+  Folder, FileText, MessageSquare, HelpCircle, X, Check, Eye
+} from 'lucide-react';
 
 interface OpenVoucher {
   id: string; // The draft ID or edited ID
@@ -1208,117 +1213,113 @@ function SalesVoucherWindow({
       
       {/* 1. Header Toolbar Ribbon - Modernized with Material 3 styling */}
       <div 
-        style={{ marginTop: '0px', marginBottom: '3px', width: '100%' }}
-        className="flex items-center justify-between bg-white dark:bg-slate-900 p-2 rounded-2xl border border-slate-200/50 dark:border-slate-800/85 gap-2 select-none shadow-xs h-[57px] shrink-0 flex-nowrap overflow-x-auto scrollbar-none"
+        style={{ marginTop: '0px', marginBottom: '2px', width: '100%' }}
+        className="flex items-center justify-between bg-white dark:bg-slate-900 py-1 px-2 rounded-xl border border-slate-200/50 dark:border-slate-800/85 gap-1.5 select-none shadow-xs h-[46px] shrink-0 flex-nowrap overflow-x-auto scrollbar-none"
       >
         
         {/* Media Buttons: Deb, Prec, Suiv, Fin grouped together */}
-        <div className="flex items-center gap-2 flex-nowrap shrink-0">
-          <div className="flex bg-slate-105 dark:bg-slate-950 p-1 rounded-xl border border-slate-200/20 gap-1 dev-pager-group shadow-inner">
+        <div className="flex items-center gap-1.5 flex-nowrap shrink-0">
+          <div className="flex bg-slate-105 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200/20 gap-0.5 dev-pager-group shadow-inner">
             <button
               onClick={handleFirst}
               disabled={navigableVouchers.length <= 1 || activeNavIndex <= 0}
-              className="w-10 h-9 flex flex-col justify-center items-center rounded-lg bg-white dark:bg-slate-900 border border-slate-200/30 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer"
+              className="w-9 h-7.5 flex flex-col justify-center items-center rounded bg-white dark:bg-slate-900 border border-slate-200/30 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer"
               title="Premier Bon"
             >
-              <span className="text-sm font-sans leading-none text-slate-800 dark:text-sky-400 font-extrabold">⏮</span>
-              <span className="text-[7.5px] font-black text-slate-500 uppercase tracking-tight mt-0.5">Début</span>
+              <span className="text-xs font-sans leading-none text-slate-800 dark:text-sky-400 font-extrabold">⏮</span>
+              <span className="text-[6.5px] font-black text-slate-500 uppercase tracking-tight">Début</span>
             </button>
             <button
               onClick={handlePrev}
               disabled={navigableVouchers.length <= 1 || activeNavIndex <= 0}
-              className="w-10 h-9 flex flex-col justify-center items-center rounded-lg bg-white dark:bg-slate-900 border border-slate-200/30 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer"
+              className="w-9 h-7.5 flex flex-col justify-center items-center rounded bg-white dark:bg-slate-900 border border-slate-200/30 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer"
               title="Bon Précédent"
             >
-              <span className="text-xs font-sans leading-none text-slate-800 dark:text-sky-400 font-extrabold">◀</span>
-              <span className="text-[7.5px] font-black text-slate-500 uppercase tracking-tight mt-0.5">Préc.</span>
+              <span className="text-[10px] font-sans leading-none text-slate-800 dark:text-sky-400 font-extrabold">◀</span>
+              <span className="text-[6.5px] font-black text-slate-500 uppercase tracking-tight">Préc.</span>
             </button>
             <button
               onClick={handleNext}
               disabled={navigableVouchers.length <= 1 || activeNavIndex === -1 || activeNavIndex >= navigableVouchers.length - 1}
-              className="w-10 h-9 flex flex-col justify-center items-center rounded-lg bg-white dark:bg-slate-900 border border-slate-200/30 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer"
+              className="w-9 h-7.5 flex flex-col justify-center items-center rounded bg-white dark:bg-slate-900 border border-slate-200/30 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer"
               title="Bon Suivant"
             >
-              <span className="text-xs font-sans leading-none text-slate-800 dark:text-sky-400 font-extrabold">▶</span>
-              <span className="text-[7.5px] font-black text-slate-500 uppercase tracking-tight mt-0.5">Suiv.</span>
+              <span className="text-[10px] font-sans leading-none text-slate-800 dark:text-sky-400 font-extrabold">▶</span>
+              <span className="text-[6.5px] font-black text-slate-500 uppercase tracking-tight">Suiv.</span>
             </button>
             <button
               onClick={handleLast}
               disabled={navigableVouchers.length <= 1 || activeNavIndex === -1 || activeNavIndex >= navigableVouchers.length - 1}
-              className="w-10 h-9 flex flex-col justify-center items-center rounded-lg bg-white dark:bg-slate-900 border border-slate-200/30 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer"
+              className="w-9 h-7.5 flex flex-col justify-center items-center rounded bg-white dark:bg-slate-900 border border-slate-200/30 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer"
               title="Dernier Bon"
             >
-              <span className="text-sm font-sans leading-none text-slate-800 dark:text-sky-400 font-extrabold">⏭</span>
-              <span className="text-[7.5px] font-black text-slate-500 uppercase tracking-tight mt-0.5">Fin</span>
+              <span className="text-xs font-sans leading-none text-slate-800 dark:text-sky-400 font-extrabold">⏭</span>
+              <span className="text-[6.5px] font-black text-slate-500 uppercase tracking-tight">Fin</span>
             </button>
           </div>
-
-          <div className="h-7 w-[1px] bg-slate-300 dark:bg-slate-700 mx-1.5 shrink-0" />
-
+ 
+          <div className="h-6 w-[1px] bg-slate-300 dark:bg-slate-700 mx-1 shrink-0" />
+ 
           {/* Action Buttons: F1, F2, F3... */}
-          <div className="flex items-center gap-1.5 flex-nowrap shrink-0">
+          <div className="flex items-center gap-1 flex-nowrap shrink-0">
             <button
               onClick={startCreateMode}
-              className="px-3.5 h-10 flex items-center justify-center gap-2 bg-gradient-to-br from-emerald-500 to-teal-600 hover:to-teal-700 text-white rounded-xl shadow-md cursor-pointer transition-transform duration-100 active:scale-95 whitespace-nowrap shrink-0"
+              className="px-2.5 h-8 flex items-center justify-center gap-1.5 bg-gradient-to-br from-emerald-500 to-teal-600 hover:to-teal-700 text-white rounded-lg shadow-md cursor-pointer transition-transform duration-100 active:scale-95 whitespace-nowrap shrink-0"
             >
-              <span className="text-base">📄</span>
+              <span className="text-xs">📄</span>
               <div className="flex flex-col text-left">
-                <span style={{ fontSize: '12px', fontFamily: 'Arial' }} className="font-extrabold text-[10px] uppercase tracking-wider leading-none">Nouveau bon</span>
-                <span className="text-[8px] font-bold text-emerald-100 tracking-wider mt-0.5">[ F1 ]</span>
+                <span style={{ fontSize: '9.5px', fontFamily: 'Arial' }} className="font-extrabold uppercase tracking-wider leading-none">Nouveau bon</span>
+                <span className="text-[7px] font-bold text-emerald-100 tracking-wider">[ F1 ]</span>
               </div>
             </button>
 
-            <div className="h-7 w-[1px] bg-slate-300 dark:bg-slate-700 mx-1 shrink-0" />
+            <div className="h-6 w-[1px] bg-slate-300 dark:bg-slate-700 mx-0.5 shrink-0" />
 
             <button
               onClick={handleFermerLeBon}
               disabled={mode !== 'create'}
-              className={`px-3.5 h-10 flex items-center justify-center gap-2 rounded-xl shadow-sm transition-transform duration-100 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap shrink-0 ${
+              className={`px-2.5 h-8 flex items-center justify-center gap-1.5 rounded-lg shadow-sm transition-transform duration-100 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap shrink-0 ${
                 mode === 'create'
                   ? 'bg-gradient-to-br from-[#1e293b] to-slate-800 text-white cursor-pointer'
                   : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-950 cursor-default'
               }`}
             >
-              <span className="text-base">🔒</span>
+              <span className="text-xs">🔒</span>
               <div className="flex flex-col text-left">
-                <span style={{ fontSize: '12px', lineHeight: '10px', fontFamily: 'Arial' }} className="font-extrabold text-[10px] uppercase tracking-wider leading-none">Fermer le bon</span>
-                <span className="text-[8px] font-bold opacity-80 tracking-wider mt-0.5">[ F2 ]</span>
+                <span style={{ fontSize: '9.5px', lineHeight: '9px', fontFamily: 'Arial' }} className="font-extrabold uppercase tracking-wider leading-none">Fermer le bon</span>
+                <span className="text-[7px] font-bold opacity-80 tracking-wider">[ F2 ]</span>
               </div>
             </button>
-
-
-
-            <div className="h-7 w-[1px] bg-slate-300 dark:bg-slate-700 mx-1 shrink-0" />
+            <div className="h-6 w-[1px] bg-slate-300 dark:bg-slate-700 mx-0.5 shrink-0" />
 
             <button
               type="button"
               disabled={mode === 'create'}
               onClick={() => setIsBonPreviewOpen(true)}
-              className="px-3.5 h-10 flex items-center justify-center gap-2 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-950 shadow-xs cursor-pointer transition-transform duration-100 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap shrink-0"
+              className="px-2.5 h-8 flex items-center justify-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-950 shadow-xs cursor-pointer transition-transform duration-100 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap shrink-0"
             >
-              <span className="text-base">🖨️</span>
+              <Printer size={13} className="text-slate-500 dark:text-slate-400" />
               <div className="flex flex-col text-left">
-                <span style={{ fontSize: '12px', fontFamily: 'Arial' }} className="font-extrabold text-[10px] uppercase tracking-wider leading-none">Imprimer le bon</span>
-                <span className="text-[8px] font-bold text-slate-400 tracking-wider mt-0.5">[ F3 ]</span>
+                <span style={{ fontSize: '9.5px', fontFamily: 'Arial' }} className="font-extrabold uppercase tracking-wider leading-none">Imprimer le bon</span>
+                <span className="text-[7px] font-bold text-slate-400 tracking-wider">[ F3 ]</span>
               </div>
             </button>
 
-            <div className="h-7 w-[1px] bg-slate-300 dark:bg-slate-700 mx-1 shrink-0" />
+            <div className="h-6 w-[1px] bg-slate-300 dark:bg-slate-700 mx-0.5 shrink-0" />
 
             <button
               onClick={handleEditVoucher}
               disabled={mode === 'create' || !selectedSale}
-              style={{ fontSize: '12px' }}
-              className="px-3.5 h-10 flex items-center justify-center gap-2 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-950 shadow-xs cursor-pointer disabled:opacity-40 transition-transform duration-100 active:scale-95 whitespace-nowrap shrink-0"
+              className="px-2.5 h-8 flex items-center justify-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-950 shadow-xs cursor-pointer disabled:opacity-40 transition-transform duration-100 active:scale-95 whitespace-nowrap shrink-0"
             >
-              <span className="text-base">✏️</span>
+              <Edit size={13} className="text-slate-500 dark:text-slate-400" />
               <div className="flex flex-col text-left">
-                <span style={{ fontSize: '12px', fontFamily: 'Arial' }} className="font-extrabold text-[10px] uppercase tracking-wider leading-none">Modifier</span>
-                <span className="text-[8px] font-bold text-slate-400 tracking-wider mt-0.5">[ F4 ]</span>
+                <span style={{ fontSize: '9.5px', fontFamily: 'Arial' }} className="font-extrabold uppercase tracking-wider leading-none">Modifier</span>
+                <span className="text-[7px] font-bold text-slate-400 tracking-wider">[ F4 ]</span>
               </div>
             </button>
 
-            <div className="h-7 w-[1px] bg-slate-300 dark:bg-slate-700 mx-1 shrink-0" />
+            <div className="h-6 w-[1px] bg-slate-300 dark:bg-slate-700 mx-0.5 shrink-0" />
 
             <button
               onClick={() => {
@@ -1326,12 +1327,12 @@ function SalesVoucherWindow({
                 setTvaRate(nextTva);
                 showRetroAlert(`TVA changé à ${nextTva}%`, "Configuration");
               }}
-              className="px-3.5 h-10 flex items-center justify-center gap-2 bg-slate-100 dark:bg-slate-950/60 text-slate-700 dark:text-slate-300 rounded-xl hover:opacity-90 shadow-xs cursor-pointer transition-transform duration-100 active:scale-95 whitespace-nowrap shrink-0"
+              className="px-2.5 h-8 flex items-center justify-center gap-1.5 bg-slate-100 dark:bg-slate-950/60 text-slate-700 dark:text-slate-300 rounded-lg hover:opacity-90 shadow-xs cursor-pointer transition-transform duration-100 active:scale-95 whitespace-nowrap shrink-0"
             >
-              <span className="text-base">🔄</span>
+              <RefreshCw size={13} className="text-m3-primary dark:text-sky-400" />
               <div className="flex flex-col text-left">
-                <span style={{ fontSize: '12px', fontFamily: 'Arial' }} className="font-extrabold text-[10px] text-m3-primary dark:text-sky-400 uppercase tracking-wider leading-none">Mode de tarif</span>
-                <span className="text-[8px] font-bold text-green-600 dark:text-green-400 tracking-wider mt-0.5">TARIF {tvaRate === 19 ? 'TVA 19%' : '1'}</span>
+                <span style={{ fontSize: '9.5px', fontFamily: 'Arial' }} className="font-extrabold text-m3-primary dark:text-sky-400 uppercase tracking-wider leading-none">Mode de tarif</span>
+                <span className="text-[7px] font-bold text-green-600 dark:text-green-400 tracking-wider">TARIF {tvaRate === 19 ? 'TVA 19%' : '1'}</span>
               </div>
             </button>
           </div>
@@ -1460,7 +1461,7 @@ function SalesVoucherWindow({
                     : 'bg-slate-50 dark:bg-slate-900/60 border-slate-200/50 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                 }`}
               >
-                <span className="text-[11px]">📊</span>
+                <BarChart3 size={14} className="text-blue-500 dark:text-sky-400 shrink-0" />
                 <div className="flex-1 flex flex-col leading-none">
                   <div className="flex items-center justify-between">
                     <span className="text-[8.5px] font-extrabold uppercase tracking-wide text-slate-700 dark:text-slate-300">Facturation</span>
@@ -1543,14 +1544,14 @@ function SalesVoucherWindow({
             </div>
 
             <div className="h-8 bg-slate-50 dark:bg-slate-900/60 px-2.5 border border-slate-200/50 dark:border-slate-800 rounded-xl flex gap-2 items-center text-slate-600 dark:text-slate-300 w-[145px]">
-              <span className="text-[11px]">🖨️</span>
+              <Printer size={14} className="text-indigo-500 dark:text-indigo-400 shrink-0" />
               <div className="flex flex-col leading-none text-left">
                 <span className="text-[8.5px] font-extrabold uppercase tracking-wide text-slate-700 dark:text-slate-300">Autres imp.</span>
                 <span className="text-[7.5px] text-slate-400 mt-0.5">BLs Multiples</span>
               </div>
             </div>
             <div className="h-8 bg-slate-50 dark:bg-slate-900/60 px-2.5 border border-slate-200/50 dark:border-slate-800 rounded-xl flex gap-2 items-center text-slate-600 dark:text-slate-300 w-[145px]">
-              <span className="text-[11px]">🔌</span>
+              <Plug size={14} className="text-teal-500 dark:text-teal-400 shrink-0" />
               <div className="flex flex-col leading-none text-left">
                 <span className="text-[8.5px] font-extrabold uppercase tracking-wide text-slate-700 dark:text-slate-300">Import / Exp</span>
                 <span className="text-[7.5px] text-slate-400 mt-0.5">Sauvegardes</span>
@@ -1647,7 +1648,7 @@ function SalesVoucherWindow({
               className="flex-1 h-6 bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-md cursor-pointer text-[9px] font-black border border-slate-200/60 dark:border-slate-800/80 flex items-center justify-center transition-all"
               title="TVA%"
             >
-              📊
+              <BarChart3 size={11} className="text-slate-600 dark:text-slate-400" />
             </button>
             <button 
               onClick={() => showRetroAlert("Filtre numérique actif", "Filtres")}
@@ -1669,57 +1670,57 @@ function SalesVoucherWindow({
 
       {/* 3. Middle Code-Produit Input / Control Line - Modern Material 3 */}
       <div 
-        className="mx-0.5 p-2 bg-slate-100/60 dark:bg-slate-900/60 border border-slate-200/50 dark:border-slate-800 rounded-2xl flex items-center justify-start gap-3 select-none shrink-0 overflow-hidden transition-all duration-300"
+        className="mx-0.5 py-1 px-2 bg-slate-100/60 dark:bg-slate-900/60 border border-slate-200/50 dark:border-slate-800 rounded-xl flex items-center justify-start gap-2 select-none shrink-0 overflow-hidden transition-all duration-300 h-10"
       >
         {/* Search input wrapped in a tight flex layout */}
         <div className="relative flex items-center shrink-0">
-          <span className="absolute left-2.5 text-slate-400">🔍</span>
+          <Search size={13} className="absolute left-2 text-slate-400" />
           <input
             type="text"
             placeholder="Saisir code barre ou désignation..."
             value={soldItemsSearchQuery}
             onChange={(e) => setSoldItemsSearchQuery(e.target.value)}
-            className="w-56 h-8.5 pl-8 pr-3 bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800 rounded-xl font-sans text-xs focus:outline-none font-semibold focus:border-m3-primary dark:focus:border-sky-500"
+            className="w-56 h-7.5 pl-7 pr-2.5 bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800 rounded-lg font-sans text-xs focus:outline-none font-semibold focus:border-m3-primary dark:focus:border-sky-500"
           />
         </div>
 
         {/* Group containing navigator AND action buttons together, so they stay positioned beside each other without moving on resize */}
-        <div className="flex items-center gap-2.5 shrink-0 flex-nowrap">
+        <div className="flex items-center gap-2 shrink-0 flex-nowrap">
           {/* Table index navigator controls */}
           <div 
-            className="flex items-center gap-1 h-8.5 bg-slate-50 dark:bg-slate-950 p-1 rounded-xl border border-slate-200/10 shrink-0 flex-nowrap"
+            className="flex items-center gap-0.5 h-7.5 bg-slate-50 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200/10 shrink-0 flex-nowrap"
           >
             <button
               onClick={selectFirstItem}
-              className="w-7 h-6.5 font-bold hover:bg-slate-100 dark:hover:bg-slate-900 text-xs text-slate-700 dark:text-slate-300 rounded-lg bg-white dark:bg-slate-950/20 cursor-pointer"
+              className="w-6.5 h-6 font-bold hover:bg-slate-100 dark:hover:bg-slate-900 text-[10px] text-slate-700 dark:text-slate-300 rounded bg-white dark:bg-slate-950/20 cursor-pointer"
               title="Premier de la grille"
             >
               ⏮
             </button>
             <button
               onClick={selectPrevItem}
-              className="w-7 h-6.5 font-bold hover:bg-slate-100 dark:hover:bg-slate-900 text-xs text-slate-700 dark:text-slate-300 rounded-lg bg-white dark:bg-slate-950/20 cursor-pointer"
+              className="w-6.5 h-6 font-bold hover:bg-slate-100 dark:hover:bg-slate-900 text-[10px] text-slate-700 dark:text-slate-300 rounded bg-white dark:bg-slate-950/20 cursor-pointer"
               title="Précédent de la grille"
             >
               ◀
             </button>
             <button
               onClick={selectNextItem}
-              className="w-7 h-6.5 font-bold hover:bg-slate-100 dark:hover:bg-slate-900 text-xs text-slate-700 dark:text-slate-300 rounded-lg bg-white dark:bg-slate-950/20 cursor-pointer"
+              className="w-6.5 h-6 font-bold hover:bg-slate-100 dark:hover:bg-slate-900 text-[10px] text-slate-700 dark:text-slate-300 rounded bg-white dark:bg-slate-950/20 cursor-pointer"
               title="Suivant de la grille"
             >
               ▶
             </button>
             <button
               onClick={selectLastItem}
-              className="w-7 h-6.5 font-bold hover:bg-slate-100 dark:hover:bg-slate-900 text-xs text-slate-700 dark:text-slate-300 rounded-lg bg-white dark:bg-slate-950/20 cursor-pointer"
+              className="w-6.5 h-6 font-bold hover:bg-slate-100 dark:hover:bg-slate-900 text-[10px] text-slate-700 dark:text-slate-300 rounded bg-white dark:bg-slate-950/20 cursor-pointer"
               title="Dernier de la grille"
             >
               ⏭
             </button>
           </div>
 
-          <div className="h-7 w-[1px] bg-slate-300 dark:bg-slate-700 mx-1.5 shrink-0" />
+          <div className="h-5 w-[1px] bg-slate-300 dark:bg-slate-700 mx-1 shrink-0" />
 
           {/* Action buttons with Material 3 styling (permanently grouped beside navigator) */}
           <div className="flex items-center gap-1.5 shrink-0 flex-nowrap">
@@ -1727,34 +1728,34 @@ function SalesVoucherWindow({
               onClick={handleInsertProduct}
               disabled={mode === 'view'}
               type="button"
-              className="h-8.5 px-3 bg-gradient-to-br from-sky-500 to-sky-600 hover:opacity-95 text-white rounded-xl text-[10px] font-black tracking-wide flex items-center gap-1.5 shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all duration-100 cursor-pointer shrink-0 animate-pulse-once disabled:opacity-40 disabled:cursor-not-allowed"
+              className="h-7.5 px-2.5 bg-gradient-to-br from-sky-500 to-sky-600 hover:opacity-95 text-white rounded-lg text-[9.5px] font-black tracking-wide flex items-center gap-1 shadow-sm hover:scale-[1.01] active:scale-[0.99] transition-all duration-100 cursor-pointer shrink-0 animate-pulse-once disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <span>➕</span> Insérer [F7]
+              <Plus size={12} /> Insérer [F7]
             </button>
 
-            <div className="h-7 w-[1px] bg-slate-300 dark:bg-slate-700 mx-1 shrink-0" />
+            <div className="h-5 w-[1px] bg-slate-300 dark:bg-slate-700 mx-0.5 shrink-0" />
 
             <button
               onClick={handleEditPriceOrQty}
               disabled={mode === 'view'}
               type="button"
-              className="h-8.5 px-3 bg-gradient-to-br from-amber-500 to-amber-600 hover:opacity-95 text-white rounded-xl text-[10px] font-black tracking-wide flex items-center gap-1.5 shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all duration-100 cursor-pointer shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="h-7.5 px-2.5 bg-gradient-to-br from-amber-500 to-amber-600 hover:opacity-95 text-white rounded-lg text-[9.5px] font-black tracking-wide flex items-center gap-1 shadow-sm hover:scale-[1.01] active:scale-[0.99] transition-all duration-100 cursor-pointer shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <span>✏️</span> Modifier [F8]
+              <Edit size={12} /> Modifier [F8]
             </button>
 
-            <div className="h-7 w-[1px] bg-slate-300 dark:bg-slate-700 mx-1 shrink-0" />
+            <div className="h-5 w-[1px] bg-slate-300 dark:bg-slate-700 mx-0.5 shrink-0" />
 
             <button
               onClick={handleDeleteItem}
               disabled={mode === 'view'}
               type="button"
-              className="h-8.5 px-3 bg-gradient-to-br from-rose-500 to-rose-600 hover:opacity-95 text-white rounded-xl text-[10px] font-black tracking-wide flex items-center gap-1.5 shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all duration-100 cursor-pointer shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="h-7.5 px-2.5 bg-gradient-to-br from-rose-500 to-rose-600 hover:opacity-95 text-white rounded-lg text-[9.5px] font-black tracking-wide flex items-center gap-1 shadow-sm hover:scale-[1.01] active:scale-[0.99] transition-all duration-100 cursor-pointer shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              <span>➖</span> Supprimer [Supp]
+              <Minus size={12} /> Supprimer [Supp]
             </button>
 
-            <div className="h-7 w-[1px] bg-slate-300 dark:bg-slate-700 mx-1 shrink-0" />
+            <div className="h-5 w-[1px] bg-slate-300 dark:bg-slate-700 mx-0.5 shrink-0" />
 
             <button
               onClick={() => {
@@ -1763,26 +1764,26 @@ function SalesVoucherWindow({
               }}
               type="button"
               title="Observations"
-              className={`h-8.5 w-8.5 flex items-center justify-center rounded-xl text-xs shadow-sm hover:scale-105 active:scale-95 transition-all duration-100 cursor-pointer border shrink-0 ${
+              className={`h-7.5 w-7.5 flex items-center justify-center rounded-lg text-[10px] shadow-sm hover:scale-105 active:scale-95 transition-all duration-100 cursor-pointer border shrink-0 ${
                 observations 
                   ? 'bg-emerald-500 text-white border-emerald-600 dark:bg-emerald-600 dark:border-emerald-700 font-bold' 
                   : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-700'
               }`}
             >
-              <span>✏️</span>
+              <FileText size={13} />
             </button>
 
             {/* Supprimer registry button to delete registered vouchers */}
             {mode === 'view' && selectedSale && (
               <>
-                <div className="h-7 w-[1px] bg-slate-300 dark:bg-slate-700 mx-1 shrink-0" />
+                <div className="h-5 w-[1px] bg-slate-300 dark:bg-slate-700 mx-0.5 shrink-0" />
                 <button
                   onClick={handleDeleteSelectedVoucher}
                   type="button"
                   title="Supprimer définitivement ce bon de vente de la liste historique"
-                  className="h-8.5 w-8.5 flex items-center justify-center rounded-xl text-xs shadow-sm hover:scale-105 active:scale-95 text-rose-600 bg-rose-50 border border-rose-200 hover:bg-rose-100 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/40 dark:hover:bg-rose-950 cursor-pointer shrink-0 transition-transform duration-100"
+                  className="h-7.5 w-7.5 flex items-center justify-center rounded-lg text-[10px] shadow-sm hover:scale-105 active:scale-95 text-rose-600 bg-rose-50 border border-rose-200 hover:bg-rose-100 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/40 dark:hover:bg-rose-950 cursor-pointer shrink-0 transition-transform duration-100"
                 >
-                  <span>🗑️</span>
+                  <Trash2 size={13} />
                 </button>
               </>
             )}
@@ -1991,13 +1992,13 @@ function SalesVoucherWindow({
             {/* Header of the dialog */}
             <div className="bg-[#1e293b] dark:bg-slate-950 px-5 py-4 flex items-center justify-between select-none">
               <div className="flex items-center gap-2 text-white font-bold font-display text-sm">
-                <span>✏️</span> Notes sur le bon
+                <FileText size={15} /> Notes sur le bon
               </div>
               <button
                 onClick={() => setIsObsModalOpen(false)}
-                className="w-7 h-7 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-all cursor-pointer font-bold"
+                className="w-7 h-7 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-all cursor-pointer"
               >
-                ✕
+                <X size={14} />
               </button>
             </div>
 
@@ -2053,13 +2054,13 @@ function SalesVoucherWindow({
             {/* Header of the dialog */}
             <div className="bg-m3-primary dark:bg-slate-950 px-5 py-4 flex items-center justify-between select-none">
               <div className="flex items-center gap-2 text-white font-bold font-display text-sm">
-                <span>📦</span> Sélectionner un produit à vendre
+                <Package size={15} /> Sélectionner un produit à vendre
               </div>
               <button
                 onClick={() => setIsProductChooserOpen(false)}
-                className="w-7 h-7 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-all cursor-pointer font-bold"
+                className="w-7 h-7 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-all cursor-pointer"
               >
-                ✕
+                <X size={14} />
               </button>
             </div>
 
@@ -2070,7 +2071,7 @@ function SalesVoucherWindow({
               <div className="flex flex-col gap-1.5">
                 <span className="font-extrabold text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wide">Filtrer les articles de la base:</span>
                 <div className="relative flex items-center">
-                  <span className="absolute left-3 text-slate-400">🔍</span>
+                  <Search size={14} className="absolute left-3 text-slate-400" />
                   <input
                     type="text"
                     autoFocus
@@ -2110,6 +2111,10 @@ function SalesVoucherWindow({
                           <tr
                             key={p.code}
                             onClick={() => {
+                              if (p.blocked) {
+                                showRetroAlert(`⚠️ Impossible d'insérer l'article : Le produit "${p.designation}" est BLOQUÉ !`, "Article Bloqué");
+                                return;
+                              }
                               setSelectedProductInChooser(p);
                               setChooserQty(1);
                               setSelectedPriceType('prixVente1');
@@ -2119,10 +2124,15 @@ function SalesVoucherWindow({
                             className={`cursor-pointer border-b border-slate-100 dark:border-slate-800/40 h-8.5 transition-colors ${
                               isChosenTmp 
                                 ? 'bg-m3-primary/15 dark:bg-sky-500/15 text-m3-primary dark:text-sky-300 font-bold' 
-                                : 'hover:bg-slate-50 dark:hover:bg-slate-900/40 text-slate-700 dark:text-slate-300'
+                                : p.blocked 
+                                  ? 'bg-rose-50/20 dark:bg-rose-950/10 text-rose-600 dark:text-rose-450'
+                                  : 'hover:bg-slate-50 dark:hover:bg-slate-900/40 text-slate-700 dark:text-slate-300'
                             }`}
                           >
-                            <td style={{ width: colWidths.code, maxWidth: colWidths.code }} className="px-3 py-1.5 font-mono text-[11px] truncate">
+                            <td 
+                              style={{ width: colWidths.code, maxWidth: colWidths.code }} 
+                              className={`px-3 py-1.5 font-mono text-[11px] truncate ${p.blocked ? 'text-red-600 dark:text-red-400 font-extrabold bg-red-50 dark:bg-red-950/30' : ''}`}
+                            >
                               {p.code}
                             </td>
                             <td style={{ width: colWidths.designation, maxWidth: colWidths.designation }} className="px-3 py-1.5 font-sans truncate">
@@ -2180,13 +2190,13 @@ function SalesVoucherWindow({
             {/* Title Bar */}
             <div className="bg-m3-primary dark:bg-slate-950 px-5 py-4 flex items-center justify-between select-none">
               <span className="text-white font-bold font-display text-sm flex items-center gap-2">
-                💰 Saisie du Règlement & Fermeture
+                <Coins size={15} /> Saisie du Règlement & Fermeture
               </span>
               <button 
                 onClick={() => setIsPaymentDialogOpen(false)}
-                className="w-7 h-7 bg-white/10 text-white rounded-full flex items-center justify-center font-bold hover:bg-white/20 transition-all cursor-pointer"
+                className="w-7 h-7 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-all cursor-pointer"
               >
-                ✕
+                <X size={14} />
               </button>
             </div>
 
@@ -2298,17 +2308,17 @@ function SalesVoucherWindow({
               <button
                 type="button"
                 onClick={() => setIsPaymentDialogOpen(false)}
-                className="px-5 h-9 text-xs font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-full hover:bg-slate-100 transition-all cursor-pointer"
+                className="px-5 h-9 text-xs font-bold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-full hover:bg-slate-100 transition-all cursor-pointer flex items-center justify-center gap-1"
               >
-                ✕ Fermer
+                <X size={14} /> Fermer
               </button>
 
               <button
                 type="button"
                 onClick={() => handleConfirmPaymentAndSaveVoucher()}
-                className="px-6 h-9 text-xs font-black bg-m3-primary text-white rounded-full shadow-md hover:opacity-90 active:scale-95 transition-all flex items-center gap-1 cursor-pointer"
+                className="px-6 h-9 text-xs font-black bg-m3-primary text-white rounded-full shadow-md hover:opacity-90 active:scale-95 transition-all flex items-center gap-1 cursor-pointer justify-center"
               >
-                ✓ Enregistrer Bon (F5)
+                <Check size={14} /> Enregistrer Bon (F5)
               </button>
             </div>
 
@@ -2322,7 +2332,7 @@ function SalesVoucherWindow({
           <div className="bg-white dark:bg-slate-900 w-[450px] rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col">
             {/* Modal Title bar */}
             <div className="bg-gradient-to-r from-rose-500/10 to-rose-600/15 p-4 pb-3 flex items-center gap-3">
-              <span className="text-xl">⚠️</span>
+              <AlertTriangle size={20} className="text-rose-600 dark:text-rose-400" />
               <div>
                 <h3 className="font-sans font-black text-xs text-rose-800 dark:text-rose-400 uppercase tracking-wider">
                   Confirmation de suppression
@@ -2352,9 +2362,10 @@ function SalesVoucherWindow({
                 </div>
               </div>
 
-              <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-normal">
-                💡 Les stocks correspondants seront automatiquement re-crédités dans la base de données, et le solde du client sera ré-ajusté de manière transparente.
-              </p>
+              <div className="text-[10px] text-slate-400 dark:text-slate-500 leading-normal flex gap-1.5 items-start">
+                <Lightbulb size={12} className="text-amber-500 shrink-0 mt-0.5" />
+                <span>Les stocks correspondants seront automatiquement re-crédités dans la base de données, et le solde du client sera ré-ajusté de manière transparente.</span>
+              </div>
             </div>
 
             {/* Modal Actions */}
@@ -2370,9 +2381,9 @@ function SalesVoucherWindow({
               <button
                 type="button"
                 onClick={handleConfirmDeleteVoucher}
-                className="px-6 h-9 text-xs font-black bg-rose-600 hover:bg-rose-700 text-white rounded-full shadow-md active:scale-95 transition-all flex items-center gap-1 cursor-pointer animate-in zoom-in"
+                className="px-6 h-9 text-xs font-black bg-rose-600 hover:bg-rose-700 text-white rounded-full shadow-md active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer animate-in zoom-in justify-center"
               >
-                🗑️ Oui, Supprimer
+                <Trash2 size={13} /> Oui, Supprimer
               </button>
             </div>
           </div>
@@ -2387,13 +2398,13 @@ function SalesVoucherWindow({
             {/* Header of the dialog */}
             <div className="bg-gradient-to-r from-sky-800 to-sky-900 dark:from-slate-950 dark:to-slate-900 px-5 py-4 flex items-center justify-between select-none">
               <div className="flex items-center gap-2 text-white font-bold font-display text-sm">
-                <span>👥</span> Fichier Clients & Sélection Directe
+                <Users size={15} /> Fichier Clients & Sélection Directe
               </div>
               <button
                 onClick={() => setIsClientModalOpen(false)}
-                className="w-7 h-7 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-all cursor-pointer font-bold"
+                className="w-7 h-7 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-all cursor-pointer"
               >
-                ✕
+                <X size={14} />
               </button>
             </div>
 
@@ -2414,7 +2425,7 @@ function SalesVoucherWindow({
                       onChange={(e) => setClientSearchQuery(e.target.value)}
                       className="w-full h-8 pl-8 pr-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-xs focus:outline-none focus:border-sky-500 font-sans font-bold"
                     />
-                    <span className="absolute left-2.5 top-2 text-slate-400 text-xs">🔍</span>
+                    <Search size={12} className="absolute left-2.5 top-2.5 text-slate-400" />
                   </div>
                 </div>
 
@@ -2431,10 +2442,10 @@ function SalesVoucherWindow({
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
-                        <div className="w-6 h-6 rounded-full bg-sky-100 dark:bg-sky-950 flex items-center justify-center text-xs">👤</div>
+                        <div className="w-6 h-6 rounded-full bg-sky-100 dark:bg-sky-950 flex items-center justify-center text-xs text-sky-600 dark:text-sky-400"><UserIcon size={12} /></div>
                         <div>
-                          <div className="font-bold">ANONYME</div>
-                          <div className="text-[9px] text-slate-400 font-mono">Client de comptoir</div>
+                           <div className="font-bold">ANONYME</div>
+                           <div className="text-[9px] text-slate-400 font-mono">Client de comptoir</div>
                         </div>
                       </div>
                       <div className="text-right">
@@ -2455,7 +2466,7 @@ function SalesVoucherWindow({
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
-                        <div className="w-6 h-6 rounded-full bg-slate-150 dark:bg-slate-800 flex items-center justify-center text-xs">👤</div>
+                        <div className="w-6 h-6 rounded-full bg-slate-150 dark:bg-slate-800 flex items-center justify-center text-xs text-slate-600 dark:text-slate-450"><UserIcon size={12} /></div>
                         <div>
                           <div className="font-bold">{c.name}</div>
                           <div className="text-[9px] text-slate-400 font-mono">{c.code} {c.contact ? `• ${c.contact}` : ''}</div>
@@ -2541,7 +2552,7 @@ function SalesVoucherWindow({
                   onClick={handleCreateClient}
                   className="w-full h-9 bg-gradient-to-r from-emerald-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-black text-[11px] rounded-lg shadow-md active:scale-95 transition-all flex items-center justify-center gap-1.5 cursor-pointer mt-1"
                 >
-                  <span>➕</span>
+                  <Plus size={14} />
                   {mode === 'create' ? 'Créer & Associer' : 'Créer Client'}
                 </button>
               </div>
@@ -2581,15 +2592,15 @@ function SalesVoucherWindow({
             <div className="bg-gradient-to-r from-teal-700 to-teal-850 dark:from-slate-950 dark:to-slate-900 px-5 py-4 flex items-center justify-between">
               <div className="flex flex-col text-white font-sans">
                 <span className="font-extrabold text-sm flex items-center gap-1.5">
-                  ⚙️ Configuration d'Ajout d'Article
+                  <Edit3 size={15} /> Configuration d'Ajout d'Article
                 </span>
               </div>
               <button
                 type="button"
                 onClick={() => setIsConfigPopupOpen(false)}
-                className="w-7 h-7 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-all cursor-pointer font-bold"
+                className="w-7 h-7 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-all cursor-pointer"
               >
-                ✕
+                <X size={14} />
               </button>
             </div>
 
@@ -2611,7 +2622,7 @@ function SalesVoucherWindow({
               <div className="grid grid-cols-2 gap-4">
                 {/* Stock Actuel (read-only) */}
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wide">📦 Stock Actuel</span>
+                  <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wide flex items-center gap-1"><Package size={11} className="text-slate-400" /> Stock Actuel</span>
                   <div className="h-9.5 px-3 bg-slate-50 dark:bg-slate-950/60 border border-slate-200/60 dark:border-slate-800 rounded-xl flex items-center font-mono font-bold text-slate-700 dark:text-slate-300 text-xs">
                     {selectedProductInChooser.stock - (chooserQty === '' ? 0 : Number(chooserQty))} unités
                   </div>
@@ -2679,7 +2690,7 @@ function SalesVoucherWindow({
                   <div className={`grid ${hasRevient ? 'grid-cols-3' : 'grid-cols-2'} gap-4`}>
                     {/* Prix d'Achat (not editable) */}
                     <div className="flex flex-col gap-1.5">
-                      <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wide">📉 Prix d'Achat</span>
+                      <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wide flex items-center gap-1"><Coins size={11} className="text-slate-400" /> Prix d'Achat</span>
                       <div className="h-9.5 px-3 bg-slate-100 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center font-mono font-bold text-slate-500 dark:text-slate-500 text-xs select-none">
                         {(selectedProductInChooser.prixAchat || 0).toLocaleString('fr-FR', { minimumFractionDigits: 1 })} DA
                       </div>
@@ -2688,7 +2699,7 @@ function SalesVoucherWindow({
                     {/* Prix de Revient (not editable, only shown if different from Prix d'Achat) */}
                     {hasRevient && (
                       <div className="flex flex-col gap-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
-                        <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wide">🔄 Prix de Revient</span>
+                        <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wide flex items-center gap-1"><RefreshCw size={11} className="text-slate-400" /> Prix de Revient</span>
                         <div className="h-9.5 px-3 bg-slate-100 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center font-mono font-bold text-slate-500 dark:text-slate-500 text-xs select-none">
                           {(selectedProductInChooser.prixDeRevient || 0).toLocaleString('fr-FR', { minimumFractionDigits: 1 })} DA
                         </div>
@@ -2697,7 +2708,7 @@ function SalesVoucherWindow({
 
                     {/* Prix de Vente Final (editable) */}
                     <div className="flex flex-col gap-1.5">
-                      <span className="text-[10px] font-black uppercase text-rose-600 dark:text-rose-400 tracking-wide">📈 Prix de Vente Final</span>
+                      <span className="text-[10px] font-black uppercase text-rose-600 dark:text-rose-400 tracking-wide flex items-center gap-1"><Coins size={11} className="text-rose-500" /> Prix de Vente Final</span>
                       <input
                         type="number"
                         min="0"
@@ -2742,7 +2753,15 @@ function SalesVoucherWindow({
                   }`}>
                     <div className="flex items-center justify-between">
                       <span className={`text-[10px] font-black uppercase tracking-wider ${isLoss ? 'text-rose-600' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                        {isLoss ? '⚠️ Perte Estimée' : '💰 Bénéfice Estimé'}
+                        {isLoss ? (
+                          <span className="flex items-center gap-1">
+                            <AlertTriangle size={12} className="text-rose-600" /> Perte Estimée
+                          </span>
+                        ) : (
+                          <span className="flex items-center gap-1">
+                            <Coins size={12} className="text-emerald-600 dark:text-emerald-450" /> Bénéfice Estimé
+                          </span>
+                        )}
                       </span>
                       <span className="text-[8px] font-sans font-bold bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md text-slate-500">
                         {qty} unité(s)
@@ -2782,7 +2801,7 @@ function SalesVoucherWindow({
                 type="submit"
                 className="px-6 h-9 text-xs font-black bg-teal-600 hover:bg-teal-500 text-white rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
               >
-                <span>➕</span> Insérer au Bon
+                <Plus size={14} /> Insérer au Bon
               </button>
             </div>
           </form>
@@ -2862,7 +2881,7 @@ function SalesVoucherWindow({
             <div className="bg-gradient-to-r from-indigo-700 to-indigo-850 dark:from-slate-950 dark:to-slate-900 px-5 py-4 flex items-center justify-between">
               <div className="flex flex-col text-white font-sans">
                 <span className="font-extrabold text-sm flex items-center gap-1.5">
-                  ✏️ Modifier Quantité / Prix
+                  <Edit size={15} /> Modifier Quantité / Prix
                 </span>
                 <span className="text-[10px] opacity-80 font-mono mt-0.5">
                   {draftItems[editModalIndex]?.designation}
@@ -2871,9 +2890,9 @@ function SalesVoucherWindow({
               <button
                 type="button"
                 onClick={() => setIsItemEditModalOpen(false)}
-                className="w-7 h-7 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-all cursor-pointer font-bold"
+                className="w-7 h-7 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-all cursor-pointer"
               >
-                ✕
+                <X size={14} />
               </button>
             </div>
 
@@ -2930,7 +2949,7 @@ function SalesVoucherWindow({
                 type="submit"
                 className="px-6 h-9 text-xs font-black bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
               >
-                💾 Enregistrer
+                <Check size={14} /> Enregistrer
               </button>
             </div>
           </form>
@@ -2945,22 +2964,26 @@ function SalesVoucherWindow({
             {/* Dialog Title Bar */}
             <div className="bg-slate-50 dark:bg-slate-950 px-5 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between font-bold">
               <span className="flex items-center gap-2 text-slate-850 dark:text-slate-200">
-                <span>💬</span>
+                <MessageSquare size={14} className="text-slate-500" />
                 <span className="tracking-wide text-xs uppercase">{retroDialog.title}</span>
               </span>
               <button
                 onClick={() => setRetroDialog(prev => ({ ...prev, isOpen: false }))}
                 className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition-colors focus:outline-none cursor-pointer"
               >
-                ✕
+                <X size={14} />
               </button>
             </div>
 
             {/* Dialog Contents */}
             <div className="p-5 flex gap-4 text-xs font-bold text-slate-700 dark:text-slate-300 items-start select-text leading-relaxed bg-white dark:bg-slate-900 m-1">
               {/* Icon */}
-              <div className="text-3xl select-none flex-shrink-0">
-                {retroDialog.type === 'confirm' ? '❓' : '⚠️'}
+              <div className="select-none flex-shrink-0 mt-0.5">
+                {retroDialog.type === 'confirm' ? (
+                  <HelpCircle size={24} className="text-sky-500" />
+                ) : (
+                  <AlertTriangle size={24} className="text-amber-500" />
+                )}
               </div>
               <div className="flex-1 whitespace-pre-wrap pt-1 selection:bg-indigo-200 dark:selection:bg-indigo-900">
                 {retroDialog.message}
@@ -3051,7 +3074,7 @@ function SalesVoucherWindow({
             {/* Toolbar - Hidden when printing */}
             <div className="w-[794px] bg-slate-800 text-white p-3 px-5 rounded-2xl flex justify-between items-center shadow-lg print:hidden font-sans">
               <div className="flex items-center gap-2">
-                <span className="text-lg">🖨️</span>
+                <Printer size={18} className="text-sky-400" />
                 <div>
                   <h4 className="text-xs font-black uppercase tracking-wider">Aperçu avant impression</h4>
                   <p className="text-[10px] text-slate-300 font-medium">Facture de Vente au format A4</p>
@@ -3063,14 +3086,14 @@ function SalesVoucherWindow({
                   onClick={() => window.print()}
                   className="px-4 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
                 >
-                  🖨️ Imprimer la Facture
+                  <Printer size={13} /> Imprimer la Facture
                 </button>
                 <button
                   type="button"
                   onClick={() => setIsFacturePreviewOpen(false)}
-                  className="px-4 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-100 rounded-lg text-xs font-bold transition-all cursor-pointer"
+                  className="px-4 py-1.5 bg-slate-700 hover:bg-slate-600 text-slate-100 rounded-lg text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
                 >
-                  ✕ Fermer
+                  <X size={13} /> Fermer
                 </button>
               </div>
             </div>
@@ -3282,7 +3305,7 @@ function SalesVoucherWindow({
             {/* Title Bar */}
             <div className="bg-gradient-to-r from-indigo-700 to-indigo-800 dark:from-slate-950 dark:to-slate-900 p-4.5 text-white flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <span className="text-xl">📁</span>
+                <Folder size={18} className="text-indigo-300" />
                 <div className="text-left">
                   <h3 className="font-sans font-black text-xs uppercase tracking-wider">
                     Factures de Ventes Comptabilisées
@@ -3292,9 +3315,9 @@ function SalesVoucherWindow({
               </div>
               <button
                 onClick={() => setShowComptabiliseesList(false)}
-                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center font-bold transition-colors cursor-pointer"
+                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
               >
-                ✕
+                <X size={14} />
               </button>
             </div>
 
@@ -3366,7 +3389,7 @@ function SalesVoucherWindow({
             {/* Title Bar */}
             <div className="bg-gradient-to-r from-amber-600 to-amber-700 dark:from-slate-950 dark:to-slate-900 p-4.5 text-white flex items-center justify-between">
               <div className="flex items-center gap-2.5">
-                <span className="text-xl">📝</span>
+                <FileText size={18} className="text-amber-300" />
                 <div className="text-left">
                   <h3 className="font-sans font-black text-xs uppercase tracking-wider">
                     Factures de Ventes NON Comptabilisées
@@ -3376,9 +3399,9 @@ function SalesVoucherWindow({
               </div>
               <button
                 onClick={() => setShowNonComptabiliseesList(false)}
-                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center font-bold transition-colors cursor-pointer"
+                className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
               >
-                ✕
+                <X size={14} />
               </button>
             </div>
 
@@ -3504,7 +3527,7 @@ function SalesVoucherWindow({
               {/* Toolbar */}
               <div className="w-[340px] bg-slate-800 text-white p-3 px-4 rounded-xl flex justify-between items-center shadow-lg print:hidden font-sans">
                 <div className="flex items-center gap-1.5">
-                  <span className="text-base">🖨️</span>
+                  <Printer size={15} className="text-emerald-400" />
                   <div>
                     <h4 className="text-[10px] font-black uppercase tracking-wider">Format Ticket (Bon)</h4>
                     <p className="text-[8px] text-slate-300 font-medium">Imprimantes portables 58/80mm</p>
@@ -3516,14 +3539,14 @@ function SalesVoucherWindow({
                     onClick={() => window.print()}
                     className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer active:scale-95"
                   >
-                    🖨️ Imprimer
+                    <Printer size={11} /> Imprimer
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsBonPreviewOpen(false)}
-                    className="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 text-slate-100 rounded-lg text-[10px] font-bold transition-all cursor-pointer"
+                    className="px-2.5 py-1 bg-slate-700 hover:bg-slate-600 text-slate-100 rounded-lg text-[10px] font-bold transition-all cursor-pointer flex items-center gap-1"
                   >
-                    ✕ Fermer
+                    <X size={11} /> Fermer
                   </button>
                 </div>
               </div>

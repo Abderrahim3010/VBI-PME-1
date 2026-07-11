@@ -4,7 +4,8 @@ import { getStorageJson, saveJson } from '../services/localDb';
 import { 
   ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, 
   Search, Plus, Edit3, Edit, Check, X, Tag, Trash2, Calendar, 
-  Sparkles, AlertTriangle, ArrowRight, FolderPlus
+  Sparkles, AlertTriangle, ArrowRight, FolderPlus,
+  Package, Info, Camera, Folder, Coins, TrendingUp, RefreshCw
 } from 'lucide-react';
 
 interface ProductListWindowProps {
@@ -562,7 +563,7 @@ function ProductListWindow({
                       : 'hover:bg-slate-50/70 dark:hover:bg-slate-850/60 odd:bg-slate-50/20 text-slate-900 dark:text-slate-100'
                   }`}
                 >
-                  <td className={`px-4 py-2.5 font-bold truncate ${p.blocked ? (reqSelected ? 'text-rose-200 font-extrabold bg-rose-900/45 rounded-lg' : 'text-rose-600 dark:text-rose-400 font-extrabold') : ''}`}>
+                  <td className={`px-4 py-2.5 font-bold truncate ${p.blocked ? (reqSelected ? 'text-red-200 font-black bg-red-900/40 rounded-lg' : 'text-red-600 dark:text-red-400 font-black bg-red-50 dark:bg-red-950/20') : ''}`}>
                     {p.code}
                   </td>
                   <td className="px-4 py-2.5 truncate font-sans font-bold select-text">{p.designation}</td>
@@ -740,7 +741,7 @@ function ProductListWindow({
             {/* Header */}
             <div className="bg-slate-50/50 dark:bg-slate-950/20 px-5 py-4 text-slate-800 dark:text-slate-100 text-xs font-bold flex justify-between select-none border-b border-slate-150 dark:border-slate-800/80">
               <span className="text-sm font-black font-sans text-slate-900 dark:text-white uppercase tracking-wide flex items-center gap-2">
-                📦 {isAddingNew ? 'Créer un nouveau produit' : 'Modifier la fiche produit'}
+                <Package size={16} className="text-indigo-600 dark:text-indigo-400" /> {isAddingNew ? 'Créer un nouveau produit' : 'Modifier la fiche produit'}
               </span>
               <button
                 type="button"
@@ -765,7 +766,7 @@ function ProductListWindow({
                     : 'text-slate-500 hover:bg-white/40 dark:hover:bg-slate-900/30'
                 }`}
               >
-                <span className="text-base">📁</span>
+                <Folder size={16} className="text-current" />
                 <div className="flex flex-col text-left">
                   <span className="leading-tight">Général</span>
                   <span className="text-[8px] font-sans opacity-60 font-medium">F1</span>
@@ -780,7 +781,7 @@ function ProductListWindow({
                     : 'text-slate-500 hover:bg-white/40 dark:hover:bg-slate-900/30'
                 }`}
               >
-                <span className="text-base">ℹ️</span>
+                <Info size={16} className="text-current" />
                 <div className="flex flex-col text-left">
                   <span className="leading-tight">Plus d'info.</span>
                   <span className="text-[8px] font-sans opacity-60 font-medium">F2</span>
@@ -795,7 +796,7 @@ function ProductListWindow({
                     : 'text-slate-500 hover:bg-white/40 dark:hover:bg-slate-900/30'
                 }`}
               >
-                <span className="text-base">📷</span>
+                <Camera size={16} className="text-current" />
                 <div className="flex flex-col text-left">
                   <span className="leading-tight">Photo Produit</span>
                   <span className="text-[8px] font-sans opacity-60 font-medium">F3</span>
@@ -841,7 +842,7 @@ function ProductListWindow({
                               }}
                               className="px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 cursor-pointer text-left w-full"
                             >
-                              ✏️ Saisir manuellement
+                              <Edit size={12} className="text-slate-500" /> Saisir manuellement
                             </button>
                             <button
                               type="button"
@@ -851,7 +852,7 @@ function ProductListWindow({
                               }}
                               className="px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 cursor-pointer text-left w-full"
                             >
-                              🔄 Générer code aléatoire
+                              <RefreshCw size={12} className="text-slate-500" /> Générer code aléatoire
                             </button>
                           </div>
                         )}
@@ -982,7 +983,7 @@ function ProductListWindow({
                   {/* Pricing section: Prix Achat & Prix Revient */}
                   <div className="grid grid-cols-2 gap-3.5 pt-1.5 border-t border-slate-100 dark:border-slate-800">
                     <div className="flex flex-col gap-1">
-                      <span className="font-extrabold text-blue-600 dark:text-blue-400 text-[9px] uppercase tracking-wide">💰 Prix d'Achat (DA)</span>
+                      <span className="font-extrabold text-blue-600 dark:text-blue-400 text-[9px] uppercase tracking-wide flex items-center gap-1"><Coins size={11} /> Prix d'Achat (DA)</span>
                       <input
                         type="number"
                         required
@@ -995,7 +996,7 @@ function ProductListWindow({
                     </div>
 
                     <div className="flex flex-col gap-1">
-                      <span className="font-extrabold text-amber-600 dark:text-amber-400 text-[9px] uppercase tracking-wide">📦 Prix de Revient (DA)</span>
+                      <span className="font-extrabold text-amber-600 dark:text-amber-400 text-[9px] uppercase tracking-wide flex items-center gap-1"><Package size={11} /> Prix de Revient (DA)</span>
                       <input
                         type="number"
                         min="0"
@@ -1009,7 +1010,7 @@ function ProductListWindow({
 
                   {/* Sales Pricing section: Prix Vente 1, 2, 3 */}
                   <div className="flex flex-col gap-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
-                    <span className="font-extrabold text-emerald-600 dark:text-emerald-400 text-[9.5px] uppercase tracking-wide">📈 Grille Tarifs de Vente (M3)</span>
+                    <span className="font-extrabold text-emerald-600 dark:text-emerald-400 text-[9.5px] uppercase tracking-wide flex items-center gap-1"><TrendingUp size={12} /> Grille Tarifs de Vente (M3)</span>
                     <div className="grid grid-cols-3 gap-2.5">
                       <div className="flex flex-col gap-1">
                         <span className="text-[8.5px] text-slate-400 dark:text-slate-500 uppercase tracking-widest text-center font-bold">Tarif Gros (V1)</span>
@@ -1250,21 +1251,21 @@ function ProductListWindow({
                         <button
                           type="button"
                           onClick={() => setFormImage('')}
-                          className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold cursor-pointer"
+                          className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold cursor-pointer gap-1"
                         >
-                          ❌ Supprimer la photo
+                          <Trash2 size={14} /> Supprimer la photo
                         </button>
                       </>
                     ) : (
-                      <div className="text-center p-4 flex flex-col items-center gap-1.5 text-slate-400 dark:text-slate-500">
-                        <span className="text-4xl">📷</span>
+                      <div className="text-center p-4 flex flex-col items-center gap-2 text-slate-400 dark:text-slate-500">
+                        <Camera size={40} className="text-slate-300 dark:text-slate-700" />
                         <span className="text-[10px] font-extrabold uppercase tracking-wider">Aucune photo enregistrée</span>
                       </div>
                     )}
                   </div>
 
                   <label className="px-4 py-2.5 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950 dark:hover:bg-indigo-900 border border-indigo-200 dark:border-indigo-800 rounded-xl text-indigo-700 dark:text-indigo-300 text-xs font-bold cursor-pointer transition-colors shadow-xs active:scale-95 inline-flex items-center gap-1.5">
-                    📁 Sélectionner une image
+                    <Folder size={14} /> Sélectionner une image
                     <input
                       type="file"
                       accept="image/*"
