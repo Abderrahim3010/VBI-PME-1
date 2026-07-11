@@ -125,7 +125,7 @@ function SalesVoucherWindow({
   const [showBenefit, setShowBenefit] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProductCode, setSelectedProductCode] = useState('');
-  const [selectedItemIndex, setSelectedItemIndex] = useState<number>(0);
+  const [selectedItemIndex, setSelectedItemIndex] = useState<number>(-1);
 
   // Selected table item for showing product helper metrics or "images" on right
   const [viewingItemCode, setViewingItemCode] = useState<string>('');
@@ -419,12 +419,8 @@ function SalesVoucherWindow({
         
         setEditingVoucherId(draft.isEditingExisting ? draft.id : null);
         
-        setSelectedItemIndex(draft.draftItems.length > 0 ? 0 : -1);
-        if (draft.draftItems.length > 0) {
-          setViewingItemCode(draft.draftItems[0].code);
-        } else {
-          setViewingItemCode('');
-        }
+        setSelectedItemIndex(-1);
+        setViewingItemCode('');
         
         setActiveDraftId(draft.id);
         setMode('create');
@@ -433,9 +429,8 @@ function SalesVoucherWindow({
         setActiveDraftId(null);
         setMode('view');
         setSelectedSaleId(found.id);
-        const sale = found.data;
-        setViewingItemCode(sale.items[0]?.code || '');
-        setSelectedItemIndex(sale.items.length > 0 ? 0 : -1);
+        setViewingItemCode('');
+        setSelectedItemIndex(-1);
       }
     }
   };
@@ -510,12 +505,8 @@ function SalesVoucherWindow({
     
     setEditingVoucherId(draft.isEditingExisting ? draft.id : null);
     
-    setSelectedItemIndex(draft.draftItems.length > 0 ? 0 : -1);
-    if (draft.draftItems.length > 0) {
-      setViewingItemCode(draft.draftItems[0].code);
-    } else {
-      setViewingItemCode('');
-    }
+    setSelectedItemIndex(-1);
+    setViewingItemCode('');
     
     setActiveDraftId(draft.id);
     setMode('create');
@@ -712,14 +703,14 @@ function SalesVoucherWindow({
 
   // Set first item as active if none is clicked
   useEffect(() => {
-    if (currentItems.length > 0) {
+    if (currentItems.length > 0 && selectedItemIndex !== -1) {
       const codes = currentItems.map(i => i.code);
       if (!codes.includes(viewingItemCode)) {
         setViewingItemCode(currentItems[0].code);
         setSelectedItemIndex(0);
       }
     }
-  }, [currentItems, viewingItemCode]);
+  }, [currentItems, viewingItemCode, selectedItemIndex]);
 
   const startCreateMode = () => {
     if (!config?.isActivated && sales.length >= 1) {
@@ -1096,7 +1087,8 @@ function SalesVoucherWindow({
     }
 
     if (product.blocked) {
-      showRetroAlert(`⚠️ Attention : Le produit "${product.designation}" est BLOQUÉ ! Son code barre sera affiché en rouge.`, "Article Bloqué");
+      showRetroAlert(`⚠️ Impossible d'insérer l'article : Le produit "${product.designation}" est BLOQUÉ !`, "Article Bloqué");
+      return false;
     }
 
     const currentStock = effectiveStockMap.get(product.code) ?? product.stock;
@@ -1204,7 +1196,15 @@ function SalesVoucherWindow({
   }, [selectedSale, mode]);
 
   return (
-    <div className="flex-1 flex flex-col font-sans text-xs bg-slate-50 dark:bg-slate-900/40 text-slate-800 dark:text-slate-100 h-full overflow-hidden select-none outline-none">
+    <div 
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          setSelectedItemIndex(-1);
+          setViewingItemCode('');
+        }
+      }}
+      className="flex-1 flex flex-col font-sans text-xs bg-slate-50 dark:bg-slate-900/40 text-slate-800 dark:text-slate-100 h-full overflow-hidden select-none outline-none"
+    >
       
       {/* 1. Header Toolbar Ribbon - Modernized with Material 3 styling */}
       <div 
@@ -1799,8 +1799,17 @@ function SalesVoucherWindow({
             ? 'grayscale opacity-50 dark:opacity-30 bg-slate-200/30 dark:bg-black/20 pointer-events-none' 
             : ''
         }`}>
-          <div className="flex-1 overflow-auto">
-            <table className="w-full text-left font-sans text-xs border-collapse">
+          <div 
+            onClick={() => {
+              setSelectedItemIndex(-1);
+              setViewingItemCode('');
+            }}
+            className="flex-1 overflow-auto"
+          >
+            <table 
+              onClick={(e) => e.stopPropagation()}
+              className="w-full text-left font-sans text-xs border-collapse"
+            >
               <thead className="sticky top-0 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-extrabold select-none border-b border-slate-200/60 dark:border-slate-800/80 z-10">
                 <tr>
                   <th className="w-10 px-3 py-2 text-center text-[10px] uppercase tracking-wider">N°</th>
@@ -1829,7 +1838,8 @@ function SalesVoucherWindow({
                     return (
                       <tr
                         key={item.id}
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setSelectedItemIndex(item.originalIndex);
                           setViewingItemCode(item.code);
                         }}

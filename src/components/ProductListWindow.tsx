@@ -56,7 +56,7 @@ function ProductListWindow({
 }: ProductListWindowProps) {
   const [searchTermName, setSearchTermName] = useState('');
   const [searchTermCode, setSearchTermCode] = useState('');
-  const [selectedIndex, setSelectedIndex] = useState<number>(0);
+  const [selectedIndex, setSelectedIndex] = useState<number>(-1);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
@@ -444,7 +444,14 @@ function ProductListWindow({
   };
 
   return (
-    <div className="flex-1 flex flex-col gap-3.5 relative h-full font-sans text-slate-800 dark:text-slate-100">
+    <div 
+      onClick={(e) => {
+        if (e.target === e.currentTarget) {
+          setSelectedIndex(-1);
+        }
+      }}
+      className="flex-1 flex flex-col gap-3.5 relative h-full font-sans text-slate-800 dark:text-slate-100"
+    >
       
       {/* Search Header layout */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center shrink-0">
@@ -489,7 +496,7 @@ function ProductListWindow({
             value={searchTermName}
             onChange={(e) => {
               setSearchTermName(e.target.value);
-              setSelectedIndex(0);
+              setSelectedIndex(-1);
             }}
             className="h-8.5 bg-slate-100 dark:bg-slate-950/60 border border-slate-200/50 dark:border-slate-800 rounded-full px-3.5 pr-8 text-xs outline-none focus:border-m3-primary focus:ring-1 focus:ring-m3-primary/15 transition-all text-slate-800 dark:text-slate-100 placeholder:text-slate-400 font-semibold"
           />
@@ -503,7 +510,7 @@ function ProductListWindow({
             value={searchTermCode}
             onChange={(e) => {
               setSearchTermCode(e.target.value);
-              setSelectedIndex(0);
+              setSelectedIndex(-1);
             }}
             className="h-8.5 bg-slate-100 dark:bg-slate-950/60 border border-slate-200/50 dark:border-slate-800 rounded-full px-3.5 pr-8 text-xs outline-none focus:border-m3-primary focus:ring-1 focus:ring-m3-primary/15 transition-all text-slate-800 dark:text-slate-100 placeholder:text-slate-400 font-semibold"
           />
@@ -512,8 +519,14 @@ function ProductListWindow({
       </div>
 
       {/* Main product catalogue table */}
-      <div className="flex-1 border border-m3-outline-variant/15 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 overflow-auto relative min-h-[160px] shadow-sm">
-        <table className="w-full text-left border-collapse table-fixed font-sans">
+      <div 
+        onClick={() => setSelectedIndex(-1)}
+        className="flex-1 border border-m3-outline-variant/15 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900 overflow-auto relative min-h-[160px] shadow-sm cursor-default"
+      >
+        <table 
+          onClick={(e) => e.stopPropagation()}
+          className="w-full text-left border-collapse table-fixed font-sans"
+        >
           <thead className="sticky top-0 bg-[#f8fafc] dark:bg-slate-950/60 text-xs font-bold border-b border-slate-200 dark:border-slate-800 text-slate-600 select-none z-10 shadow-xs font-display">
             <tr>
               <th className="w-32 px-4 py-3 text-slate-500 truncate">Référence</th>
@@ -538,7 +551,10 @@ function ProductListWindow({
               return (
                 <tr
                   key={p.code}
-                  onClick={() => setSelectedIndex(p.originalIndex)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedIndex(p.originalIndex);
+                  }}
                   onDoubleClick={startEdit}
                   className={`cursor-pointer transition-colors ${
                     reqSelected 
@@ -546,7 +562,9 @@ function ProductListWindow({
                       : 'hover:bg-slate-50/70 dark:hover:bg-slate-850/60 odd:bg-slate-50/20 text-slate-900 dark:text-slate-100'
                   }`}
                 >
-                  <td className="px-4 py-2.5 font-bold truncate">{p.code}</td>
+                  <td className={`px-4 py-2.5 font-bold truncate ${p.blocked ? (reqSelected ? 'text-rose-200 font-extrabold bg-rose-900/45 rounded-lg' : 'text-rose-600 dark:text-rose-400 font-extrabold') : ''}`}>
+                    {p.code}
+                  </td>
                   <td className="px-4 py-2.5 truncate font-sans font-bold select-text">{p.designation}</td>
                   <td className="px-3 py-2.5 text-right font-sans font-bold text-slate-500 dark:text-slate-400 text-[10px] truncate">{p.category || 'DIVERS'}</td>
                   <td className="px-3 py-2.5 text-right truncate font-sans">
@@ -695,13 +713,6 @@ function ProductListWindow({
           >
             <Plus size={14} /> Nouveau
           </button>
-          <button
-            onClick={startEdit}
-            disabled={!selectedProduct}
-            className="h-9.5 px-4.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold text-xs rounded-xl border border-transparent shadow-xs flex items-center justify-center gap-1.5 disabled:opacity-45 disabled:pointer-events-none cursor-pointer active:scale-95 transition-all whitespace-nowrap shrink-0"
-          >
-            <Edit3 size={14} /> Modifier
-          </button>
         </div>
 
         <div className="flex gap-2 shrink-0 flex-nowrap">
@@ -713,7 +724,8 @@ function ProductListWindow({
           </button>
           <button
             onClick={selectAndConfirm}
-            className="h-9.5 w-32 text-xs font-black bg-m3-primary text-white rounded-full shadow-md flex items-center justify-center gap-1 hover:opacity-95 transition-all cursor-pointer whitespace-nowrap shrink-0"
+            disabled={!selectedProduct}
+            className="h-9.5 w-32 text-xs font-black bg-m3-primary text-white rounded-full shadow-md flex items-center justify-center gap-1 hover:opacity-95 transition-all cursor-pointer whitespace-nowrap shrink-0 disabled:opacity-45 disabled:pointer-events-none"
           >
             <Check size={14} /> OK
           </button>
@@ -794,72 +806,72 @@ function ProductListWindow({
             {/* Form */}
             <form onSubmit={handleSave} className="p-5 flex flex-col gap-4 overflow-y-auto max-h-[460px]">
               
-              {/* Reference and Block fields (Always visible at the top of the form) */}
-              <div className="grid grid-cols-3 gap-3 items-end border-b border-slate-100 dark:border-slate-800/60 pb-3">
-                <div className="col-span-2 flex flex-col gap-1 relative">
-                  <span className="font-extrabold text-slate-400 dark:text-slate-500 text-[9px] uppercase tracking-wide">Code unique / Référence</span>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      required
-                      placeholder="Code unique de l'article"
-                      value={formCode}
-                      onChange={(e) => setFormCode(e.target.value)}
-                      readOnly={isCodeReadOnly}
-                      className={`flex-1 h-9 bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-xl px-3 font-mono text-xs outline-none focus:border-m3-primary focus:ring-1 focus:ring-m3-primary/10 ${isCodeReadOnly ? 'opacity-70 bg-slate-100/50 dark:bg-slate-900/40 cursor-not-allowed' : ''}`}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowCodeMenu(!showCodeMenu)}
-                      className="h-9 px-3 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 font-extrabold text-xs rounded-xl flex items-center gap-1 border border-indigo-200/20 active:scale-95 transition-all cursor-pointer relative"
-                      title="Modifier ou générer un code"
-                    >
-                      <Sparkles size={12} /> Action
-                    </button>
-                    {showCodeMenu && (
-                      <div className="absolute top-full left-0 mt-1 bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 p-1 flex flex-col gap-0.5 w-48 text-left animate-in fade-in duration-100">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsCodeReadOnly(false);
-                            setShowCodeMenu(false);
-                          }}
-                          className="px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 cursor-pointer text-left w-full"
-                        >
-                          ✏️ Saisir manuellement
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            generateRandomCode();
-                            setShowCodeMenu(false);
-                          }}
-                          className="px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 cursor-pointer text-left w-full"
-                        >
-                          🔄 Générer code aléatoire
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Blocked checkbox */}
-                <div className="col-span-1 h-9 flex items-center justify-end">
-                  <label className="flex items-center gap-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 cursor-pointer border border-rose-200/40 dark:border-rose-900/30 px-3 h-full rounded-xl bg-rose-50/30 dark:bg-rose-950/10 hover:bg-rose-50 dark:hover:bg-rose-950/20 select-none transition-all">
-                    <input
-                      type="checkbox"
-                      checked={formBlocked}
-                      onChange={(e) => setFormBlocked(e.target.checked)}
-                      className="rounded border-rose-300 text-rose-600 focus:ring-rose-500 w-3.5 h-3.5"
-                    />
-                    Bloquer
-                  </label>
-                </div>
-              </div>
-
               {/* TAB CONTENT: GENERAL */}
               {activeFormTab === 'general' && (
                 <div className="flex flex-col gap-4 animate-in fade-in duration-150">
+                  {/* Reference and Block fields (Only visible under Général tab) */}
+                  <div className="grid grid-cols-3 gap-3 items-end border-b border-slate-100 dark:border-slate-800/60 pb-3">
+                    <div className="col-span-2 flex flex-col gap-1 relative">
+                      <span className="font-extrabold text-slate-400 dark:text-slate-500 text-[9px] uppercase tracking-wide">Code unique / Référence</span>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          required
+                          placeholder="Code unique de l'article"
+                          value={formCode}
+                          onChange={(e) => setFormCode(e.target.value)}
+                          readOnly={isCodeReadOnly}
+                          className={`flex-1 h-9 bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 rounded-xl px-3 font-mono text-xs outline-none focus:border-m3-primary focus:ring-1 focus:ring-m3-primary/10 ${isCodeReadOnly ? 'opacity-70 bg-slate-100/50 dark:bg-slate-900/40 cursor-not-allowed' : ''}`}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowCodeMenu(!showCodeMenu)}
+                          className="h-9 px-3 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-950/30 dark:hover:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 font-extrabold text-xs rounded-xl flex items-center gap-1 border border-indigo-200/20 active:scale-95 transition-all cursor-pointer relative"
+                          title="Modifier ou générer un code"
+                        >
+                          <Sparkles size={12} /> Action
+                        </button>
+                        {showCodeMenu && (
+                          <div className="absolute top-full left-0 mt-1 bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl z-50 p-1 flex flex-col gap-0.5 w-48 text-left animate-in fade-in duration-100">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIsCodeReadOnly(false);
+                                setShowCodeMenu(false);
+                              }}
+                              className="px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 cursor-pointer text-left w-full"
+                            >
+                              ✏️ Saisir manuellement
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                generateRandomCode();
+                                setShowCodeMenu(false);
+                              }}
+                              className="px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 cursor-pointer text-left w-full"
+                            >
+                              🔄 Générer code aléatoire
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Blocked checkbox */}
+                    <div className="col-span-1 h-9 flex items-center justify-end">
+                      <label className="flex items-center gap-1.5 text-xs font-bold text-rose-600 dark:text-rose-400 cursor-pointer border border-rose-200/40 dark:border-rose-900/30 px-3 h-full rounded-xl bg-rose-50/30 dark:bg-rose-950/10 hover:bg-rose-50 dark:hover:bg-rose-950/20 select-none transition-all">
+                        <input
+                          type="checkbox"
+                          checked={formBlocked}
+                          onChange={(e) => setFormBlocked(e.target.checked)}
+                          className="rounded border-rose-300 text-rose-600 focus:ring-rose-500 w-3.5 h-3.5"
+                        />
+                        Bloquer
+                      </label>
+                    </div>
+                  </div>
+
                   {/* Designation */}
                   <div className="flex flex-col gap-1">
                     <span className="font-extrabold text-slate-500 dark:text-slate-400 text-[9px] uppercase tracking-wide">Désignation / Article</span>
