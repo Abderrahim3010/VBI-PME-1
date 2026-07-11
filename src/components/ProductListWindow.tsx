@@ -6,7 +6,8 @@ import {
   Search, Plus, Edit3, Edit, Check, X, Tag, Trash2, Calendar, 
   Sparkles, AlertTriangle, ArrowRight, FolderPlus,
   Package, Info, Camera, Folder, Coins, TrendingUp, RefreshCw,
-  Filter, ArrowUpDown
+  Filter, ArrowUpDown, FileDown, BarChart3, FileSpreadsheet, FileText,
+  TrendingDown, ShieldAlert
 } from 'lucide-react';
 
 interface ProductListWindowProps {
@@ -59,10 +60,12 @@ function ProductListWindow({
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'none' | 'famille' | 'fournisseur'>('none');
   const [selectedFilterValue, setSelectedFilterValue] = useState<string>('');
-  const [sortType, setSortType] = useState<'none' | 'a-z' | 'z-a' | 'price-desc'>('none');
+  const [sortType, setSortType] = useState<'none' | 'a-z' | 'z-a' | 'price-desc' | 'price-asc'>('none');
 
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [showSortDropdown, setShowSortDropdown] = useState(false);
+  const [showExportDropdown, setShowExportDropdown] = useState(false);
+  const [showStatsModal, setShowStatsModal] = useState(false);
 
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
   const [isAddingNew, setIsAddingNew] = useState(false);
@@ -276,6 +279,12 @@ function ProductListWindow({
         const pA = a.prixVente1 ?? 0;
         const pB = b.prixVente1 ?? 0;
         return pB - pA;
+      });
+    } else if (sortType === 'price-asc') {
+      result.sort((a, b) => {
+        const pA = a.prixVente1 ?? 0;
+        const pB = b.prixVente1 ?? 0;
+        return pA - pB;
       });
     }
     return result;
@@ -513,6 +522,385 @@ function ProductListWindow({
     }
   };
 
+  // --- EXPORTS & STATISTICS ---
+
+  // Export to Excel (CSV format optimized for French locale/Excel)
+  const handleExportExcel = () => {
+    const listToExport = sortedAndFilteredProducts.length > 0 ? sortedAndFilteredProducts : products;
+    
+    // Prepare column headers
+    const headers = [
+      'Code Barres / Réf',
+      'Désignation',
+      'Famille',
+      'Prix Achat (DA)',
+      'Prix Vente (DA)',
+      'Prix Demi-Gros (DA)',
+      'Prix Gros (DA)',
+      'Stock Actuel',
+      'Unité',
+      'Seuil Min Alert',
+      'Date d\'expiration',
+      'Est Bloqué'
+    ];
+
+    // Format data rows
+    const rows = listToExport.map(p => [
+      p.code || '',
+      (p.designation || '').replace(/"/g, '""'), // Escape quotes
+      p.category || 'DIVERS',
+      p.prixAchat !== undefined ? p.prixAchat : (p.prixDeRevient || 0),
+      p.prixVente1 || 0,
+      p.prixVente2 || 0,
+      p.prixVente3 || 0,
+      p.stock !== undefined ? p.stock : 0,
+      p.unitOfMeasure || 'U',
+      p.stockMin || 0,
+      p.expirationDate || '',
+      p.blocked ? 'Oui' : 'Non'
+    ]);
+
+    // Build CSV content with semicolon separator for European/French Excel compatibility
+    const csvContent = [
+      headers.join(';'),
+      ...rows.map(row => row.map(val => typeof val === 'string' ? `"${val}"` : val).join(';'))
+    ].join('\r\n');
+
+    // Excel UTF-8 BOM indicator so accents load correctly
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    const storePrefix = config?.storeName ? config.storeName.replace(/\s+/g, '_').toLowerCase() : 'catalogue';
+    link.href = url;
+    link.setAttribute('download', `${storePrefix}_produits_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Export to beautifully styled Print/PDF document
+  const handleExportPDF = () => {
+    const listToExport = sortedAndFilteredProducts.length > 0 ? sortedAndFilteredProducts : products;
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      alert("Veuillez autoriser les fenêtres contextuelles (popups) pour imprimer le catalogue.");
+      return;
+    }
+
+    const rowsHtml = listToExport.map((p, idx) => `
+      <tr>
+        <td style="text-align: center;">${idx + 1}</td>
+        <td style="font-family: monospace; font-weight: bold; color: #475569;">${p.code || ''}</td>
+        <td><strong>${p.designation || ''}</strong></td>
+        <td>${p.category || 'DIVERS'}</td>
+        <td style="text-align: right; font-weight: bold;">${p.stock !== undefined ? p.stock : 0} ${p.unitOfMeasure || 'U'}</td>
+        <td style="text-align: right; font-weight: bold; color: #0284c7;">${(p.prixVente1 || 0).toFixed(2)} DA</td>
+        <td style="text-align: right; color: #475569;">${p.prixVente2 !== undefined ? p.prixVente2.toFixed(2) + ' DA' : '-'}</td>
+        <td style="text-align: right; color: #475569;">${p.prixVente3 !== undefined ? p.prixVente3.toFixed(2) + ' DA' : '-'}</td>
+      </tr>
+    `).join('');
+
+    const storeName = config?.storeName || 'Ma Boutique';
+    const currentDate = new Date().toLocaleDateString('fr-FR', {
+      year: 'numeric', month: 'long', day: 'numeric',
+      hour: '2-digit', minute: '2-digit'
+    });
+
+    printWindow.document.write(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Catalogue Produits - ${storeName}</title>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+            body {
+              font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+              color: #0f172a;
+              background-color: #ffffff;
+              margin: 0;
+              padding: 30px;
+              line-height: 1.4;
+            }
+            .header-container {
+              display: flex;
+              justify-content: space-between;
+              align-items: flex-start;
+              border-bottom: 2px solid #3b82f6;
+              padding-bottom: 15px;
+              margin-bottom: 25px;
+            }
+            .store-title {
+              font-size: 22px;
+              font-weight: 800;
+              color: #1e3a8a;
+              margin: 0 0 5px 0;
+              text-transform: uppercase;
+              letter-spacing: -0.5px;
+            }
+            .doc-title {
+              font-size: 13px;
+              font-weight: 600;
+              color: #4b5563;
+              margin: 0;
+            }
+            .meta-info {
+              text-align: right;
+              font-size: 11px;
+              color: #4b5563;
+              line-height: 1.5;
+            }
+            .summary-cards {
+              display: flex;
+              gap: 12px;
+              margin-bottom: 20px;
+            }
+            .card {
+              flex: 1;
+              background-color: #f8fafc;
+              border: 1px solid #e2e8f0;
+              padding: 10px 12px;
+              border-radius: 6px;
+            }
+            .card-title {
+              font-size: 9px;
+              text-transform: uppercase;
+              font-weight: 700;
+              color: #64748b;
+              margin-bottom: 3px;
+              letter-spacing: 0.5px;
+            }
+            .card-value {
+              font-size: 14px;
+              font-weight: 700;
+              color: #0f172a;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 5px;
+              font-size: 10px;
+            }
+            th {
+              background-color: #1e3a8a;
+              color: #ffffff;
+              border: 1px solid #1e3a8a;
+              padding: 8px 6px;
+              text-align: left;
+              font-weight: 700;
+              text-transform: uppercase;
+              font-size: 9px;
+              letter-spacing: 0.5px;
+            }
+            td {
+              border: 1px solid #e2e8f0;
+              padding: 6px 6px;
+              text-align: left;
+            }
+            tr:nth-child(even) td {
+              background-color: #f8fafc;
+            }
+            .footer {
+              margin-top: 30px;
+              text-align: center;
+              font-size: 9px;
+              color: #94a3b8;
+              border-top: 1px solid #e2e8f0;
+              padding-top: 10px;
+            }
+            @media print {
+              body { padding: 0; }
+              @page { margin: 12mm; }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header-container">
+            <div>
+              <h1 class="store-title">${storeName}</h1>
+              <p class="doc-title">CATALOGUE GÉNÉRAL DES PRODUITS</p>
+            </div>
+            <div class="meta-info">
+              <div>Date d'export : <strong>${currentDate}</strong></div>
+              <div>Nombre d'articles : <strong>${listToExport.length}</strong></div>
+            </div>
+          </div>
+
+          <div class="summary-cards">
+            <div class="card">
+              <div class="card-title">Total Références</div>
+              <div class="card-value">${listToExport.length} articles</div>
+            </div>
+            <div class="card">
+              <div class="card-title">Total Quantité en Stock</div>
+              <div class="card-value">${listToExport.reduce((acc, p) => acc + (p.stock || 0), 0)} unités</div>
+            </div>
+            <div class="card">
+              <div class="card-title">Valeur Stock (Prix Vente)</div>
+              <div class="card-value">${listToExport.reduce((acc, p) => acc + ((p.stock || 0) * (p.prixVente1 || 0)), 0).toLocaleString('fr-FR')} DA</div>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 5%; text-align: center;">N°</th>
+                <th style="width: 15%;">Code Barres</th>
+                <th style="width: 35%;">Désignation</th>
+                <th style="width: 15%;">Famille</th>
+                <th style="width: 10%; text-align: right;">Stock</th>
+                <th style="width: 10%; text-align: right;">Prix Vente</th>
+                <th style="width: 10%; text-align: right;">Demi-gros</th>
+                <th style="width: 10%; text-align: right;">Prix Gros</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+            </tbody>
+          </table>
+
+          <div class="footer">
+            Document généré automatiquement depuis l'application de gestion de stock - ${storeName}
+          </div>
+
+          <script>
+            window.onload = function() {
+              window.print();
+            };
+          </script>
+        </body>
+      </html>
+    `);
+    printWindow.document.close();
+  };
+
+  // Comprehensive analytics calculation
+  const stats = useMemo(() => {
+    let totalRefs = products.length;
+    let totalStockVolume = 0;
+    let totalValuePurchase = 0;
+    let totalValueSale = 0;
+    let outOfStockCount = 0;
+    let lowStockCount = 0;
+    let blockedCount = 0;
+    let hasExpirationCount = 0;
+    let expiredCount = 0;
+    let nearExpirationCount = 0;
+
+    const parseDate = (dStr?: string) => {
+      if (!dStr) return null;
+      if (dStr.includes('/')) {
+        const parts = dStr.split('/');
+        if (parts.length === 3) return new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+      }
+      return new Date(dStr);
+    };
+
+    const today = new Date();
+
+    const categoryStats: Record<string, { count: number; stock: number; saleVal: number; purchaseVal: number }> = {};
+
+    products.forEach(p => {
+      const pStock = p.stock || 0;
+      const pPurchase = p.prixAchat ?? p.prixDeRevient ?? 0;
+      const pSale = p.prixVente1 || 0;
+
+      totalStockVolume += pStock;
+      
+      if (pStock > 0) {
+        totalValuePurchase += pStock * pPurchase;
+        totalValueSale += pStock * pSale;
+      }
+
+      if (pStock <= 0) {
+        outOfStockCount++;
+      } else if (p.stockMin !== undefined && pStock <= p.stockMin) {
+        lowStockCount++;
+      }
+
+      if (p.blocked) {
+        blockedCount++;
+      }
+
+      const cat = p.category || 'DIVERS';
+      if (!categoryStats[cat]) {
+        categoryStats[cat] = { count: 0, stock: 0, saleVal: 0, purchaseVal: 0 };
+      }
+      categoryStats[cat].count++;
+      categoryStats[cat].stock += pStock;
+      categoryStats[cat].saleVal += Math.max(0, pStock) * pSale;
+      categoryStats[cat].purchaseVal += Math.max(0, pStock) * pPurchase;
+
+      if (p.hasExpiration && p.expirationDate) {
+        hasExpirationCount++;
+        const expDate = parseDate(p.expirationDate);
+        if (expDate) {
+          const diffTime = expDate.getTime() - today.getTime();
+          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          if (diffDays <= 0) {
+            expiredCount++;
+          } else if (diffDays <= (p.alertDays || 30)) {
+            nearExpirationCount++;
+          }
+        }
+      }
+    });
+
+    const averageMarginVal = totalValueSale - totalValuePurchase;
+    const averageMarginPct = totalValueSale > 0 ? (averageMarginVal / totalValueSale) * 100 : 0;
+
+    // Sort categories by product count
+    const sortedCategories = Object.entries(categoryStats).map(([name, data]) => ({
+      name,
+      ...data,
+      marginVal: data.saleVal - data.purchaseVal,
+    })).sort((a, b) => b.count - a.count);
+
+    // Top 5 products by stock value (selling price * stock)
+    const topProductsByStockValue = [...products]
+      .map(p => ({
+        ...p,
+        stockVal: (p.stock || 0) * (p.prixVente1 || 0)
+      }))
+      .filter(p => p.stockVal > 0)
+      .sort((a, b) => b.stockVal - a.stockVal)
+      .slice(0, 5);
+
+    // Top 5 highest unit margins
+    const topMarginProducts = [...products]
+      .filter(p => {
+        const purchase = p.prixAchat ?? p.prixDeRevient ?? 0;
+        return purchase > 0 && (p.prixVente1 || 0) > purchase;
+      })
+      .map(p => {
+        const purchase = p.prixAchat ?? p.prixDeRevient ?? 0;
+        const sale = p.prixVente1 || 0;
+        const marginPct = ((sale - purchase) / sale) * 100;
+        const marginDA = sale - purchase;
+        return { ...p, marginPct, marginDA };
+      })
+      .sort((a, b) => b.marginDA - a.marginDA)
+      .slice(0, 5);
+
+    return {
+      totalRefs,
+      totalStockVolume,
+      totalValuePurchase,
+      totalValueSale,
+      potentialProfit: averageMarginVal,
+      averageMarginPct,
+      outOfStockCount,
+      lowStockCount,
+      blockedCount,
+      hasExpirationCount,
+      expiredCount,
+      nearExpirationCount,
+      sortedCategories,
+      topProductsByStockValue,
+      topMarginProducts
+    };
+  }, [products]);
+
   return (
     <div 
       onClick={(e) => {
@@ -522,20 +910,21 @@ function ProductListWindow({
       }}
       className="flex-1 flex flex-col gap-3.5 relative h-full font-sans text-slate-800 dark:text-slate-100"
     >
-      {/* Click-away backdrop to close filter/sort dropdowns */}
-      {(showFilterDropdown || showSortDropdown) && (
+      {/* Click-away backdrop to close filter/sort/export dropdowns */}
+      {(showFilterDropdown || showSortDropdown || showExportDropdown) && (
         <div 
           className="fixed inset-0 z-40 bg-transparent cursor-default" 
           onClick={(e) => {
             e.stopPropagation();
             setShowFilterDropdown(false);
             setShowSortDropdown(false);
+            setShowExportDropdown(false);
           }}
         />
       )}
       
       {/* Search Header layout */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0 bg-slate-50/50 dark:bg-slate-900/30 p-2 rounded-2xl border border-slate-200/40 dark:border-slate-800/50 z-40 relative">
+      <div className="flex flex-wrap items-center gap-2.5 shrink-0 bg-slate-50/50 dark:bg-slate-900/30 p-2 rounded-2xl border border-slate-200/40 dark:border-slate-800/50 z-40 relative">
         
         {/* Navigation control pills - Compact design */}
         <div className="flex bg-slate-100 dark:bg-slate-950 p-0.5 rounded-full border border-slate-200/50 dark:border-slate-800 shadow-inner w-36 shrink-0 h-8.5 items-center select-none">
@@ -569,11 +958,11 @@ function ProductListWindow({
           </button>
         </div>
 
-        {/* Unified Search Input (Designation / Barcode Code in same box) */}
-        <div className="flex-1 relative min-w-[200px]">
+        {/* Unified Search Input (Designation / Barcode Code in same box) - Compact sizing */}
+        <div className="w-48 sm:w-56 relative shrink-0">
           <input
             type="text"
-            placeholder="Rechercher par désignation ou code..."
+            placeholder="Rechercher..."
             value={searchQuery}
             onChange={(e) => {
               setSearchQuery(e.target.value);
@@ -739,6 +1128,7 @@ function ProductListWindow({
             onClick={() => {
               setShowSortDropdown(!showSortDropdown);
               setShowFilterDropdown(false);
+              setShowExportDropdown(false);
             }}
             className="h-8.5 px-3 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all select-none border shadow-xs cursor-pointer active:scale-95 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800"
           >
@@ -747,7 +1137,8 @@ function ProductListWindow({
               {sortType === 'none' && 'Affichage'}
               {sortType === 'a-z' && 'A-Z'}
               {sortType === 'z-a' && 'Z-A'}
-              {sortType === 'price-desc' && 'Prix ▼'}
+              {sortType === 'price-desc' && 'Prix: +cher ➔ -cher'}
+              {sortType === 'price-asc' && 'Prix: -cher ➔ +cher'}
             </span>
             <span className="text-[10px] opacity-40">▼</span>
           </button>
@@ -810,10 +1201,87 @@ function ProductListWindow({
                   <span>Prix: de +cher à -cher</span>
                   {sortType === 'price-desc' && <Check size={12} />}
                 </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSortType('price-asc');
+                    setShowSortDropdown(false);
+                  }}
+                  className={`w-full px-2.5 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-xs font-bold text-left flex items-center justify-between cursor-pointer ${
+                    sortType === 'price-asc' ? 'text-m3-primary bg-slate-50 dark:bg-slate-900' : 'text-slate-700 dark:text-slate-350'
+                  }`}
+                >
+                  <span>Prix: de -cher à +cher</span>
+                  {sortType === 'price-asc' && <Check size={12} />}
+                </button>
               </div>
             </div>
           )}
         </div>
+
+        {/* Exporter Dropdown */}
+        <div className="relative shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              setShowExportDropdown(!showExportDropdown);
+              setShowFilterDropdown(false);
+              setShowSortDropdown(false);
+            }}
+            className="h-8.5 px-3 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all select-none border shadow-xs cursor-pointer active:scale-95 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800"
+          >
+            <FileDown size={13} className="text-slate-500 dark:text-slate-400" />
+            <span>Exporter</span>
+            <span className="text-[10px] opacity-40">▼</span>
+          </button>
+
+          {showExportDropdown && (
+            <div className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 p-1 w-44 text-left animate-in fade-in duration-100 flex flex-col">
+              <div className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 px-2 py-1 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800/60">
+                Format d'export
+              </div>
+              <div className="py-1 space-y-0.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleExportPDF();
+                    setShowExportDropdown(false);
+                  }}
+                  className="w-full px-2.5 py-1.5 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-lg text-xs font-bold text-left flex items-center gap-2 text-rose-600 dark:text-rose-400 cursor-pointer"
+                >
+                  <FileText size={13} />
+                  <span>Document PDF</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    handleExportExcel();
+                    setShowExportDropdown(false);
+                  }}
+                  className="w-full px-2.5 py-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 rounded-lg text-xs font-bold text-left flex items-center gap-2 text-emerald-600 dark:text-emerald-400 cursor-pointer"
+                >
+                  <FileSpreadsheet size={13} />
+                  <span>Fichier EXCEL</span>
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Statistique Button */}
+        <button
+          type="button"
+          onClick={() => {
+            setShowStatsModal(true);
+            setShowFilterDropdown(false);
+            setShowSortDropdown(false);
+            setShowExportDropdown(false);
+          }}
+          className="h-8.5 px-3 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all select-none border shadow-xs cursor-pointer active:scale-95 bg-indigo-50 hover:bg-indigo-100/80 dark:bg-indigo-950/20 dark:hover:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 border-indigo-100 dark:border-indigo-900/40"
+        >
+          <BarChart3 size={13} />
+          <span>Statistiques</span>
+        </button>
 
       </div>
 
@@ -1854,6 +2322,291 @@ function ProductListWindow({
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* STATISTICS DASHBOARD MODAL */}
+      {showStatsModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs select-none">
+          {/* Backdrop click away */}
+          <div className="absolute inset-0 cursor-default" onClick={() => setShowStatsModal(false)} />
+          
+          <div className="relative w-full max-w-4xl max-h-[90vh] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 duration-150 z-10 text-slate-800 dark:text-slate-100">
+            {/* Header */}
+            <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50/50 dark:bg-slate-950/20">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-indigo-50 dark:bg-indigo-950/40 flex items-center justify-center text-indigo-600 dark:text-indigo-400 border border-indigo-100/50 dark:border-indigo-900/30 shadow-xs">
+                  <BarChart3 size={20} />
+                </div>
+                <div>
+                  <h2 className="text-base font-black text-slate-900 dark:text-white font-display">
+                    Statistiques Globales du Catalogue
+                  </h2>
+                  <p className="text-xs text-slate-500">
+                    Aperçu complet de la valeur du stock, des marges prévisionnelles et de la santé du catalogue
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowStatsModal(false)}
+                className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-800 flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-850 cursor-pointer transition-all"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            {/* Scrollable Body */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 scrollbar-thin dark:bg-slate-900 text-slate-800 dark:text-slate-200">
+              {/* Grid 1: Metric KPI cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Sale Valuation Card */}
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-sky-500/5 to-sky-500/0 border border-sky-100 dark:border-sky-950/40 shadow-xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-sky-600 dark:text-sky-400">
+                      Valorisation Vente
+                    </span>
+                    <Coins size={15} className="text-sky-500" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-black font-mono text-slate-900 dark:text-white">
+                      {stats.totalValueSale.toLocaleString('fr-FR')} <span className="text-[10px] font-bold">DA</span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      Valeur de revente totale estimée
+                    </p>
+                  </div>
+                </div>
+
+                {/* Cost Valuation Card */}
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-amber-500/5 to-amber-500/0 border border-amber-100 dark:border-amber-950/40 shadow-xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                      Valorisation Coût
+                    </span>
+                    <Package size={15} className="text-amber-500" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-black font-mono text-slate-900 dark:text-white">
+                      {stats.totalValuePurchase.toLocaleString('fr-FR')} <span className="text-[10px] font-bold">DA</span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-1">
+                      Coût d'acquisition du stock
+                    </p>
+                  </div>
+                </div>
+
+                {/* Profit/Margin Card */}
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-500/5 to-emerald-500/0 border border-emerald-100 dark:border-emerald-950/40 shadow-xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                      Marge Prévisionnelle
+                    </span>
+                    <TrendingUp size={15} className="text-emerald-500" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-black font-mono text-emerald-600 dark:text-emerald-400">
+                      +{stats.potentialProfit.toLocaleString('fr-FR')} <span className="text-[10px] font-bold">DA</span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-1 flex items-center gap-1">
+                      <span>Taux moyen de</span>
+                      <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
+                        {stats.averageMarginPct.toFixed(1)}%
+                      </span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Global Volumes Card */}
+                <div className="p-4 rounded-2xl bg-gradient-to-br from-indigo-500/5 to-indigo-500/0 border border-indigo-100 dark:border-indigo-950/40 shadow-xs flex flex-col justify-between">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                      Volume Catalogue
+                    </span>
+                    <Info size={15} className="text-indigo-500" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-black font-mono text-slate-900 dark:text-white">
+                      {stats.totalStockVolume.toLocaleString('fr-FR')} <span className="text-[10px] font-bold">Unités</span>
+                    </div>
+                    <p className="text-[10px] text-slate-500 mt-1 flex items-center justify-between">
+                      <span>Sur un catalogue de :</span>
+                      <span className="font-black text-indigo-600 dark:text-indigo-400">
+                        {stats.totalRefs} articles
+                      </span>
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Grid 2: Alert Status boxes */}
+              <div className="p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/10 space-y-3">
+                <div className="text-xs font-extrabold uppercase tracking-wider text-slate-500 border-b border-slate-200/40 dark:border-slate-800 pb-1.5 flex items-center gap-1.5">
+                  <AlertTriangle size={13} className="text-amber-500" />
+                  <span>Alertes de Vigilance & Anomalies</span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  {/* Out of Stock */}
+                  <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 text-center">
+                    <div className="text-xs font-black text-slate-400 dark:text-slate-500">Rupture totale</div>
+                    <div className={`text-xl font-black mt-1 ${stats.outOfStockCount > 0 ? 'text-rose-500' : 'text-emerald-500'}`}>
+                      {stats.outOfStockCount}
+                    </div>
+                    <div className="text-[9px] text-slate-400">produits à stock nul</div>
+                  </div>
+
+                  {/* Low Stock alert */}
+                  <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 text-center">
+                    <div className="text-xs font-black text-slate-400 dark:text-slate-500">Stock critique</div>
+                    <div className={`text-xl font-black mt-1 ${stats.lowStockCount > 0 ? 'text-amber-500 animate-pulse' : 'text-emerald-500'}`}>
+                      {stats.lowStockCount}
+                    </div>
+                    <div className="text-[9px] text-slate-400">sous le seuil d'alerte</div>
+                  </div>
+
+                  {/* Blocked Items */}
+                  <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 text-center">
+                    <div className="text-xs font-black text-slate-400 dark:text-slate-500">Bloqués / Bloqués</div>
+                    <div className={`text-xl font-black mt-1 ${stats.blockedCount > 0 ? 'text-rose-600' : 'text-slate-400'}`}>
+                      {stats.blockedCount}
+                    </div>
+                    <div className="text-[9px] text-slate-400">articles désactivés</div>
+                  </div>
+
+                  {/* Expirations */}
+                  <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-100 dark:border-slate-800 text-center">
+                    <div className="text-xs font-black text-slate-400 dark:text-slate-500">Expirations</div>
+                    <div className="text-xl font-black mt-1 flex items-baseline justify-center gap-1.5">
+                      {stats.expiredCount > 0 && (
+                        <span className="text-rose-600" title="Expirés">
+                          {stats.expiredCount}E
+                        </span>
+                      )}
+                      {stats.nearExpirationCount > 0 && (
+                        <span className="text-amber-500" title="Proche d'expiration">
+                          {stats.nearExpirationCount}P
+                        </span>
+                      )}
+                      {stats.expiredCount === 0 && stats.nearExpirationCount === 0 && (
+                        <span className="text-emerald-500">0</span>
+                      )}
+                    </div>
+                    <div className="text-[9px] text-slate-400">périmés (E) / proches (P)</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Grid 3: Columns for breakdown */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Left Column: Categories Breakdown */}
+                <div className="p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-950/20 space-y-3">
+                  <div className="text-xs font-black uppercase tracking-wider text-slate-500 border-b border-slate-100 dark:border-slate-850 pb-1.5 flex items-center justify-between">
+                    <span>Répartition par Famille</span>
+                    <span className="text-[10px] text-indigo-500 lowercase">({stats.sortedCategories.length} familles)</span>
+                  </div>
+                  
+                  <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1 scrollbar-thin">
+                    {stats.sortedCategories.slice(0, 8).map((cat) => {
+                      const maxCount = Math.max(...stats.sortedCategories.map(c => c.count), 1);
+                      const pctWidth = (cat.count / maxCount) * 100;
+                      return (
+                        <div key={cat.name} className="space-y-1">
+                          <div className="flex items-center justify-between text-xs font-bold">
+                            <span className="uppercase text-slate-700 dark:text-slate-350 truncate max-w-[180px]">
+                              {cat.name}
+                            </span>
+                            <span className="font-mono text-[10px] text-slate-500">
+                              {cat.count} réf · {cat.stock} unités · <strong className="text-slate-800 dark:text-slate-200">{cat.saleVal.toLocaleString('fr-FR')} DA</strong>
+                            </span>
+                          </div>
+                          <div className="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-indigo-500 dark:bg-indigo-400 rounded-full transition-all duration-300" 
+                              style={{ width: `${pctWidth}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Right Column: Top Products & Top Margin Products */}
+                <div className="space-y-4">
+                  {/* Top Products by Valuation */}
+                  <div className="p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-950/20 space-y-2">
+                    <div className="text-xs font-black uppercase tracking-wider text-slate-500 border-b border-slate-100 dark:border-slate-850 pb-1.5 flex items-center gap-1.5">
+                      <TrendingUp size={13} className="text-sky-500" />
+                      <span>Top 5 Stocks les plus valorisés (Revente)</span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {stats.topProductsByStockValue.length === 0 ? (
+                        <div className="text-[10px] text-slate-400 italic py-2 text-center">Aucune valorisation active</div>
+                      ) : (
+                        stats.topProductsByStockValue.map((p, idx) => (
+                          <div key={p.code} className="flex items-center justify-between text-xs py-1 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg px-1 transition-colors">
+                            <div className="flex items-center gap-2 truncate max-w-[200px]">
+                              <span className="w-4 h-4 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center font-bold text-[9px] text-slate-500">
+                                {idx + 1}
+                              </span>
+                              <span className="font-bold truncate text-slate-800 dark:text-slate-200" title={p.designation}>
+                                {p.designation}
+                              </span>
+                            </div>
+                            <div className="text-right font-mono text-[10px]">
+                              <span className="text-slate-400 mr-2">({p.stock} {p.unitOfMeasure || 'U'})</span>
+                              <strong className="text-sky-600 dark:text-sky-400">{p.stockVal.toLocaleString('fr-FR')} DA</strong>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Top Margin Products */}
+                  <div className="p-4 rounded-2xl border border-slate-200/60 dark:border-slate-800 bg-white dark:bg-slate-950/20 space-y-2">
+                    <div className="text-xs font-black uppercase tracking-wider text-slate-500 border-b border-slate-100 dark:border-slate-850 pb-1.5 flex items-center gap-1.5">
+                      <Sparkles size={13} className="text-emerald-500" />
+                      <span>Top 5 Marge unitaire en valeur</span>
+                    </div>
+                    <div className="space-y-1.5">
+                      {stats.topMarginProducts.length === 0 ? (
+                        <div className="text-[10px] text-slate-400 italic py-2 text-center">Renseignez des prix d'achat pour voir les marges</div>
+                      ) : (
+                        stats.topMarginProducts.map((p, idx) => (
+                          <div key={p.code} className="flex items-center justify-between text-xs py-1 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg px-1 transition-colors">
+                            <div className="flex items-center gap-2 truncate max-w-[200px]">
+                              <span className="w-4 h-4 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center font-bold text-[9px] text-slate-500">
+                                {idx + 1}
+                              </span>
+                              <span className="font-bold truncate text-slate-800 dark:text-slate-200" title={p.designation}>
+                                {p.designation}
+                              </span>
+                            </div>
+                            <div className="text-right font-mono text-[10px]">
+                              <span className="text-emerald-500 mr-2">+{p.marginPct.toFixed(0)}%</span>
+                              <strong className="text-emerald-600 dark:text-emerald-400">+{p.marginDA.toFixed(2)} DA</strong>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-5 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950/40 flex justify-end">
+              <button
+                type="button"
+                onClick={() => setShowStatsModal(false)}
+                className="px-5 py-2 bg-slate-900 hover:bg-slate-850 text-white font-black text-xs rounded-xl cursor-pointer shadow-sm active:scale-95 transition-all"
+              >
+                Fermer
+              </button>
+            </div>
           </div>
         </div>
       )}
