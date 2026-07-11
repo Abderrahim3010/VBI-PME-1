@@ -5,7 +5,8 @@ import {
   ChevronFirst, ChevronLeft, ChevronRight, ChevronLast, 
   Search, Plus, Edit3, Edit, Check, X, Tag, Trash2, Calendar, 
   Sparkles, AlertTriangle, ArrowRight, FolderPlus,
-  Package, Info, Camera, Folder, Coins, TrendingUp, RefreshCw
+  Package, Info, Camera, Folder, Coins, TrendingUp, RefreshCw,
+  Filter, ArrowUpDown
 } from 'lucide-react';
 
 interface ProductListWindowProps {
@@ -55,8 +56,14 @@ function ProductListWindow({
   onCreatedFamillesChange,
   config
 }: ProductListWindowProps) {
-  const [searchTermName, setSearchTermName] = useState('');
-  const [searchTermCode, setSearchTermCode] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterType, setFilterType] = useState<'none' | 'famille' | 'fournisseur'>('none');
+  const [selectedFilterValue, setSelectedFilterValue] = useState<string>('');
+  const [sortType, setSortType] = useState<'none' | 'a-z' | 'z-a' | 'price-desc'>('none');
+
+  const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  const [showSortDropdown, setShowSortDropdown] = useState(false);
+
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
@@ -200,28 +207,90 @@ function ProductListWindow({
 
   const [displayLimit, setDisplayLimit] = useState(100);
 
+  // Suppliers lookup for filtering
+  const suppliers = useMemo(() => {
+    const fromDb = getStorageJson<any[]>('compos_suppliers', []);
+    const namesFromDb = fromDb.map(s => s.name?.trim()).filter(Boolean);
+    
+    const purchases = getStorageJson<PurchaseVoucher[]>('compos_purchases', []);
+    const namesFromPurchases = purchases.map(p => p.supplier?.trim()).filter(Boolean);
+    
+    return Array.from(new Set([...namesFromDb, ...namesFromPurchases])).sort();
+  }, []);
+
+  // Map each product to its suppliers for fast supplier filtering
+  const productCodesForSupplier = useMemo(() => {
+    if (filterType !== 'fournisseur' || !selectedFilterValue) return null;
+    const purchases = getStorageJson<PurchaseVoucher[]>('compos_purchases', []);
+    const codes = new Set<string>();
+    const targetSup = selectedFilterValue.trim().toUpperCase();
+    for (const v of purchases) {
+      if (v.supplier && v.supplier.trim().toUpperCase() === targetSup) {
+        if (v.items) {
+          for (const item of v.items) {
+            codes.add(item.code);
+          }
+        }
+      }
+    }
+    return codes;
+  }, [filterType, selectedFilterValue]);
+
   useEffect(() => {
     setDisplayLimit(100);
-  }, [searchTermName, searchTermCode]);
+  }, [searchQuery, filterType, selectedFilterValue, sortType]);
 
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
-      const matchName = p.designation.toLowerCase().includes(searchTermName.toLowerCase());
-      const matchCode = p.code.includes(searchTermCode);
-      return matchName && matchCode;
+      // 1. Search Query
+      const q = searchQuery.toLowerCase().trim();
+      if (q) {
+        const matchName = p.designation.toLowerCase().includes(q);
+        const matchCode = p.code.includes(q);
+        if (!matchName && !matchCode) return false;
+      }
+
+      // 2. Filter by Famille
+      if (filterType === 'famille' && selectedFilterValue) {
+        const pFam = (p.category || 'DIVERS').toUpperCase();
+        if (pFam !== selectedFilterValue.toUpperCase()) return false;
+      }
+
+      // 3. Filter by Fournisseur
+      if (filterType === 'fournisseur' && selectedFilterValue && productCodesForSupplier) {
+        if (!productCodesForSupplier.has(p.code)) return false;
+      }
+
+      return true;
     });
-  }, [products, searchTermName, searchTermCode]);
+  }, [products, searchQuery, filterType, selectedFilterValue, productCodesForSupplier]);
+
+  const sortedAndFilteredProducts = useMemo(() => {
+    let result = [...filteredProducts];
+    if (sortType === 'a-z') {
+      result.sort((a, b) => a.designation.localeCompare(b.designation, 'fr'));
+    } else if (sortType === 'z-a') {
+      result.sort((a, b) => b.designation.localeCompare(a.designation, 'fr'));
+    } else if (sortType === 'price-desc') {
+      result.sort((a, b) => {
+        const pA = a.prixVente1 ?? 0;
+        const pB = b.prixVente1 ?? 0;
+        return pB - pA;
+      });
+    }
+    return result;
+  }, [filteredProducts, sortType]);
 
   const visibleProducts = useMemo(() => {
-    const mapped = filteredProducts.map((p, idx) => ({ ...p, originalIndex: idx }));
+    const mapped = sortedAndFilteredProducts.map((p, idx) => ({ ...p, originalIndex: idx }));
     const limit = Math.max(displayLimit, selectedIndex + 1);
     return mapped.slice(0, limit);
-  }, [filteredProducts, displayLimit, selectedIndex]);
+  }, [sortedAndFilteredProducts, displayLimit, selectedIndex]);
 
-  const selectedProduct = filteredProducts[selectedIndex] || null;
+  const selectedProduct = sortedAndFilteredProducts[selectedIndex] || null;
 
   const handleNext = () => {
-    if (selectedIndex < filteredProducts.length - 1) {
+    if (selectedIndex < sortedAndFilteredProducts.length - 1) {
       setSelectedIndex((prev) => prev + 1);
     }
   };
@@ -237,8 +306,8 @@ function ProductListWindow({
   };
 
   const handleLast = () => {
-    if (filteredProducts.length > 0) {
-      setSelectedIndex(filteredProducts.length - 1);
+    if (sortedAndFilteredProducts.length > 0) {
+      setSelectedIndex(sortedAndFilteredProducts.length - 1);
     }
   };
 
@@ -438,7 +507,7 @@ function ProductListWindow({
     if (deletingProduct && onDeleteProduct) {
       onDeleteProduct(deletingProduct.code);
       setDeletingProduct(null);
-      if (selectedIndex >= filteredProducts.length - 1 && selectedIndex > 0) {
+      if (selectedIndex >= sortedAndFilteredProducts.length - 1 && selectedIndex > 0) {
         setSelectedIndex(selectedIndex - 1);
       }
     }
@@ -453,70 +522,299 @@ function ProductListWindow({
       }}
       className="flex-1 flex flex-col gap-3.5 relative h-full font-sans text-slate-800 dark:text-slate-100"
     >
+      {/* Click-away backdrop to close filter/sort dropdowns */}
+      {(showFilterDropdown || showSortDropdown) && (
+        <div 
+          className="fixed inset-0 z-40 bg-transparent cursor-default" 
+          onClick={(e) => {
+            e.stopPropagation();
+            setShowFilterDropdown(false);
+            setShowSortDropdown(false);
+          }}
+        />
+      )}
       
       {/* Search Header layout */}
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-3 items-center shrink-0">
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0 bg-slate-50/50 dark:bg-slate-900/30 p-2 rounded-2xl border border-slate-200/40 dark:border-slate-800/50 z-40 relative">
         
-        {/* Navigation control pills */}
-        <div className="md:col-span-4 flex bg-slate-100 dark:bg-slate-950 p-1 rounded-full border border-slate-200/50 dark:border-slate-800 shadow-inner">
+        {/* Navigation control pills - Compact design */}
+        <div className="flex bg-slate-100 dark:bg-slate-950 p-0.5 rounded-full border border-slate-200/50 dark:border-slate-800 shadow-inner w-36 shrink-0 h-8.5 items-center select-none">
           <button
             onClick={handleFirst}
-            className="flex-1 h-8 rounded-full flex items-center justify-center bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-350 active:scale-95 transition-all select-none cursor-pointer border border-transparent shadow-xs"
+            className="flex-1 h-7 rounded-full flex items-center justify-center bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 active:scale-95 transition-all cursor-pointer border border-transparent shadow-xs"
             title="Premier produit"
           >
-            <ChevronFirst size={14} />
+            <ChevronFirst size={13} />
           </button>
           <button
             onClick={handlePrev}
-            className="flex-1 h-8 rounded-full flex items-center justify-center bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-350 active:scale-95 transition-all select-none cursor-pointer border border-transparent shadow-xs"
+            className="flex-1 h-7 rounded-full flex items-center justify-center bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 active:scale-95 transition-all cursor-pointer border border-transparent shadow-xs"
             title="Précédent"
           >
-            <ChevronLeft size={14} />
+            <ChevronLeft size={13} />
           </button>
           <button
             onClick={handleNext}
-            className="flex-1 h-8 rounded-full flex items-center justify-center bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-350 active:scale-95 transition-all select-none cursor-pointer border border-transparent shadow-xs"
+            className="flex-1 h-7 rounded-full flex items-center justify-center bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 active:scale-95 transition-all cursor-pointer border border-transparent shadow-xs"
             title="Suivant"
           >
-            <ChevronRight size={14} />
+            <ChevronRight size={13} />
           </button>
           <button
             onClick={handleLast}
-            className="flex-1 h-8 rounded-full flex items-center justify-center bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-350 active:scale-95 transition-all select-none cursor-pointer border border-transparent shadow-xs"
+            className="flex-1 h-7 rounded-full flex items-center justify-center bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 active:scale-95 transition-all cursor-pointer border border-transparent shadow-xs"
             title="Dernier produit"
           >
-            <ChevronLast size={14} />
+            <ChevronLast size={13} />
           </button>
         </div>
 
-        {/* Inputs */}
-        <div className="md:col-span-4 flex flex-col relative">
+        {/* Unified Search Input (Designation / Barcode Code in same box) */}
+        <div className="flex-1 relative min-w-[200px]">
           <input
             type="text"
-            placeholder="Rechercher par nom..."
-            value={searchTermName}
+            placeholder="Rechercher par désignation ou code..."
+            value={searchQuery}
             onChange={(e) => {
-              setSearchTermName(e.target.value);
+              setSearchQuery(e.target.value);
               setSelectedIndex(-1);
             }}
-            className="h-8.5 bg-slate-100 dark:bg-slate-950/60 border border-slate-200/50 dark:border-slate-800 rounded-full px-3.5 pr-8 text-xs outline-none focus:border-m3-primary focus:ring-1 focus:ring-m3-primary/15 transition-all text-slate-800 dark:text-slate-100 placeholder:text-slate-400 font-semibold"
+            className="w-full h-8.5 bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl pl-8.5 pr-8 text-xs outline-none focus:border-m3-primary focus:ring-1 focus:ring-m3-primary/10 transition-all text-slate-850 dark:text-slate-100 placeholder:text-slate-400 font-semibold"
           />
-          <Search size={13} className="absolute right-3.5 top-2.5 text-slate-400" />
+          <Search size={13} className="absolute left-3 top-2.5 text-slate-400" />
+          {searchQuery && (
+            <button
+              onClick={() => {
+                setSearchQuery('');
+                setSelectedIndex(-1);
+              }}
+              className="absolute right-3 top-2 p-0.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+            >
+              <X size={12} />
+            </button>
+          )}
         </div>
 
-        <div className="md:col-span-4 flex flex-col relative">
-          <input
-            type="text"
-            placeholder="Rechercher par code..."
-            value={searchTermCode}
-            onChange={(e) => {
-              setSearchTermCode(e.target.value);
-              setSelectedIndex(-1);
+        {/* Filtre par Dropdown */}
+        <div className="relative shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              setShowFilterDropdown(!showFilterDropdown);
+              setShowSortDropdown(false);
             }}
-            className="h-8.5 bg-slate-100 dark:bg-slate-950/60 border border-slate-200/50 dark:border-slate-800 rounded-full px-3.5 pr-8 text-xs outline-none focus:border-m3-primary focus:ring-1 focus:ring-m3-primary/15 transition-all text-slate-800 dark:text-slate-100 placeholder:text-slate-400 font-semibold"
-          />
-          <Search size={13} className="absolute right-3.5 top-2.5 text-slate-400" />
+            className={`h-8.5 px-3 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all select-none border shadow-xs cursor-pointer active:scale-95 ${
+              filterType !== 'none'
+                ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900/40'
+                : 'bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800'
+            }`}
+          >
+            <Filter size={12} className={filterType !== 'none' ? 'animate-pulse' : ''} />
+            <span className="max-w-[140px] truncate">
+              {filterType === 'none' && 'Filtre par'}
+              {filterType === 'famille' && `${selectedFilterValue}`}
+              {filterType === 'fournisseur' && `${selectedFilterValue}`}
+            </span>
+            {filterType !== 'none' ? (
+              <span 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setFilterType('none');
+                  setSelectedFilterValue('');
+                  setShowFilterDropdown(false);
+                }}
+                className="hover:bg-amber-200/50 dark:hover:bg-amber-900/40 p-0.5 rounded-full inline-flex items-center justify-center text-amber-500 hover:text-amber-700"
+                title="Réinitialiser le filtre"
+              >
+                <X size={10} />
+              </span>
+            ) : (
+              <span className="text-[10px] opacity-40">▼</span>
+            )}
+          </button>
+
+          {showFilterDropdown && (
+            <div className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 p-1.5 w-60 text-left animate-in fade-in duration-100 flex flex-col max-h-[320px] overflow-hidden">
+              <div className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 px-2 py-1 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800/60 flex items-center justify-between">
+                <span>Filtrer les articles</span>
+                {filterType !== 'none' && (
+                  <button
+                    onClick={() => {
+                      setFilterType('none');
+                      setSelectedFilterValue('');
+                      setShowFilterDropdown(false);
+                    }}
+                    className="text-rose-500 hover:text-rose-600 font-bold"
+                  >
+                    Effacer
+                  </button>
+                )}
+              </div>
+
+              <div className="flex-1 overflow-y-auto py-1 space-y-2 max-h-[260px] scrollbar-thin">
+                {/* Default Option */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilterType('none');
+                    setSelectedFilterValue('');
+                    setShowFilterDropdown(false);
+                  }}
+                  className={`w-full px-2.5 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-xs font-bold text-left flex items-center justify-between cursor-pointer ${
+                    filterType === 'none' ? 'text-m3-primary bg-slate-50 dark:bg-slate-900' : 'text-slate-700 dark:text-slate-300'
+                  }`}
+                >
+                  <span>🚫 Tous les articles</span>
+                  {filterType === 'none' && <Check size={12} />}
+                </button>
+
+                {/* Families Section */}
+                <div className="space-y-0.5">
+                  <div className="px-2.5 py-1 text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-t border-slate-50 dark:border-slate-800/40 mt-1 pt-1.5">
+                    📂 Par Famille ({familles.length})
+                  </div>
+                  {familles.map((fam) => {
+                    const isSelected = filterType === 'famille' && selectedFilterValue === fam;
+                    return (
+                      <button
+                        key={fam}
+                        type="button"
+                        onClick={() => {
+                          setFilterType('famille');
+                          setSelectedFilterValue(fam);
+                          setShowFilterDropdown(false);
+                        }}
+                        className={`w-full pl-5 pr-2.5 py-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-xs font-bold text-left flex items-center justify-between cursor-pointer ${
+                          isSelected ? 'text-m3-primary bg-indigo-50/50 dark:bg-indigo-950/20 font-black' : 'text-slate-600 dark:text-slate-400'
+                        }`}
+                      >
+                        <span className="truncate">{fam}</span>
+                        {isSelected && <Check size={12} />}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Suppliers Section */}
+                <div className="space-y-0.5">
+                  <div className="px-2.5 py-1 text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-t border-slate-50 dark:border-slate-800/40 mt-1 pt-1.5">
+                    👤 Par Fournisseur ({suppliers.length})
+                  </div>
+                  {suppliers.length === 0 ? (
+                    <div className="px-5 py-1 text-[10px] text-slate-450 italic">
+                      Aucun fournisseur enregistré
+                    </div>
+                  ) : (
+                    suppliers.map((sup) => {
+                      const isSelected = filterType === 'fournisseur' && selectedFilterValue === sup;
+                      return (
+                        <button
+                          key={sup}
+                          type="button"
+                          onClick={() => {
+                            setFilterType('fournisseur');
+                            setSelectedFilterValue(sup);
+                            setShowFilterDropdown(false);
+                          }}
+                          className={`w-full pl-5 pr-2.5 py-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-xs font-bold text-left flex items-center justify-between cursor-pointer ${
+                            isSelected ? 'text-m3-primary bg-indigo-50/50 dark:bg-indigo-950/20 font-black' : 'text-slate-600 dark:text-slate-400'
+                          }`}
+                        >
+                          <span className="truncate">{sup}</span>
+                          {isSelected && <Check size={12} />}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
+
+        {/* Affichage Dropdown */}
+        <div className="relative shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              setShowSortDropdown(!showSortDropdown);
+              setShowFilterDropdown(false);
+            }}
+            className="h-8.5 px-3 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all select-none border shadow-xs cursor-pointer active:scale-95 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800"
+          >
+            <ArrowUpDown size={12} />
+            <span>
+              {sortType === 'none' && 'Affichage'}
+              {sortType === 'a-z' && 'A-Z'}
+              {sortType === 'z-a' && 'Z-A'}
+              {sortType === 'price-desc' && 'Prix ▼'}
+            </span>
+            <span className="text-[10px] opacity-40">▼</span>
+          </button>
+
+          {showSortDropdown && (
+            <div className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 p-1 w-52 text-left animate-in fade-in duration-100 flex flex-col">
+              <div className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 px-2 py-1 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800/60">
+                Trier l'affichage
+              </div>
+              <div className="py-1 space-y-0.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSortType('none');
+                    setShowSortDropdown(false);
+                  }}
+                  className={`w-full px-2.5 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-xs font-bold text-left flex items-center justify-between cursor-pointer ${
+                    sortType === 'none' ? 'text-m3-primary bg-slate-50 dark:bg-slate-900' : 'text-slate-700 dark:text-slate-350'
+                  }`}
+                >
+                  <span>Par défaut (Référence)</span>
+                  {sortType === 'none' && <Check size={12} />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSortType('a-z');
+                    setShowSortDropdown(false);
+                  }}
+                  className={`w-full px-2.5 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-xs font-bold text-left flex items-center justify-between cursor-pointer ${
+                    sortType === 'a-z' ? 'text-m3-primary bg-slate-50 dark:bg-slate-900' : 'text-slate-700 dark:text-slate-350'
+                  }`}
+                >
+                  <span>Désignation: A ➔ Z</span>
+                  {sortType === 'a-z' && <Check size={12} />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSortType('z-a');
+                    setShowSortDropdown(false);
+                  }}
+                  className={`w-full px-2.5 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-xs font-bold text-left flex items-center justify-between cursor-pointer ${
+                    sortType === 'z-a' ? 'text-m3-primary bg-slate-50 dark:bg-slate-900' : 'text-slate-700 dark:text-slate-350'
+                  }`}
+                >
+                  <span>Désignation: Z ➔ A</span>
+                  {sortType === 'z-a' && <Check size={12} />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSortType('price-desc');
+                    setShowSortDropdown(false);
+                  }}
+                  className={`w-full px-2.5 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-xs font-bold text-left flex items-center justify-between cursor-pointer ${
+                    sortType === 'price-desc' ? 'text-m3-primary bg-slate-50 dark:bg-slate-900' : 'text-slate-700 dark:text-slate-350'
+                  }`}
+                >
+                  <span>Prix: de +cher à -cher</span>
+                  {sortType === 'price-desc' && <Check size={12} />}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
       </div>
 
       {/* Main product catalogue table */}
@@ -622,7 +920,7 @@ function ProductListWindow({
                 </tr>
               );
             })}
-            {filteredProducts.length > visibleProducts.length && (
+            {sortedAndFilteredProducts.length > visibleProducts.length && (
               <tr>
                 <td colSpan={8} className="text-center p-3 bg-slate-50/50 dark:bg-slate-900/50">
                   <button
@@ -633,7 +931,7 @@ function ProductListWindow({
                     }}
                     className="px-4 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors cursor-pointer"
                   >
-                    Afficher plus de produits ({filteredProducts.length - visibleProducts.length} restants)
+                    Afficher plus de produits ({sortedAndFilteredProducts.length - visibleProducts.length} restants)
                   </button>
                 </td>
               </tr>

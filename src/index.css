@@ -64,7 +64,7 @@
 /* Base resets & scrollbars helper */
 body {
   font-family: var(--font-sans);
-  background-color: #f8fafc;
+  background-color: #f1f5f9; /* Matte Slate 100 instead of reflective Slate 50 */
   overflow: hidden;
   transition: background-color 0.3s ease;
 }
@@ -138,7 +138,7 @@ html:not(.dark) select,
 html:not(.dark) textarea,
 html:not(.dark) .editable-input,
 html:not(.dark) [contenteditable="true"] {
-  background-color: #ffffff !important;
+  background-color: #fafbfc !important; /* Soft glare-free off-white */
   color: #0f172a !important; /* Slate 900 - high contrast text */
   border: 1.5px solid #94a3b8 !important; /* Solid Slate 400 border for perfect clarity */
   border-radius: 8px !important;
@@ -166,7 +166,7 @@ html:not(.dark) input[type="search"]:focus,
 html:not(.dark) select:focus,
 html:not(.dark) textarea:focus {
   border-color: #0284c7 !important; /* Sky 600 on focus */
-  background-color: #ffffff !important;
+  background-color: #fafbfc !important; /* Soft glare-free off-white */
   box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2), inset 0 1px 2px rgba(0,0,0,0.05) !important;
   outline: none !important;
 }
@@ -305,15 +305,15 @@ button:disabled {
 
 /* Specific calculated summary values (like total price / TTC blocks on the right) */
 html:not(.dark) .summary-panel-value {
-  background-color: #ffffff !important;
+  background-color: #fafbfc !important; /* Soft glare-free off-white */
   border-color: #94a3b8 !important;
   color: #0f172a !important;
   font-weight: 800 !important;
 }
 
-/* Tables in light mode - Make grid lines crisp and background purely white */
+/* Tables in light mode - Make grid lines crisp and background soft off-white */
 html:not(.dark) table {
-  background-color: #ffffff !important;
+  background-color: #fafbfc !important; /* Soft glare-free off-white */
   border-collapse: separate !important;
   border-spacing: 0 !important;
 }
@@ -334,12 +334,12 @@ html:not(.dark) td {
   background-color: inherit !important;
 }
 
-/* Zebra striping for ultra high data legibility in table lists */
+/* Zebra striping for ultra high data legibility in table lists without blinding glare */
 html:not(.dark) tbody tr:nth-child(even) {
-  background-color: #ffffff !important;
+  background-color: #fafbfc !important; /* Soft off-white */
 }
 html:not(.dark) tbody tr:nth-child(odd) {
-  background-color: #f8fafc !important; /* Very subtle Slate 50 */
+  background-color: #f1f5f9 !important; /* Soft matte Slate 100 instead of reflective Slate 50 */
 }
 
 html:not(.dark) tbody tr:hover {
@@ -366,7 +366,7 @@ html:not(.dark) tr[class*="bg-m3-primary"] td {
 
 /* Material buttons polish for light mode */
 html:not(.dark) .ripple-btn:not(.bg-m3-primary):not(.bg-red-600):not(.bg-emerald-600) {
-  background-color: #ffffff !important;
+  background-color: #fafbfc !important; /* Soft off-white */
   color: #1e293b !important;
   border: 1.5px solid #94a3b8 !important;
 }
@@ -400,11 +400,11 @@ html:not(.dark) [id^="window-"] .bg-m3-surface-container\/30 {
   background-color: #cbd5e1 !important; /* Steel-blue/slate 300 frame divider background */
 }
 
-/* Guarantee that interactive text fields, drop-downs, and editors are purely white */
+/* Guarantee that interactive text fields, drop-downs, and editors are glare-free off-white */
 html:not(.dark) [id^="window-"] input:not([readonly]):not([disabled]),
 html:not(.dark) [id^="window-"] select:not([disabled]),
 html:not(.dark) [id^="window-"] textarea:not([disabled]) {
-  background-color: #ffffff !important;
+  background-color: #fafbfc !important; /* Soft glare-free off-white */
   color: #0f172a !important; /* High contrast text */
   border: 1.5px solid #94a3b8 !important; /* Strong border for clear visual boundary */
 }
@@ -415,13 +415,13 @@ html:not(.dark) [id^="window-"] [data-selected="true"] {
   color: #ffffff !important;
 }
 
-/* Grid Table Rows - Ensure rows are purely white with crisp zebra striping to pop beautifully */
+/* Grid Table Rows - Ensure rows are glare-free off-white with crisp zebra striping to pop beautifully */
 html:not(.dark) [id^="window-"] tr:not(.bg-m3-primary):not([data-selected="true"]):not([class*="bg-sky-"]):not([class*="bg-indigo-"]) {
-  background-color: #ffffff !important;
+  background-color: #fafbfc !important; /* Soft off-white */
   color: #0f172a !important;
 }
 html:not(.dark) [id^="window-"] tr:nth-child(even):not(.bg-m3-primary):not([data-selected="true"]):not([class*="bg-sky-"]):not([class*="bg-indigo-"]) {
-  background-color: #f8fafc !important; /* Soft Slate 50 for row grouping readability */
+  background-color: #f1f5f9 !important; /* Soft Slate 100 instead of 50 to reduce glare */
 }
 html:not(.dark) [id^="window-"] td {
   color: #0f172a !important;
