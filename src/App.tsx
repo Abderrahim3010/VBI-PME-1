@@ -1275,7 +1275,7 @@ export default function App() {
             className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
             <ShoppingBag className="text-amber-500 dark:text-amber-400 shrink-0" size={26} />
-            <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Saisie Achats</span>
+            <span style={{ fontSize: '14px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Saisie Achats</span>
             <span className="text-[8px] text-slate-500 font-bold tracking-tight mt-1">F1</span>
           </button>
         )}
@@ -1286,7 +1286,7 @@ export default function App() {
             className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
             <ShoppingCart className="text-emerald-500 dark:text-emerald-400 shrink-0" size={26} />
-            <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Saisie Ventes</span>
+            <span style={{ fontSize: '14px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Saisie Ventes</span>
             <span className="text-[8px] text-slate-500 font-bold tracking-tight mt-1">F2</span>
           </button>
         )}
@@ -1297,7 +1297,7 @@ export default function App() {
             className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
             <Package className="text-orange-500 dark:text-orange-400 shrink-0" size={26} />
-            <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Catalogue</span>
+            <span style={{ fontSize: '14px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Catalogue</span>
             <span className="text-[8px] text-slate-500 font-bold tracking-tight mt-1">F3</span>
           </button>
         )}
@@ -1308,7 +1308,7 @@ export default function App() {
             className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
             <Truck className="text-indigo-500 dark:text-indigo-400 shrink-0" size={26} />
-            <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Fournisseurs</span>
+            <span style={{ fontSize: '14px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Fournisseurs</span>
             <span className="text-[8px] text-slate-500 font-bold tracking-tight mt-1">F4</span>
           </button>
         )}
@@ -1319,7 +1319,7 @@ export default function App() {
             className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
             <Users className="text-teal-500 dark:text-teal-400 shrink-0" size={26} />
-            <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Clients</span>
+            <span style={{ fontSize: '14px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Clients</span>
             <span className="text-[8px] text-slate-500 font-bold tracking-tight mt-1">F5</span>
           </button>
         )}
@@ -1332,7 +1332,7 @@ export default function App() {
             className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
             <BookOpen className="text-rose-500 dark:text-rose-400 shrink-0" size={26} />
-            <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Situation Fourn.</span>
+            <span style={{ fontSize: '14px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Situation Fourn.</span>
             <span className="text-[8px] text-slate-500 font-bold tracking-tight mt-1">F6</span>
           </button>
         )}
@@ -1343,7 +1343,7 @@ export default function App() {
             className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
             <BookOpen className="text-emerald-500 dark:text-emerald-400 shrink-0" size={26} />
-            <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Situation Client</span>
+            <span style={{ fontSize: '14px', lineHeight: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Situation Client</span>
             <span className="text-[8px] text-slate-500 font-bold tracking-tight mt-1">F7</span>
           </button>
         )}
@@ -1354,7 +1354,7 @@ export default function App() {
             className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
             <BarChart3 className="text-purple-500 dark:text-purple-400 shrink-0" size={26} />
-            <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Statistiques</span>
+            <span style={{ fontSize: '14px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Statistiques</span>
             <span className="text-[8px] text-slate-500 font-bold tracking-tight mt-1">F8</span>
           </button>
         )}
@@ -1365,7 +1365,7 @@ export default function App() {
             className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
             <Search className="text-cyan-500 dark:text-cyan-400 shrink-0" size={26} />
-            <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Inventaire</span>
+            <span style={{ fontSize: '14px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Inventaire</span>
             <span className="text-[8px] text-slate-500 font-bold tracking-tight mt-1">F9</span>
           </button>
         )}
@@ -1376,7 +1376,7 @@ export default function App() {
             className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
             <Coins className="text-emerald-600 dark:text-emerald-400 shrink-0" size={26} />
-            <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Coffre Caisse</span>
+            <span style={{ fontSize: '14px', fontStyle: 'normal', textDecorationLine: 'none', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Coffre Caisse</span>
             <span className="text-[8px] text-slate-500 font-bold tracking-tight mt-1">F10</span>
           </button>
         )}
