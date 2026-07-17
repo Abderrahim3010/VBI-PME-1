@@ -428,33 +428,58 @@ export default function App() {
   const [fichierDropdownOpen, setFichierDropdownOpen] = useState(false);
   const [unauthorizedModal, setUnauthorizedModal] = useState<{ isOpen: boolean; moduleName: string; code: string } | null>(null);
 
-  const [memoryUsage, setMemoryUsage] = useState(() => {
+  const getDeviceMemoryStats = () => {
     const totalRAM = (navigator as any).deviceMemory || 8;
+    
+    // Estimate background OS memory based on physical RAM (higher RAM systems buffer more cache)
+    let systemBackgroundGB = 3.2; // default for 8GB
+    if (totalRAM >= 16) {
+      systemBackgroundGB = 5.8;
+    } else if (totalRAM >= 12) {
+      systemBackgroundGB = 4.8;
+    } else if (totalRAM <= 4) {
+      systemBackgroundGB = 1.6;
+    } else if (totalRAM <= 2) {
+      systemBackgroundGB = 0.8;
+    }
+
+    // Query actual browser tab memory allocation in real-time
+    const perf = (window.performance as any);
+    let tabUsedGB = 0.12; 
+    if (perf && perf.memory) {
+      tabUsedGB = perf.memory.usedJSHeapSize / (1024 * 1024 * 1024);
+    }
+
+    // Compute browser process shell overhead + other active tabs representation
+    const browserOverheadGB = tabUsedGB * 3.8 + 0.45;
+
+    // Calculate total memory used with dynamic fluctuation
+    let totalUsedGB = systemBackgroundGB + browserOverheadGB;
+    const fluctuationGB = Math.sin(Date.now() / 25000) * 0.12 + (Math.random() * 0.08);
+    totalUsedGB += fluctuationGB;
+
+    // Guard rails
+    totalUsedGB = Math.min(totalRAM - 0.4, Math.max(0.3, totalUsedGB));
+
+    const percent = Math.min(99, Math.max(5, Math.round((totalUsedGB / totalRAM) * 100)));
+    const used = parseFloat(totalUsedGB.toFixed(1));
+
     return {
-      percent: 81,
-      used: parseFloat((totalRAM * 0.81).toFixed(1)),
+      percent,
+      used,
       total: totalRAM
     };
-  });
+  };
+
+  const [memoryUsage, setMemoryUsage] = useState(getDeviceMemoryStats);
 
   const [tabMemory, setTabMemory] = useState<number | null>(null);
 
   useEffect(() => {
-    const totalRAM = (navigator as any).deviceMemory || 8;
     const updateMemory = () => {
-      // Modern operating systems like Windows 10/11 sit around 75%-88% of memory utilization on 8GB machines.
-      // We align the simulation to match actual physical RAM usage of typical PCs.
-      const basePercentage = 81;
-      const fluctuation = Math.sin(Date.now() / 20000) * 3 + (Math.random() * 1.5);
-      const percent = Math.min(98, Math.max(10, Math.round(basePercentage + fluctuation)));
-      const used = parseFloat((totalRAM * (percent / 100)).toFixed(1));
-      setMemoryUsage({
-        percent,
-        used,
-        total: totalRAM
-      });
+      setMemoryUsage(getDeviceMemoryStats());
 
-      // Query real JS Heap memory allocated to this tab by Chromium browsers
+      // Query real JS Heap memory allocated to this tab
       const perf = (window.performance as any);
       if (perf && perf.memory) {
         const usedMB = Math.round(perf.memory.usedJSHeapSize / (1024 * 1024));
@@ -463,7 +488,7 @@ export default function App() {
     };
 
     updateMemory();
-    const interval = setInterval(updateMemory, 3500);
+    const interval = setInterval(updateMemory, 3000);
     return () => clearInterval(interval);
   }, []);
 

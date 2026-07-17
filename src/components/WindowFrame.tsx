@@ -59,7 +59,7 @@ export default function WindowFrame({
     return { width: defaultW, height: defaultH };
   });
 
-  const hasManuallyResizedRef = useRef(false);
+  const hasManuallyDraggedRef = useRef(false);
 
   // Keep references updated to bypass stale effects & closure limitations
   const sizeRef = useRef(size);
@@ -82,26 +82,38 @@ export default function WindowFrame({
     const defaultW = parseTailwindLength(width, 800);
     const defaultH = parseTailwindLength(height, 500);
 
-    // Limit window sizes to match available desktop stage with padding
-    const fittedW = Math.min(defaultW, stageW - 16);
-    const fittedH = Math.min(defaultH, stageH - 16);
+    // Calculate scaled window size based on stage size compared to standard baseline (1185 x 700)
+    // This allows the windows to scale up when screen is larger, and scale down when smaller,
+    // keeping everything in perfect proportion and avoiding layout breakages!
+    let finalW = Math.round(stageW * (defaultW / 1185));
+    let finalH = Math.round(stageH * (defaultH / 700));
 
-    let finalW = fittedW;
-    let finalH = fittedH;
+    // Constrain sizes to keep layout functional
+    const minW = Math.min(420, stageW - 16);
+    const minH = Math.min(260, stageH - 16);
+    const maxW = stageW - 16;
+    const maxH = stageH - 16;
 
-    if (hasManuallyResizedRef.current) {
-      finalW = Math.min(sizeRef.current.width, stageW - 16);
-      finalH = Math.min(sizeRef.current.height, stageH - 16);
-    }
+    finalW = Math.max(minW, Math.min(maxW, finalW));
+    finalH = Math.max(minH, Math.min(maxH, finalH));
 
     setSize({ width: finalW, height: finalH });
 
     // Constrain positions so it doesn't leak off screen
-    const currentX = positionRef.current.x === 0 ? initialX : positionRef.current.x;
-    const currentY = positionRef.current.y === 0 ? initialY : positionRef.current.y;
+    let targetX = initialX;
+    let targetY = initialY;
 
-    const fittedX = Math.max(8, Math.min(currentX, stageW - finalW - 8));
-    const fittedY = Math.max(8, Math.min(currentY, stageH - finalH - 8));
+    if (hasManuallyDraggedRef.current) {
+      targetX = positionRef.current.x === 0 ? initialX : positionRef.current.x;
+      targetY = positionRef.current.y === 0 ? initialY : positionRef.current.y;
+    } else {
+      // Scale initial coordinates proportionally to current stage size from baseline (1185 x 700)
+      targetX = Math.round(stageW * (initialX / 1185));
+      targetY = Math.round(stageH * (initialY / 700));
+    }
+
+    const fittedX = Math.max(8, Math.min(targetX, stageW - finalW - 8));
+    const fittedY = Math.max(8, Math.min(targetY, stageH - finalH - 8));
 
     setPosition({ x: fittedX, y: fittedY });
   };
@@ -157,62 +169,13 @@ export default function WindowFrame({
       
       // Update React state at the end of the drag session
       setPosition({ x: currentX, y: currentY });
+      hasManuallyDraggedRef.current = true;
     };
 
     document.addEventListener('pointermove', handlePointerMove);
     document.addEventListener('pointerup', handlePointerUp);
     
     e.preventDefault();
-  };
-
-  const handleResizeStart = (e: React.PointerEvent) => {
-    if (e.button !== 0 || isMaximized) return;
-    onFocus();
-
-    const startX = e.clientX;
-    const startY = e.clientY;
-    const startW = sizeRef.current.width;
-    const startH = sizeRef.current.height;
-    const s = scale || 1;
-
-    let currentWidth = startW;
-    let currentHeight = startH;
-
-    const handlePointerMove = (moveEvent: PointerEvent) => {
-      const dx = (moveEvent.clientX - startX) / s;
-      const dy = (moveEvent.clientY - startY) / s;
-      
-      const stageW = Math.max(500, (window.innerWidth / s) - 260);
-      const stageH = Math.max(350, (window.innerHeight - 100) / s);
-
-      const maxW = stageW - positionRef.current.x - 8;
-      const maxH = stageH - positionRef.current.y - 8;
-      
-      currentWidth = Math.max(380, Math.min(maxW, startW + dx));
-      currentHeight = Math.max(220, Math.min(maxH, startH + dy));
-      
-      if (windowRef.current) {
-        windowRef.current.style.width = `${currentWidth}px`;
-        windowRef.current.style.height = `${currentHeight}px`;
-      }
-      
-      sizeRef.current = { width: currentWidth, height: currentHeight };
-    };
-
-    const handlePointerUp = () => {
-      document.removeEventListener('pointermove', handlePointerMove);
-      document.removeEventListener('pointerup', handlePointerUp);
-      
-      // Update React state at the end of the resize session
-      setSize({ width: currentWidth, height: currentHeight });
-      hasManuallyResizedRef.current = true;
-    };
-
-    document.addEventListener('pointermove', handlePointerMove);
-    document.addEventListener('pointerup', handlePointerUp);
-    
-    e.preventDefault();
-    e.stopPropagation();
   };
 
   const [hasBeenOpened, setHasBeenOpened] = useState(isOpen);
@@ -317,16 +280,6 @@ export default function WindowFrame({
         {children}
       </div>
 
-      {/* Dynamic Resize Handle at the bottom right corner */}
-      {!isMaximized && (
-        <div
-          onPointerDown={handleResizeStart}
-          className="absolute bottom-1 right-1 w-8 h-8 cursor-se-resize z-[100] flex items-end justify-end p-1.5 select-none hover:bg-slate-100 dark:hover:bg-slate-800 rounded-br-2xl text-slate-400 hover:text-indigo-500 transition-colors"
-          title="Faites glisser pour redimensionner"
-        >
-          <Move size={12} className="rotate-45 select-none pointer-events-none" />
-        </div>
-      )}
     </div>
   );
 }
