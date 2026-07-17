@@ -1,5 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { Search, Package, Plus, X } from 'lucide-react';
 import { Product, Supplier, PurchaseVoucher, VoucherItem } from '../types';
 import { getStorageJson, getStorageString, saveData, saveJson } from '../services/localDb';
 
@@ -528,7 +529,8 @@ function PurchaseVoucherWindow({
 
   const selectedVoucher = useMemo(() => {
     if (mode === 'create') return null;
-    return purchases.find(v => String(v.id) === String(selectedVoucherId)) || purchases[purchases.length - 1] || null;
+    if (selectedVoucherId === '') return null;
+    return purchases.find(v => String(v.id) === String(selectedVoucherId)) || null;
   }, [purchases, selectedVoucherId, mode]);
 
   // Keep selectedVoucherId valid and synchronized with current purchases
@@ -537,9 +539,11 @@ function PurchaseVoucherWindow({
       if (purchases.length === 0) {
         setSelectedVoucherId('');
       } else {
-        const found = purchases.some(v => String(v.id) === String(selectedVoucherId));
-        if (!found) {
-          setSelectedVoucherId(purchases[purchases.length - 1].id);
+        if (selectedVoucherId !== '') {
+          const found = purchases.some(v => String(v.id) === String(selectedVoucherId));
+          if (!found) {
+            setSelectedVoucherId(purchases[purchases.length - 1].id);
+          }
         }
       }
     }
@@ -1765,7 +1769,13 @@ function PurchaseVoucherWindow({
               </div>
             </div>
           </div>
-          <div className="flex-1 overflow-auto">
+          <div 
+            className="flex-1 overflow-auto"
+            onClick={() => {
+              setSelectedVoucherId('');
+              setEditingVoucherId(null);
+            }}
+          >
             <table className="w-full text-left font-sans text-xs border-collapse">
               <thead className="bg-slate-100/60 dark:bg-slate-900 font-semibold text-slate-500 dark:text-slate-400 sticky top-0 select-none border-b border-slate-200/40 dark:border-slate-800/40 z-10 text-[10.5px] uppercase tracking-wider">
                 <tr>
@@ -1785,7 +1795,7 @@ function PurchaseVoucherWindow({
                   
                   const isSelected = mode === 'create'
                     ? (v.id === newVoucherId)
-                    : (v.id === selectedVoucherId);
+                    : (selectedVoucherId !== '' && v.id === selectedVoucherId);
 
                   const displaySupplier = isEditing ? newSupplierName : v.supplier;
                   const displayItemsCount = isEditing ? draftItems.length : isDraft ? (v.draftItems || []).length : v.itemsCount;
@@ -1804,9 +1814,10 @@ function PurchaseVoucherWindow({
 
                   return (
                     <tr
-                      key={v.id}
+                      key={`${nav.type}-${v.id}`}
                       data-selected={isSelected}
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         if (isDraft) {
                           loadDraft(v);
                         } else {
@@ -2091,7 +2102,10 @@ function PurchaseVoucherWindow({
             </div>
             <span className="text-slate-400 font-mono text-[9px] uppercase tracking-wide hidden sm:inline">F8 pour éditer la ligne</span>
           </div>
-          <div className="flex-1 overflow-auto">
+          <div 
+            className="flex-1 overflow-auto"
+            onClick={() => setSelectedDraftIdx(-1)}
+          >
             <table className="w-full text-left font-sans text-xs border-collapse">
               <thead className="bg-slate-100/60 dark:bg-slate-900 font-semibold text-slate-500 dark:text-slate-400 sticky top-0 select-none border-b border-slate-200/40 dark:border-slate-800/40 z-10 text-[10.5px] uppercase tracking-wider">
                 <tr>
@@ -2121,7 +2135,8 @@ function PurchaseVoucherWindow({
                       <tr 
                         key={item.id} 
                         data-selected={isSelected}
-                        onClick={() => {
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setSelectedDraftIdx(actualIndex);
                         }}
                         className={`border-b border-slate-100 dark:border-slate-900/60 transition-colors cursor-pointer ${
@@ -2229,32 +2244,39 @@ function PurchaseVoucherWindow({
 
       {/* ==================== SELECT CATALOG PRODUCT MODAL ==================== */}
       {isCatalogSearchOpen && (
-        <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/60 flex items-center justify-center z-50 p-4 backdrop-blur-[2px]">
-          <div className="w-[600px] max-w-full bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xl flex flex-col overflow-hidden font-sans text-xs animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-xs flex items-center justify-center z-[10010] p-4 select-none animate-in fade-in duration-150">
+          <div className="w-[580px] max-w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden text-slate-800 dark:text-slate-200 animate-in fade-in zoom-in-95 duration-200">
             
-            {/* Modal Titlebar */}
-            <div className="bg-slate-50 dark:bg-slate-950 px-4 py-3 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center select-none">
-              <span className="flex items-center gap-2 font-bold text-sm text-slate-800 dark:text-slate-200">
-                <span>📥</span> INSÉRER UN PRODUIT DEPUIS LE CATALOGUE
-              </span>
-              <button 
+            {/* Header */}
+            <div className="bg-gradient-to-r from-teal-700 to-teal-850 dark:from-slate-950 dark:to-slate-900 px-5 py-4 flex items-center justify-between">
+              <div className="flex flex-col text-white font-sans">
+                <span className="font-extrabold text-sm flex items-center gap-1.5">
+                  <Package size={15} /> Insérer un Produit depuis le Catalogue
+                </span>
+                <span className="text-[10px] opacity-80 mt-0.5">
+                  Recherchez et sélectionnez le produit à ajouter au bon d'achat
+                </span>
+              </div>
+              <button
+                type="button"
                 onClick={() => setIsCatalogSearchOpen(false)}
-                className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 transition-colors focus:outline-none cursor-pointer"
+                className="w-7 h-7 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-all cursor-pointer"
               >
-                ✕
+                <X size={14} />
               </button>
             </div>
 
             {/* Instruction Banner */}
-            <div className="bg-amber-50/60 dark:bg-amber-950/25 text-amber-900 dark:text-amber-300 px-4 py-2.5 border-b border-slate-100 dark:border-slate-800/60 font-sans select-none leading-relaxed">
-              Recherchez et sélectionnez le produit dans votre stock. Cliquez sur un article pour le choisir puis valisez pour configurer sa quantité d'achat.
+            <div className="bg-amber-50/40 dark:bg-amber-950/20 text-amber-900 dark:text-amber-300 px-5 py-3 border-b border-slate-100 dark:border-slate-800/60 font-sans select-none leading-relaxed text-[11px]">
+              Recherchez et sélectionnez le produit dans votre stock. Cliquez sur un article pour le choisir puis validez pour configurer sa quantité d'achat.
             </div>
 
-            {/* Body */}
-            <div className="p-4 flex flex-col gap-3 bg-white dark:bg-slate-900 flex-1">
+            {/* Content Body */}
+            <div className="p-5 flex flex-col gap-4 bg-white dark:bg-slate-900 flex-1">
+              
               {/* Search Box Row */}
-              <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-850">
-                <label className="font-bold text-slate-700 dark:text-slate-300 text-[11px] uppercase tracking-wider flex-shrink-0">Rechercher :</label>
+              <div className="relative flex items-center">
+                <Search size={14} className="absolute left-3.5 text-slate-400" />
                 <input
                   type="text"
                   autoFocus
@@ -2275,14 +2297,14 @@ function PurchaseVoucherWindow({
                       }
                     }
                   }}
-                  className="flex-1 h-8 px-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs outline-none font-bold text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                  className="w-full h-10 pl-10 pr-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:border-teal-500 focus:ring-1 focus:ring-teal-500 transition-all"
                 />
               </div>
 
               {/* Matching products table */}
-              <div className="flex flex-col border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+              <div className="flex flex-col border border-slate-200/60 dark:border-slate-800 rounded-2xl overflow-hidden shadow-sm bg-slate-50/30 dark:bg-slate-950/20">
                 {/* Table Header */}
-                <div className="grid grid-cols-12 gap-1 bg-slate-50 dark:bg-slate-950 font-bold text-[10px] text-slate-600 dark:text-slate-400 border-b border-slate-200 dark:border-slate-850 py-2 px-3 select-none font-sans uppercase tracking-wider">
+                <div className="grid grid-cols-12 gap-1 bg-slate-50 dark:bg-slate-950 font-black text-[9px] text-slate-500 dark:text-slate-400 border-b border-slate-200/60 dark:border-slate-850 py-2.5 px-4 select-none font-sans uppercase tracking-widest">
                   <span className="col-span-3">Code Article</span>
                   <span className="col-span-4">Désignation Produit</span>
                   <span className="col-span-2.5">Famille</span>
@@ -2291,7 +2313,7 @@ function PurchaseVoucherWindow({
                 </div>
                 
                 {/* Table Body */}
-                <div className="max-h-[220px] overflow-y-auto bg-white dark:bg-slate-900 flex flex-col font-mono text-[11px] text-slate-700 dark:text-slate-300 divide-y divide-slate-100 dark:divide-slate-850">
+                <div className="max-h-[200px] overflow-y-auto bg-white dark:bg-slate-900 flex flex-col font-mono text-[11px] text-slate-700 dark:text-slate-300 divide-y divide-slate-100 dark:divide-slate-850">
                   {(() => {
                     const activeItem = selectedSearchProduct && filteredProductsToInsert.some(p => p.code === selectedSearchProduct.code)
                       ? selectedSearchProduct
@@ -2306,29 +2328,30 @@ function PurchaseVoucherWindow({
                               key={p.code}
                               onClick={() => setSelectedSearchProduct(p)}
                               onDoubleClick={() => handleSelectCatalogProduct(p)}
-                              className={`grid grid-cols-12 gap-1 py-2 px-3 cursor-pointer items-center leading-tight select-none transition-colors duration-75 ${
+                              className={`grid grid-cols-12 gap-1 py-2.5 px-4 cursor-pointer items-center leading-tight select-none transition-all duration-75 ${
                                 isActive 
-                                  ? 'bg-indigo-650 text-white font-bold' 
+                                  ? 'bg-teal-600 text-white font-extrabold shadow-sm scale-[1.01]' 
                                   : 'hover:bg-slate-50 dark:hover:bg-slate-850 text-slate-800 dark:text-slate-200'
                               }`}
                             >
-                              <span className="col-span-3 truncate">{p.code}</span>
-                              <span className="col-span-4 truncate">{p.designation}</span>
-                              <span className={`col-span-2.5 truncate font-sans text-[10px] ${isActive ? 'text-indigo-100' : 'text-slate-500'}`}>
+                              <span className="col-span-3 truncate font-bold">{p.code}</span>
+                              <span className="col-span-4 truncate font-sans text-xs font-bold">{p.designation}</span>
+                              <span className={`col-span-2.5 truncate font-sans text-[10px] ${isActive ? 'text-teal-100' : 'text-slate-500'}`}>
                                 {p.category || '(Sans)'}
                               </span>
-                              <span className={`col-span-1.5 text-center truncate ${isActive ? 'text-white' : 'text-indigo-600 dark:text-indigo-400 font-bold'}`}>
+                              <span className={`col-span-1.5 text-center truncate font-bold ${isActive ? 'text-white' : 'text-teal-600 dark:text-teal-400 font-black'}`}>
                                 {p.stock}
                               </span>
-                              <span className="col-span-1 text-right truncate">
+                              <span className="col-span-1 text-right truncate font-bold">
                                 {Math.round(p.prixVente1)}
                               </span>
                             </div>
                           );
                         })}
                         {filteredProductsToInsert.length === 0 && (
-                          <div className="p-8 text-center text-slate-400 dark:text-slate-500 italic font-sans">
-                            Aucun produit correspondant trouvé dans votre stock.
+                          <div className="p-10 text-center text-slate-400 dark:text-slate-500 italic font-sans flex flex-col items-center justify-center gap-1.5">
+                            <span>🔍</span>
+                            <span>Aucun produit correspondant trouvé dans votre stock.</span>
                           </div>
                         )}
                       </>
@@ -2337,7 +2360,7 @@ function PurchaseVoucherWindow({
                 </div>
               </div>
 
-              {/* Bottom selection footer */}
+              {/* Bottom Selected Item Preview Box */}
               {(() => {
                 const activeItem = selectedSearchProduct && filteredProductsToInsert.some(p => p.code === selectedSearchProduct.code)
                   ? selectedSearchProduct
@@ -2346,22 +2369,25 @@ function PurchaseVoucherWindow({
                 return (
                   <>
                     {activeItem && (
-                      <div className="bg-indigo-50/60 dark:bg-indigo-950/20 text-indigo-900 dark:text-indigo-300 p-2.5 px-3 border border-indigo-100/50 dark:border-indigo-900/30 rounded-xl font-sans flex justify-between items-center select-none text-[11px] font-bold">
-                        <span>
-                          Produit : <span className="text-indigo-750 dark:text-sky-300 font-extrabold">{activeItem.designation}</span> ({activeItem.code})
-                        </span>
-                        <span>
-                          Stock actuel : <span className="text-indigo-750 dark:text-sky-300 font-extrabold">{activeItem.stock}</span> unités
-                        </span>
+                      <div className="bg-teal-50/40 dark:bg-teal-950/10 border border-teal-100/30 p-3 rounded-2xl flex justify-between items-center select-none text-xs font-sans animate-in fade-in duration-150">
+                        <div className="flex flex-col">
+                          <span className="text-[9px] font-black uppercase text-teal-600 dark:text-teal-450 tracking-wider">Produit sélectionné</span>
+                          <span className="text-slate-900 dark:text-slate-100 font-extrabold mt-0.5">{activeItem.designation}</span>
+                          <span className="text-[10px] text-slate-400 font-mono mt-0.5">{activeItem.code}</span>
+                        </div>
+                        <div className="flex flex-col text-right">
+                          <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">Stock actuel</span>
+                          <span className="text-teal-600 dark:text-teal-400 font-black text-sm mt-0.5">{activeItem.stock} <span className="text-[10px] font-bold text-slate-500">unités</span></span>
+                        </div>
                       </div>
                     )}
 
                     {/* Dialog Buttons */}
-                    <div className="flex justify-end gap-2 mt-1.5 select-none font-sans font-bold">
+                    <div className="flex justify-end gap-2.5 pt-2 select-none font-sans font-bold border-t border-slate-100 dark:border-slate-800">
                       <button
                         type="button"
                         onClick={() => setIsCatalogSearchOpen(false)}
-                        className="px-4 h-8 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs transition-colors cursor-pointer"
+                        className="px-5 h-9 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs transition-all cursor-pointer"
                       >
                         Annuler (Echap)
                       </button>
@@ -2371,9 +2397,9 @@ function PurchaseVoucherWindow({
                         onClick={() => {
                           if (activeItem) handleSelectCatalogProduct(activeItem);
                         }}
-                        className="px-5 h-8 bg-indigo-650 hover:bg-indigo-700 text-white rounded-xl text-xs transition-colors cursor-pointer disabled:opacity-45 shadow-md flex items-center justify-center"
+                        className="px-6 h-9 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-black shadow-md transition-all flex items-center justify-center gap-1.5 disabled:opacity-40 cursor-pointer"
                       >
-                        Valider l'insertion (Entrer)
+                        <Plus size={14} /> Insérer au Bon
                       </button>
                     </div>
                   </>

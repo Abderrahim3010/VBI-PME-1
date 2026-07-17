@@ -256,11 +256,25 @@ export default function App() {
   });
 
   const [purchases, setPurchases] = useState<PurchaseVoucher[]>(() => {
-    return getStorageJson('compos_purchases', INITIAL_PURCHASES);
+    const raw = getStorageJson('compos_purchases', INITIAL_PURCHASES);
+    const uniqueMap = new Map<string, PurchaseVoucher>();
+    raw.forEach(p => {
+      if (p && p.id) {
+        uniqueMap.set(String(p.id), p);
+      }
+    });
+    return Array.from(uniqueMap.values());
   });
 
   const [sales, setSales] = useState<SalesVoucher[]>(() => {
-    return getStorageJson('compos_sales', INITIAL_SALES);
+    const raw = getStorageJson('compos_sales', INITIAL_SALES);
+    const uniqueMap = new Map<string, SalesVoucher>();
+    raw.forEach(s => {
+      if (s && s.id) {
+        uniqueMap.set(String(s.id), s);
+      }
+    });
+    return Array.from(uniqueMap.values());
   });
 
   // System general config
@@ -761,8 +775,11 @@ export default function App() {
 
   // Handle inventory updates upon purchase / sale vouchers
   const handleAddPurchaseVoucher = (voucher: PurchaseVoucher) => {
-    // Add purchase
-    setPurchases(prev => [...prev, voucher]);
+    // Add purchase safely preventing duplicates
+    setPurchases(prev => {
+      const filtered = prev.filter(p => String(p.id) !== String(voucher.id));
+      return [...filtered, voucher];
+    });
 
     // Update supplier balance: buying stuff increases debit balance (we owe LARBI HAMIZ etc)
     setSuppliers(prevSuppliers => {
@@ -858,7 +875,10 @@ export default function App() {
   };
 
   const handleAddSalesVoucher = (voucher: SalesVoucher) => {
-    setSales(prev => [...prev, voucher]);
+    setSales(prev => {
+      const filtered = prev.filter(s => String(s.id) !== String(voucher.id));
+      return [...filtered, voucher];
+    });
 
     // Update client balance: Nouveau solde = Ancien solde + (TTC - Versement)
     setClients(prevClients => {

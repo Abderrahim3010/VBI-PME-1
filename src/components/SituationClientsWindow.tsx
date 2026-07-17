@@ -753,7 +753,7 @@ function SituationClientsWindow({
 
                       return (
                         <tr
-                          key={item.rowId}
+                          key={`${item.rowId}-${index}`}
                           onClick={() => setSelectedRowId(item.rowId)}
                           className={`cursor-pointer hover:bg-[#ebfbf3] dark:hover:bg-emerald-950/20 transition-all ${
                             isSelected 

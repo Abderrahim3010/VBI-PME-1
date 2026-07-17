@@ -754,7 +754,7 @@ function SituationFournisseursWindow({
 
                       return (
                         <tr
-                          key={item.rowId}
+                          key={`${item.rowId}-${index}`}
                           onClick={() => setSelectedRowId(item.rowId)}
                           className={`cursor-pointer hover:bg-sky-50 dark:hover:bg-sky-950/20 transition-all ${
                             isSelected 
