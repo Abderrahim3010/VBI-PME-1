@@ -166,6 +166,7 @@ function SalesVoucherWindow({
   const [editModalQty, setEditModalQty] = useState<number | ''>(1);
   const [editModalPrice, setEditModalPrice] = useState<number | ''>(0);
   const [editModalIndex, setEditModalIndex] = useState<number>(-1);
+  const [editPriceType, setEditPriceType] = useState<'prixVente1' | 'prixVente2' | 'prixVente3' | ''>('');
 
   // Client Selection and Creation Modal states
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
@@ -1158,8 +1159,21 @@ function SalesVoucherWindow({
     const currentItem = draftItems[selectedItemIndex];
     if (!currentItem) return;
 
+    const matchingProduct = products.find(p => p.code === currentItem.code);
+    let initialPriceType: 'prixVente1' | 'prixVente2' | 'prixVente3' | '' = '';
+    if (matchingProduct) {
+      if (currentItem.price === matchingProduct.prixVente1) {
+        initialPriceType = 'prixVente1';
+      } else if (currentItem.price === matchingProduct.prixVente2) {
+        initialPriceType = 'prixVente2';
+      } else if (currentItem.price === matchingProduct.prixVente3) {
+        initialPriceType = 'prixVente3';
+      }
+    }
+
     setEditModalQty(currentItem.qty);
     setEditModalPrice(currentItem.price);
+    setEditPriceType(initialPriceType);
     setEditModalIndex(selectedItemIndex);
     setIsItemEditModalOpen(true);
   };
@@ -1737,7 +1751,7 @@ function SalesVoucherWindow({
 
             <button
               onClick={handleEditPriceOrQty}
-              disabled={mode === 'view'}
+              disabled={mode === 'view' || selectedItemIndex === -1 || !draftItems[selectedItemIndex]}
               type="button"
               className="h-7.5 px-2.5 bg-gradient-to-br from-amber-500 to-amber-600 hover:opacity-95 text-white rounded-lg text-[9.5px] font-black tracking-wide flex items-center gap-1 shadow-sm hover:scale-[1.01] active:scale-[0.99] transition-all duration-100 cursor-pointer shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
             >
@@ -1748,7 +1762,7 @@ function SalesVoucherWindow({
 
             <button
               onClick={handleDeleteItem}
-              disabled={mode === 'view'}
+              disabled={mode === 'view' || selectedItemIndex === -1 || !draftItems[selectedItemIndex]}
               type="button"
               className="h-7.5 px-2.5 bg-gradient-to-br from-rose-500 to-rose-600 hover:opacity-95 text-white rounded-lg text-[9.5px] font-black tracking-wide flex items-center gap-1 shadow-sm hover:scale-[1.01] active:scale-[0.99] transition-all duration-100 cursor-pointer shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
             >
@@ -2811,35 +2825,46 @@ function SalesVoucherWindow({
       )}
 
       {/* -------------------- IN-APP ITEM EDIT (PRICE/QTY) MODAL -------------------- */}
-      {isItemEditModalOpen && editModalIndex !== -1 && (
-        <div className="fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-xs flex items-center justify-center z-[10010] p-4 select-none animate-in fade-in duration-150">
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              const currentItem = draftItems[editModalIndex];
-              if (!currentItem) return;
+      {isItemEditModalOpen && editModalIndex !== -1 && (() => {
+        const currentItem = draftItems[editModalIndex];
+        if (!currentItem) return null;
 
-              const newQty = editModalQty === '' ? 1 : Number(editModalQty);
-              const newPrice = editModalPrice === '' ? 0 : Number(editModalPrice);
+        const matchingProduct = products.find(p => p.code === currentItem.code);
+        if (!matchingProduct) return null;
 
-              if (isNaN(newQty) || newQty <= 0) {
-                showRetroAlert("La quantité doit être supérieure à 0.", "Quantité invalide");
-                return;
-              }
-              if (isNaN(newPrice) || newPrice < 0) {
-                showRetroAlert("Le prix ne peut pas être négatif.", "Prix invalide");
-                return;
-              }
+        const purchasePrice = matchingProduct.prixDeRevient || matchingProduct.prixAchat || 0;
+        const hasRevient = typeof matchingProduct.prixDeRevient === 'number' && 
+                            matchingProduct.prixDeRevient > 0 && 
+                            matchingProduct.prixDeRevient !== matchingProduct.prixAchat;
 
-              // Check if stock would be exceeded/exhausted and show confirm if needed
-              // Finding the original product
-              const origProduct = products.find(p => p.code === currentItem.code);
-              if (origProduct) {
-                const availableStockBeforeThisItem = origProduct.stock + currentItem.qty;
-                const projectedStockAfterThisItem = availableStockBeforeThisItem - newQty;
+        const availableStockBeforeThisItem = matchingProduct.stock + currentItem.qty;
+        const projectedStockAfterThisItem = availableStockBeforeThisItem - (editModalQty === '' ? 0 : Number(editModalQty));
 
+        const price = editModalPrice === '' ? 0 : Number(editModalPrice);
+        const qty = editModalQty === '' ? 1 : Number(editModalQty);
+        const unitBenefit = price - purchasePrice;
+        const totalBenefit = unitBenefit * qty;
+        const isLoss = unitBenefit < 0;
+
+        return (
+          <div className="fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-xs flex items-center justify-center z-[10010] p-4 select-none animate-in fade-in duration-150">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const newQty = editModalQty === '' ? 1 : Number(editModalQty);
+                const newPrice = editModalPrice === '' ? 0 : Number(editModalPrice);
+
+                if (isNaN(newQty) || newQty <= 0) {
+                  showRetroAlert("La quantité doit être supérieure à 0.", "Quantité invalide");
+                  return;
+                }
+                if (isNaN(newPrice) || newPrice < 0) {
+                  showRetroAlert("Le prix ne peut pas être négatif.", "Prix invalide");
+                  return;
+                }
+
+                // Check stock warning
                 if (projectedStockAfterThisItem <= 0 && availableStockBeforeThisItem > 0) {
-                  // Show confirm
                   showRetroConfirm(
                     `⚠️ Stock Épuisé : La modification amènera le produit "${currentItem.designation}" à un stock de ${projectedStockAfterThisItem}.\n\nVoulez-vous modifier quand même ?`,
                     () => {
@@ -2861,102 +2886,229 @@ function SalesVoucherWindow({
                   );
                   return;
                 }
-              }
 
-              const updated = [...draftItems];
-              const colisage = currentItem.colisage || 12;
-              updated[editModalIndex] = {
-                ...currentItem,
-                qty: newQty,
-                price: newPrice,
-                total: newQty * newPrice,
-                nbreColis: Math.floor(newQty / colisage),
-                pieces: newQty % colisage
-              };
-              setDraftItems(updated);
-              adjustProductStockInParent(currentItem.code, currentItem.qty - newQty);
-              setIsItemEditModalOpen(false);
-            }}
-            className="w-[450px] max-w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden text-slate-800 dark:text-slate-200 animate-in fade-in zoom-in-95 duration-200"
-          >
-            {/* Header */}
-            <div className="bg-gradient-to-r from-indigo-700 to-indigo-850 dark:from-slate-950 dark:to-slate-900 px-5 py-4 flex items-center justify-between">
-              <div className="flex flex-col text-white font-sans">
-                <span className="font-extrabold text-sm flex items-center gap-1.5">
-                  <Edit size={15} /> Modifier Quantité / Prix
-                </span>
-                <span className="text-[10px] opacity-80 font-mono mt-0.5">
-                  {draftItems[editModalIndex]?.designation}
-                </span>
-              </div>
-              <button
-                type="button"
-                onClick={() => setIsItemEditModalOpen(false)}
-                className="w-7 h-7 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-all cursor-pointer"
-              >
-                <X size={14} />
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="p-5 flex flex-col gap-4">
-              {/* Quantité */}
-              <div className="flex flex-col gap-1.5">
-                <span className="font-extrabold text-[10px] text-indigo-800 dark:text-indigo-400 uppercase tracking-wide">
-                  Quantité Vendue (Unités / Pièces)
-                </span>
-                <input
-                  type="number"
-                  min="1"
-                  required
-                  value={editModalQty}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setEditModalQty(val === '' ? '' : Number(val));
-                  }}
-                  className="w-full h-10 px-3 font-mono font-black rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 text-sm"
-                />
+                // Normal update
+                const updated = [...draftItems];
+                const colisage = currentItem.colisage || 12;
+                updated[editModalIndex] = {
+                  ...currentItem,
+                  qty: newQty,
+                  price: newPrice,
+                  total: newQty * newPrice,
+                  nbreColis: Math.floor(newQty / colisage),
+                  pieces: newQty % colisage
+                };
+                setDraftItems(updated);
+                adjustProductStockInParent(currentItem.code, currentItem.qty - newQty);
+                setIsItemEditModalOpen(false);
+              }}
+              className="w-[500px] max-w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden text-slate-800 dark:text-slate-200 animate-in fade-in zoom-in-95 duration-200"
+            >
+              {/* Header */}
+              <div className="bg-gradient-to-r from-teal-700 to-teal-850 dark:from-slate-950 dark:to-slate-900 px-5 py-4 flex items-center justify-between">
+                <div className="flex flex-col text-white font-sans">
+                  <span className="font-extrabold text-sm flex items-center gap-1.5">
+                    <Edit3 size={15} /> Configuration d'Ajout d'Article
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsItemEditModalOpen(false)}
+                  className="w-7 h-7 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-all cursor-pointer"
+                >
+                  <X size={14} />
+                </button>
               </div>
 
-              {/* Prix */}
-              <div className="flex flex-col gap-1.5">
-                <span className="font-extrabold text-[10px] text-indigo-800 dark:text-indigo-400 uppercase tracking-wide">
-                  Prix de Vente Unitaire (DA)
-                </span>
-                <input
-                  type="number"
-                  min="0"
-                  step="any"
-                  required
-                  value={editModalPrice}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setEditModalPrice(val === '' ? '' : Number(val));
-                  }}
-                  className="w-full h-10 px-3 font-mono font-black rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 text-sm"
-                />
-              </div>
-            </div>
+              {/* Content */}
+              <div className="p-5 flex flex-col gap-4 select-text">
+                {/* Product Info Banner */}
+                <div className="bg-teal-50/40 dark:bg-teal-950/10 border border-teal-100/30 rounded-2xl p-3 flex justify-between gap-4">
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-black uppercase text-teal-600 dark:text-teal-450 tracking-wider">Désignation de l'article</span>
+                    <span className="text-sm font-black text-slate-900 dark:text-slate-100 mt-0.5">{matchingProduct.designation}</span>
+                  </div>
+                  <div className="flex flex-col text-right shrink-0">
+                    <span className="text-[9px] font-black uppercase text-teal-600 dark:text-teal-450 tracking-wider">Référence (Code)</span>
+                    <span className="text-sm font-mono font-black text-slate-900 dark:text-slate-100 mt-0.5">{matchingProduct.code}</span>
+                  </div>
+                </div>
 
-            {/* Footer */}
-            <div className="bg-slate-50 dark:bg-slate-950 p-4 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2.5">
-              <button
-                type="button"
-                onClick={() => setIsItemEditModalOpen(false)}
-                className="px-5 h-9 text-xs font-bold bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl transition-all cursor-pointer"
-              >
-                Annuler
-              </button>
-              <button
-                type="submit"
-                className="px-6 h-9 text-xs font-black bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
-              >
-                <Check size={14} /> Enregistrer
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+                {/* Grid for Stock & Quantity */}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Stock Actuel (read-only) */}
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wide flex items-center gap-1">
+                      <Package size={11} className="text-slate-400" /> Stock Actuel
+                    </span>
+                    <div className="h-9.5 px-3 bg-slate-50 dark:bg-slate-950/60 border border-slate-200/60 dark:border-slate-800 rounded-xl flex items-center font-mono font-bold text-slate-700 dark:text-slate-300 text-xs">
+                      {projectedStockAfterThisItem} unités
+                    </div>
+                  </div>
+
+                  {/* Quantité à vendre (editable) */}
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wide">🔢 Quantité à vendre</span>
+                    <input
+                      type="number"
+                      min="1"
+                      required
+                      value={editModalQty}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setEditModalQty(val === '' ? '' : Number(val));
+                      }}
+                      className="h-9.5 px-3 font-mono font-bold rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 w-full focus:outline-none focus:border-teal-500 text-sm"
+                    />
+                  </div>
+                </div>
+
+                {/* Predefined Prices Buttons */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wide">🏷️ Choix du Tarif de Vente (PV)</span>
+                  <div className="flex gap-2 h-10 select-none">
+                    {[
+                      { key: 'prixVente1', label: 'PV1 (Détail)' },
+                      { key: 'prixVente2', label: 'PV2 (Gros)' },
+                      { key: 'prixVente3', label: 'PV3 (Super Gros)' }
+                    ].map((item) => {
+                      const priceVal = Number(matchingProduct[item.key as keyof Product]) || 0;
+                      return (
+                        <button
+                          key={item.key}
+                          type="button"
+                          onClick={() => {
+                            setEditPriceType(item.key as any);
+                            setEditModalPrice(priceVal);
+                          }}
+                          className={`flex-1 text-[10px] font-sans font-extrabold border rounded-xl flex flex-col items-center justify-center transition-all cursor-pointer ${
+                            editPriceType === item.key
+                              ? 'bg-teal-600 border-teal-600 text-white shadow-sm scale-102 font-black'
+                              : 'bg-slate-50 dark:bg-slate-950 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-850'
+                          }`}
+                        >
+                          <span className="text-[8px] opacity-75">{item.label}</span>
+                          <span className="font-mono mt-0.5">{(priceVal ?? 0).toLocaleString('fr-FR')} DA</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Grid for Buy Price & Final Sell Price */}
+                <div className={`grid ${hasRevient ? 'grid-cols-3' : 'grid-cols-2'} gap-4`}>
+                  {/* Prix d'Achat (not editable) */}
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wide flex items-center gap-1">
+                      <Coins size={11} className="text-slate-400" /> Prix d'Achat
+                    </span>
+                    <div className="h-9.5 px-3 bg-slate-100 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center font-mono font-bold text-slate-500 dark:text-slate-500 text-xs select-none">
+                      {(matchingProduct.prixAchat || 0).toLocaleString('fr-FR', { minimumFractionDigits: 1 })} DA
+                    </div>
+                  </div>
+
+                  {/* Prix de Revient (not editable, only shown if different from Prix d'Achat) */}
+                  {hasRevient && (
+                    <div className="flex flex-col gap-1.5 animate-in fade-in slide-in-from-top-1 duration-150">
+                      <span className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-wide flex items-center gap-1">
+                        <RefreshCw size={11} className="text-slate-400" /> Prix de Revient
+                      </span>
+                      <div className="h-9.5 px-3 bg-slate-100 dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center font-mono font-bold text-slate-500 dark:text-slate-500 text-xs select-none">
+                        {(matchingProduct.prixDeRevient || 0).toLocaleString('fr-FR', { minimumFractionDigits: 1 })} DA
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Prix de Vente Final (editable) */}
+                  <div className="flex flex-col gap-1.5">
+                    <span className="text-[10px] font-black uppercase text-rose-600 dark:text-rose-400 tracking-wide flex items-center gap-1">
+                      <Coins size={11} className="text-rose-500" /> Prix de Vente Final
+                    </span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="any"
+                      required
+                      value={editModalPrice}
+                      onChange={(e) => {
+                        const valStr = e.target.value;
+                        if (valStr === '') {
+                          setEditModalPrice('');
+                        } else {
+                          const val = Number(valStr);
+                          setEditModalPrice(val);
+                          if (val !== matchingProduct.prixVente1 && 
+                              val !== matchingProduct.prixVente2 && 
+                              val !== matchingProduct.prixVente3) {
+                            setEditPriceType('' as any);
+                          }
+                        }
+                      }}
+                      className="h-9.5 px-3 font-mono font-black rounded-xl border border-rose-350 focus:border-rose-500 bg-rose-50/20 dark:bg-rose-950/20 text-rose-700 dark:text-rose-300 w-full focus:outline-none text-sm"
+                    />
+                  </div>
+                </div>
+
+                {/* Benefit Box */}
+                <div className={`border rounded-2xl p-3 flex flex-col justify-between transition-colors duration-150 ${
+                  isLoss 
+                    ? 'bg-rose-50/50 dark:bg-rose-950/10 border-rose-150 dark:border-rose-900/30' 
+                    : 'bg-emerald-50/50 dark:bg-emerald-950/10 border-emerald-150 dark:border-emerald-900/30'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <span className={`text-[10px] font-black uppercase tracking-wider ${isLoss ? 'text-rose-600' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                      {isLoss ? (
+                        <span className="flex items-center gap-1">
+                          <AlertTriangle size={12} className="text-rose-600" /> Perte Estimée
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1">
+                          <Coins size={12} className="text-emerald-600 dark:text-emerald-450" /> Bénéfice Estimé
+                        </span>
+                      )}
+                    </span>
+                    <span className="text-[8px] font-sans font-bold bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md text-slate-500">
+                      {qty} unité(s)
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 mt-2 font-mono">
+                    <div className="flex flex-col">
+                      <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase">Par Unité</span>
+                      <span className={`text-xs font-black ${isLoss ? 'text-rose-600' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                        {(unitBenefit ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 1 })} DA
+                      </span>
+                    </div>
+                    <div className="flex flex-col text-right">
+                      <span className="text-[8px] font-black text-slate-400 dark:text-slate-500 uppercase">Total</span>
+                      <span className={`text-sm font-black ${isLoss ? 'text-rose-600' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                        {(totalBenefit ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 1 })} DA
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Footer */}
+              <div className="bg-slate-50 dark:bg-slate-950 p-4 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2.5">
+                <button
+                  type="button"
+                  onClick={() => setIsItemEditModalOpen(false)}
+                  className="px-5 h-9 text-xs font-bold bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl transition-all cursor-pointer"
+                >
+                  Annuler
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 h-9 text-xs font-black bg-teal-600 hover:bg-teal-500 text-white rounded-xl shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
+                >
+                  <Plus size={14} /> Insérer au Bon
+                </button>
+              </div>
+            </form>
+          </div>
+        );
+      })()}
 
       {/* -------------------- CUSTOM CONFIRM / ALERT DIALOG BOX -------------------- */}
       {retroDialog.isOpen && (
