@@ -365,8 +365,9 @@ function PurchaseVoucherWindow({
         if (prevProd && mode === 'create') {
           return {
             ...p,
-            stock: prevProd.stock,
-            stockColis: prevProd.stockColis,
+            // Keep real stock and stockColis from products prop so that they are always 100% synchronized!
+            stock: p.stock,
+            stockColis: p.stockColis,
             prixDeRevient: prevProd.prixDeRevient,
             prixAchat: prevProd.prixAchat,
             prixVente1: prevProd.prixVente1,

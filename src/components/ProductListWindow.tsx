@@ -58,8 +58,8 @@ function ProductListWindow({
   config
 }: ProductListWindowProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterType, setFilterType] = useState<'none' | 'famille' | 'fournisseur'>('none');
-  const [selectedFilterValue, setSelectedFilterValue] = useState<string>('');
+  const [selectedFamilies, setSelectedFamilies] = useState<string[]>([]);
+  const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>([]);
   const [sortType, setSortType] = useState<'none' | 'a-z' | 'z-a' | 'price-desc' | 'price-asc'>('none');
 
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
@@ -222,13 +222,13 @@ function ProductListWindow({
   }, []);
 
   // Map each product to its suppliers for fast supplier filtering
-  const productCodesForSupplier = useMemo(() => {
-    if (filterType !== 'fournisseur' || !selectedFilterValue) return null;
+  const productCodesForSuppliers = useMemo(() => {
+    if (selectedSuppliers.length === 0) return null;
     const purchases = getStorageJson<PurchaseVoucher[]>('compos_purchases', []);
     const codes = new Set<string>();
-    const targetSup = selectedFilterValue.trim().toUpperCase();
+    const upperSuppliers = new Set(selectedSuppliers.map(s => s.trim().toUpperCase()));
     for (const v of purchases) {
-      if (v.supplier && v.supplier.trim().toUpperCase() === targetSup) {
+      if (v.supplier && upperSuppliers.has(v.supplier.trim().toUpperCase())) {
         if (v.items) {
           for (const item of v.items) {
             codes.add(item.code);
@@ -237,11 +237,11 @@ function ProductListWindow({
       }
     }
     return codes;
-  }, [filterType, selectedFilterValue]);
+  }, [selectedSuppliers]);
 
   useEffect(() => {
     setDisplayLimit(100);
-  }, [searchQuery, filterType, selectedFilterValue, sortType]);
+  }, [searchQuery, selectedFamilies, selectedSuppliers, sortType]);
 
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
@@ -254,19 +254,20 @@ function ProductListWindow({
       }
 
       // 2. Filter by Famille
-      if (filterType === 'famille' && selectedFilterValue) {
+      if (selectedFamilies.length > 0) {
         const pFam = (p.category || 'DIVERS').toUpperCase();
-        if (pFam !== selectedFilterValue.toUpperCase()) return false;
+        const hasMatch = selectedFamilies.some(fam => fam.toUpperCase() === pFam);
+        if (!hasMatch) return false;
       }
 
       // 3. Filter by Fournisseur
-      if (filterType === 'fournisseur' && selectedFilterValue && productCodesForSupplier) {
-        if (!productCodesForSupplier.has(p.code)) return false;
+      if (selectedSuppliers.length > 0 && productCodesForSuppliers) {
+        if (!productCodesForSuppliers.has(p.code)) return false;
       }
 
       return true;
     });
-  }, [products, searchQuery, filterType, selectedFilterValue, productCodesForSupplier]);
+  }, [products, searchQuery, selectedFamilies, selectedSuppliers, productCodesForSuppliers]);
 
   const sortedAndFilteredProducts = useMemo(() => {
     let result = [...filteredProducts];
@@ -297,6 +298,16 @@ function ProductListWindow({
   }, [sortedAndFilteredProducts, displayLimit, selectedIndex]);
 
   const selectedProduct = sortedAndFilteredProducts[selectedIndex] || null;
+
+  const hasActiveFilters = selectedFamilies.length > 0 || selectedSuppliers.length > 0;
+  const activeFiltersCount = selectedFamilies.length + selectedSuppliers.length;
+  const filterLabel = useMemo(() => {
+    if (activeFiltersCount === 0) return 'Filtre par';
+    if (activeFiltersCount === 1) {
+      return selectedFamilies[0] || selectedSuppliers[0];
+    }
+    return `Filtres (${activeFiltersCount})`;
+  }, [selectedFamilies, selectedSuppliers, activeFiltersCount]);
 
   const handleNext = () => {
     if (selectedIndex < sortedAndFilteredProducts.length - 1) {
@@ -993,27 +1004,24 @@ function ProductListWindow({
               setShowSortDropdown(false);
             }}
             className={`h-8.5 px-3 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all select-none border shadow-xs cursor-pointer active:scale-95 ${
-              filterType !== 'none'
+              hasActiveFilters
                 ? 'bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-900/40'
                 : 'bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-800'
             }`}
           >
-            <Filter size={12} className={filterType !== 'none' ? 'animate-pulse' : ''} />
+            <Filter size={12} className={hasActiveFilters ? 'animate-pulse' : ''} />
             <span className="max-w-[140px] truncate">
-              {filterType === 'none' && 'Filtre par'}
-              {filterType === 'famille' && `${selectedFilterValue}`}
-              {filterType === 'fournisseur' && `${selectedFilterValue}`}
+              {filterLabel}
             </span>
-            {filterType !== 'none' ? (
+            {hasActiveFilters ? (
               <span 
                 onClick={(e) => {
                   e.stopPropagation();
-                  setFilterType('none');
-                  setSelectedFilterValue('');
-                  setShowFilterDropdown(false);
+                  setSelectedFamilies([]);
+                  setSelectedSuppliers([]);
                 }}
                 className="hover:bg-amber-200/50 dark:hover:bg-amber-900/40 p-0.5 rounded-full inline-flex items-center justify-center text-amber-500 hover:text-amber-700"
-                title="Réinitialiser le filtre"
+                title="Réinitialiser tous les filtres"
               >
                 <X size={10} />
               </span>
@@ -1026,12 +1034,11 @@ function ProductListWindow({
             <div className="absolute top-full right-0 mt-1 bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xl z-50 p-1.5 w-60 text-left animate-in fade-in duration-100 flex flex-col max-h-[320px] overflow-hidden">
               <div className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 px-2 py-1 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800/60 flex items-center justify-between">
                 <span>Filtrer les articles</span>
-                {filterType !== 'none' && (
+                {hasActiveFilters && (
                   <button
                     onClick={() => {
-                      setFilterType('none');
-                      setSelectedFilterValue('');
-                      setShowFilterDropdown(false);
+                      setSelectedFamilies([]);
+                      setSelectedSuppliers([]);
                     }}
                     className="text-rose-500 hover:text-rose-600 font-bold"
                   >
@@ -1045,16 +1052,15 @@ function ProductListWindow({
                 <button
                   type="button"
                   onClick={() => {
-                    setFilterType('none');
-                    setSelectedFilterValue('');
-                    setShowFilterDropdown(false);
+                    setSelectedFamilies([]);
+                    setSelectedSuppliers([]);
                   }}
                   className={`w-full px-2.5 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-xs font-bold text-left flex items-center justify-between cursor-pointer ${
-                    filterType === 'none' ? 'text-m3-primary bg-slate-50 dark:bg-slate-900' : 'text-slate-700 dark:text-slate-300'
+                    !hasActiveFilters ? 'text-m3-primary bg-slate-50 dark:bg-slate-900' : 'text-slate-700 dark:text-slate-300'
                   }`}
                 >
                   <span>🚫 Tous les articles</span>
-                  {filterType === 'none' && <Check size={12} />}
+                  {!hasActiveFilters && <Check size={12} />}
                 </button>
 
                 {/* Families Section */}
@@ -1063,15 +1069,15 @@ function ProductListWindow({
                     📂 Par Famille ({familles.length})
                   </div>
                   {familles.map((fam) => {
-                    const isSelected = filterType === 'famille' && selectedFilterValue === fam;
+                    const isSelected = selectedFamilies.includes(fam);
                     return (
                       <button
                         key={fam}
                         type="button"
                         onClick={() => {
-                          setFilterType('famille');
-                          setSelectedFilterValue(fam);
-                          setShowFilterDropdown(false);
+                          setSelectedFamilies(prev => 
+                            prev.includes(fam) ? prev.filter(f => f !== fam) : [...prev, fam]
+                          );
                         }}
                         className={`w-full pl-5 pr-2.5 py-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-xs font-bold text-left flex items-center justify-between cursor-pointer ${
                           isSelected ? 'text-m3-primary bg-indigo-50/50 dark:bg-indigo-950/20 font-black' : 'text-slate-600 dark:text-slate-400'
@@ -1095,15 +1101,15 @@ function ProductListWindow({
                     </div>
                   ) : (
                     suppliers.map((sup) => {
-                      const isSelected = filterType === 'fournisseur' && selectedFilterValue === sup;
+                      const isSelected = selectedSuppliers.includes(sup);
                       return (
                         <button
                           key={sup}
                           type="button"
                           onClick={() => {
-                            setFilterType('fournisseur');
-                            setSelectedFilterValue(sup);
-                            setShowFilterDropdown(false);
+                            setSelectedSuppliers(prev => 
+                              prev.includes(sup) ? prev.filter(s => s !== sup) : [...prev, sup]
+                            );
                           }}
                           className={`w-full pl-5 pr-2.5 py-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg text-xs font-bold text-left flex items-center justify-between cursor-pointer ${
                             isSelected ? 'text-m3-primary bg-indigo-50/50 dark:bg-indigo-950/20 font-black' : 'text-slate-600 dark:text-slate-400'
