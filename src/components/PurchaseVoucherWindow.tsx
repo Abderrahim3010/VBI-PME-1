@@ -2216,10 +2216,12 @@ function PurchaseVoucherWindow({
           </div>
 
           {/* NET EN DINARS (TTC À PAYER) replaces previous styling to match sales */}
-          <div className="bg-slate-950 dark:bg-black p-2 rounded-xl text-center flex flex-col gap-0 shadow-md border border-slate-850/50 mt-2 shrink-0">
-            <span className="text-[8px] font-black text-amber-500 tracking-wider font-sans uppercase leading-none">NET EN DINARS (ACHAT)</span>
-            <span className="text-base font-mono font-black text-emerald-400 drop-shadow-[0_0_4px_rgba(52,211,153,0.3)] mt-0.5">
-              {(displayMetrics.ttc ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 1 })} DA
+          <div className="bg-slate-950 dark:bg-black p-4 rounded-xl text-center flex flex-col gap-1.5 shadow-xl border border-slate-800 mt-2 shrink-0 select-all">
+            <span className="text-[11px] font-bold text-amber-400 tracking-widest font-display uppercase leading-none">
+              NET EN DINARS (ACHAT)
+            </span>
+            <span className="text-2xl sm:text-3xl font-mono font-black text-[#10b981] dark:text-[#34d399] tracking-tight drop-shadow-[0_0_10px_rgba(52,211,153,0.6)] mt-1">
+              {(displayMetrics.ttc ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} DA
             </span>
           </div>
         </div>

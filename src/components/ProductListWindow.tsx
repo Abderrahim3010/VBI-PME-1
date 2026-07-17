@@ -1414,67 +1414,100 @@ function ProductListWindow({
         </table>
       </div>
 
-      {/* Tech Description box */}
-      <div className="flex flex-col gap-1.5 shrink-0">
-        <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide flex items-center gap-1">
-          <Tag size={12} /> Descriptif Technique & Code-barres de l'article sélectionné
-        </label>
-        <textarea
-          readOnly
-          value={(() => {
-            if (!selectedProduct) return '';
-            
-            // Get purchases from local storage
-            const purchases = getStorageJson<PurchaseVoucher[]>('compos_purchases', []);
-            
-            // Find all purchase vouchers containing this product
-            const productVouchers = purchases.filter(p => 
-              p.items && p.items.some(item => item.code === selectedProduct.code)
-            );
+      {/* Tech Description & Product Image Area */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-3.5 shrink-0">
+        {/* Tech Description box */}
+        <div className="md:col-span-3 flex flex-col gap-1.5">
+          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide flex items-center gap-1 select-none">
+            <Tag size={12} className="text-indigo-500" /> Descriptif Technique & Code-barres de l'article sélectionné
+          </label>
+          <textarea
+            readOnly
+            value={(() => {
+              if (!selectedProduct) return '';
+              
+              // Get purchases from local storage
+              const purchases = getStorageJson<PurchaseVoucher[]>('compos_purchases', []);
+              
+              // Find all purchase vouchers containing this product
+              const productVouchers = purchases.filter(p => 
+                p.items && p.items.some(item => item.code === selectedProduct.code)
+              );
 
-            // Sort vouchers chronologically from oldest to newest
-            const sortedVouchers = [...productVouchers].sort((a, b) => {
-              const parseDateTime = (dStr: string, tStr?: string) => {
-                try {
-                  const [d, m, y] = dStr.split('/').map(Number);
-                  const [hr, min, sec] = (tStr || '00:00:00').split(':').map(Number);
-                  return new Date(y, m - 1, d, hr, min, sec).getTime();
-                } catch {
-                  return 0;
-                }
-              };
-              return parseDateTime(a.date, a.time) - parseDateTime(b.date, b.time);
-            });
+              // Sort vouchers chronologically from oldest to newest
+              const sortedVouchers = [...productVouchers].sort((a, b) => {
+                const parseDateTime = (dStr: string, tStr?: string) => {
+                  try {
+                    const [d, m, y] = dStr.split('/').map(Number);
+                    const [hr, min, sec] = (tStr || '00:00:00').split(':').map(Number);
+                    return new Date(y, m - 1, d, hr, min, sec).getTime();
+                  } catch {
+                    return 0;
+                  }
+                };
+                return parseDateTime(a.date, a.time) - parseDateTime(b.date, b.time);
+              });
 
-            // Extract unique suppliers in order of appearance
-            const supplierSequence: string[] = [];
-            for (const v of sortedVouchers) {
-              if (v.supplier) {
-                const supplierName = v.supplier.trim();
-                if (supplierName && !supplierSequence.includes(supplierName)) {
-                  supplierSequence.push(supplierName);
+              // Extract unique suppliers in order of appearance
+              const supplierSequence: string[] = [];
+              for (const v of sortedVouchers) {
+                if (v.supplier) {
+                  const supplierName = v.supplier.trim();
+                  if (supplierName && !supplierSequence.includes(supplierName)) {
+                    supplierSequence.push(supplierName);
+                  }
                 }
               }
-            }
 
-            // Construct chronological suppliers text
-            let supplierText = '';
-            if (supplierSequence.length === 1) {
-              supplierText = supplierSequence[0];
-            } else if (supplierSequence.length > 1) {
-              supplierText = supplierSequence.map((sup, index) => `${sup} (${index + 1})`).join(', ');
-            } else {
-              supplierText = 'Aucun achat enregistré';
-            }
+              // Construct chronological suppliers text
+              let supplierText = '';
+              if (supplierSequence.length === 1) {
+                supplierText = supplierSequence[0];
+              } else if (supplierSequence.length > 1) {
+                supplierText = supplierSequence.map((sup, index) => `${sup} (${index + 1})`).join(', ');
+              } else {
+                supplierText = 'Aucun achat enregistré';
+              }
 
-            const headerLine = `${selectedProduct.designation} (${selectedProduct.category || 'DIVERS'}) ${selectedProduct.date ? `| Créé le: ${selectedProduct.date}` : ''}`;
-            const supplierLine = `Fournisseur(s): ${supplierText}`;
-            const detailsLine = selectedProduct.detail || '';
+              const headerLine = `${selectedProduct.designation} (${selectedProduct.category || 'DIVERS'}) ${selectedProduct.date ? `| Créé le: ${selectedProduct.date}` : ''}`;
+              const supplierLine = `Fournisseur(s): ${supplierText}`;
+              const detailsLine = selectedProduct.detail || '';
 
-            return `${headerLine}\n${supplierLine}${detailsLine ? `\n${detailsLine}` : ''}`;
-          })()}
-          className="h-16 w-full resize-none p-2 rounded-xl text-xs outline-none font-sans bg-slate-50 dark:bg-slate-950/40 border border-slate-250 dark:border-slate-850 text-slate-600 dark:text-slate-400 select-all"
-        />
+              return `${headerLine}\n${supplierLine}${detailsLine ? `\n${detailsLine}` : ''}`;
+            })()}
+            className="h-22 w-full resize-none p-2.5 rounded-xl text-xs outline-none font-sans bg-slate-50 dark:bg-slate-950/40 border border-slate-250 dark:border-slate-850 text-slate-700 dark:text-slate-350 select-all shadow-inner leading-relaxed"
+          />
+        </div>
+
+        {/* Dedicated Product Image Box */}
+        <div className="flex flex-col gap-1.5">
+          <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wide flex items-center gap-1 select-none">
+            <Camera size={12} className="text-indigo-500" /> Photo de l'article sélectionné
+          </label>
+          <div className="h-22 rounded-xl border border-slate-250 dark:border-slate-850 bg-[#f0f4f9] dark:bg-slate-950/40 overflow-hidden flex items-center justify-center p-1.5 relative shadow-inner group">
+            {selectedProduct ? (
+              selectedProduct.image ? (
+                <div className="w-full h-full flex items-center justify-center bg-white dark:bg-slate-900 rounded-lg p-0.5 border border-slate-200/60 dark:border-slate-800/60 shadow-xs transition-transform duration-200 hover:scale-[1.03]">
+                  <img 
+                    referrerPolicy="no-referrer"
+                    src={selectedProduct.image} 
+                    alt={selectedProduct.designation} 
+                    className="max-h-full max-w-full object-contain rounded-md"
+                  />
+                </div>
+              ) : (
+                <div className="text-center text-[10px] text-slate-400 dark:text-slate-500 flex flex-col items-center justify-center gap-1">
+                  <Camera size={18} className="text-slate-350 dark:text-slate-700" />
+                  <span className="font-bold tracking-tight">Aucune photo</span>
+                </div>
+              )
+            ) : (
+              <div className="text-center text-[10px] text-slate-400 dark:text-slate-500 italic">
+                Sélectionnez un article
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Action buttons */}
