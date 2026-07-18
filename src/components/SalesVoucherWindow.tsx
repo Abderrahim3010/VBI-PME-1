@@ -382,7 +382,9 @@ function SalesVoucherWindow({
 
     // Sort by ID
     return Array.from(map.values()).sort((a, b) => {
-      return a.id.localeCompare(b.id, undefined, { numeric: true });
+      const idA = String(a.id || '');
+      const idB = String(b.id || '');
+      return idA.localeCompare(idB, undefined, { numeric: true });
     });
   }, [sales, openVouchers]);
 
@@ -967,7 +969,9 @@ function SalesVoucherWindow({
 
         // Sort by ID
         const remainingNavigable = Array.from(map.values()).sort((a, b) => {
-          return a.id.localeCompare(b.id, undefined, { numeric: true });
+          const idA = String(a.id || '');
+          const idB = String(b.id || '');
+          return idA.localeCompare(idB, undefined, { numeric: true });
         });
 
         // Update openVouchers state

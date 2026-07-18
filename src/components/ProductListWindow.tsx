@@ -272,9 +272,9 @@ function ProductListWindow({
   const sortedAndFilteredProducts = useMemo(() => {
     let result = [...filteredProducts];
     if (sortType === 'a-z') {
-      result.sort((a, b) => a.designation.localeCompare(b.designation, 'fr'));
+      result.sort((a, b) => (a.designation || '').localeCompare(b.designation || '', 'fr'));
     } else if (sortType === 'z-a') {
-      result.sort((a, b) => b.designation.localeCompare(a.designation, 'fr'));
+      result.sort((a, b) => (b.designation || '').localeCompare(a.designation || '', 'fr'));
     } else if (sortType === 'price-desc') {
       result.sort((a, b) => {
         const pA = a.prixVente1 ?? 0;

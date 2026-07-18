@@ -364,11 +364,26 @@ function PurchaseVoucherWindow({
       const updatedCatalog = products.map(p => {
         const prevProd = prevMap.get(p.code);
         if (prevProd && mode === 'create') {
+          // If we are editing an existing purchase voucher, we must revert the original voucher's stock impact
+          let currentBaseStock = p.stock;
+          let currentBaseStockColis = p.stockColis;
+          
+          if (editingVoucherId) {
+            const origVoucher = purchases.find(v => String(v.id) === String(editingVoucherId));
+            if (origVoucher) {
+              const matchingItems = origVoucher.items.filter(i => i.code === p.code);
+              const totalQty = matchingItems.reduce((acc, curr) => acc + curr.qty, 0);
+              currentBaseStock = p.stock - totalQty;
+              const colisage = Number(p.colissage) || 12;
+              currentBaseStockColis = Math.ceil(Math.max(0, currentBaseStock) / colisage);
+            }
+          }
+
           return {
             ...p,
-            // Keep real stock and stockColis from products prop so that they are always 100% synchronized!
-            stock: p.stock,
-            stockColis: p.stockColis,
+            // Keep real reverted stock and stockColis so that they are always 100% synchronized!
+            stock: currentBaseStock,
+            stockColis: currentBaseStockColis,
             prixDeRevient: prevProd.prixDeRevient,
             prixAchat: prevProd.prixAchat,
             prixVente1: prevProd.prixVente1,
@@ -387,7 +402,7 @@ function PurchaseVoucherWindow({
 
       return [...updatedCatalog, ...draftOnly];
     });
-  }, [products, mode]);
+  }, [products, mode, editingVoucherId, purchases]);
 
   // CUSTOM RETRO DIALOG BOX STATE (to completely bypass blocked iframe alert/confirm modals)
   const [retroDialog, setRetroDialog] = useState<{
@@ -517,7 +532,9 @@ function PurchaseVoucherWindow({
 
     // Sort by ID (numerical sort)
     return list.sort((a, b) => {
-      return a.id.localeCompare(b.id, undefined, { numeric: true });
+      const idA = String(a.id || '');
+      const idB = String(b.id || '');
+      return idA.localeCompare(idB, undefined, { numeric: true });
     });
   }, [purchases, openDrafts, filterVoucherId, filterVoucherDate]);
 
@@ -572,7 +589,7 @@ function PurchaseVoucherWindow({
           if (matchingItems.length > 0) {
             const totalQty = matchingItems.reduce((acc, curr) => acc + curr.qty, 0);
             const totalCostVal = matchingItems.reduce((acc, curr) => acc + (curr.qty * curr.price), 0);
-            const revStock = Math.max(0, p.stock - totalQty);
+            const revStock = p.stock - totalQty;
             let revCost = p.prixDeRevient;
             if (revStock > 0 && p.prixDeRevient !== undefined) {
               revCost = Math.round((p.prixDeRevient * p.stock - totalCostVal) / revStock);
@@ -580,7 +597,7 @@ function PurchaseVoucherWindow({
             return {
               ...p,
               stock: revStock,
-              stockColis: Math.ceil(revStock / 12),
+              stockColis: Math.ceil(Math.max(0, revStock) / 12),
               prixDeRevient: revCost
             };
           }
