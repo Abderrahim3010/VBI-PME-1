@@ -850,22 +850,14 @@ export default function App() {
       });
     });
 
-    // Revert supplier balance back / delete supplier entirely if it was their only/first purchase
+    // Revert supplier balance back without deleting the supplier
     setSuppliers(prevSuppliers => {
-      const hasOtherPurchasesWithThisSupplier = otherPurchases.some(p => p.supplier === target.supplier);
-
-      if (!hasOtherPurchasesWithThisSupplier) {
-        // Delete supplier entirely!
-        return prevSuppliers.filter(s => s.name !== target.supplier);
-      } else {
-        // Just adjust supplier balance
-        return prevSuppliers.map(s => {
-          if (s.name === target.supplier) {
-            return { ...s, balance: Math.max(0, s.balance - (target.ttc - target.versement)) };
-          }
-          return s;
-        });
-      }
+      return prevSuppliers.map(s => {
+        if (s.name === target.supplier) {
+          return { ...s, balance: Math.max(0, s.balance - (target.ttc - target.versement)) };
+        }
+        return s;
+      });
     });
 
     setPurchases(prev => prev.filter(p => String(p.id) !== String(id)));

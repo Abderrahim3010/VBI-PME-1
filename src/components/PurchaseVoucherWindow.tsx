@@ -364,26 +364,11 @@ function PurchaseVoucherWindow({
       const updatedCatalog = products.map(p => {
         const prevProd = prevMap.get(p.code);
         if (prevProd && mode === 'create') {
-          // If we are editing an existing purchase voucher, we must revert the original voucher's stock impact
-          let currentBaseStock = p.stock;
-          let currentBaseStockColis = p.stockColis;
-          
-          if (editingVoucherId) {
-            const origVoucher = purchases.find(v => String(v.id) === String(editingVoucherId));
-            if (origVoucher) {
-              const matchingItems = origVoucher.items.filter(i => i.code === p.code);
-              const totalQty = matchingItems.reduce((acc, curr) => acc + curr.qty, 0);
-              currentBaseStock = p.stock - totalQty;
-              const colisage = Number(p.colissage) || 12;
-              currentBaseStockColis = Math.ceil(Math.max(0, currentBaseStock) / colisage);
-            }
-          }
-
           return {
             ...p,
-            // Keep real reverted stock and stockColis so that they are always 100% synchronized!
-            stock: currentBaseStock,
-            stockColis: currentBaseStockColis,
+            // Keep real stock and stockColis from products prop so that they are always 100% synchronized!
+            stock: p.stock,
+            stockColis: p.stockColis,
             prixDeRevient: prevProd.prixDeRevient,
             prixAchat: prevProd.prixAchat,
             prixVente1: prevProd.prixVente1,
@@ -402,7 +387,7 @@ function PurchaseVoucherWindow({
 
       return [...updatedCatalog, ...draftOnly];
     });
-  }, [products, mode, editingVoucherId, purchases]);
+  }, [products, mode]);
 
   // CUSTOM RETRO DIALOG BOX STATE (to completely bypass blocked iframe alert/confirm modals)
   const [retroDialog, setRetroDialog] = useState<{
@@ -462,24 +447,71 @@ function PurchaseVoucherWindow({
   const [infoTvaPercent, setInfoTvaPercent] = useState('0');
   const [infoAlerteStock, setInfoAlerteStock] = useState('5');
 
+  const getOriginalQtyOfItem = (itemCode: string): number => {
+    if (!editingVoucherId) return 0;
+    const origVoucher = purchases.find(v => String(v.id) === String(editingVoucherId));
+    if (!origVoucher) return 0;
+    const origItem = origVoucher.items.find(i => i.code === itemCode);
+    return origItem ? origItem.qty : 0;
+  };
+
+  const getStartingStockAndCost = (itemCode: string) => {
+    // 1. Find the current real-time catalog stock and cost of this product from products prop
+    const catalogProd = products.find(p => p.code === itemCode);
+    const currentStock = catalogProd ? catalogProd.stock : 0;
+    const currentCost = catalogProd && catalogProd.prixDeRevient !== undefined ? catalogProd.prixDeRevient : 0;
+
+    // 2. Find the original quantity and price of this product inside the voucher being edited (if any)
+    let originalQty = 0;
+    let originalPrice = 0;
+    if (editingVoucherId) {
+      const origVoucher = purchases.find(v => String(v.id) === String(editingVoucherId));
+      if (origVoucher) {
+        const origItem = origVoucher.items.find(i => i.code === itemCode);
+        if (origItem) {
+          originalQty = origItem.qty;
+          originalPrice = origItem.price;
+        }
+      }
+    }
+
+    // 3. The starting stock before this purchase was made is:
+    const startingStock = currentStock - originalQty;
+
+    // 4. The starting cost price before this purchase was made is:
+    // If startingStock > 0, we can estimate starting cost as currentCost (or revert the weighted average if possible)
+    let startingCost = currentCost;
+    if (startingStock > 0 && currentStock > 0 && currentCost > 0 && originalQty > 0) {
+      const totalCostVal = originalQty * originalPrice;
+      const revertedCost = Math.round(((currentCost * currentStock) - totalCostVal) / startingStock);
+      if (revertedCost > 0) {
+        startingCost = revertedCost;
+      }
+    }
+
+    return {
+      startingStock,
+      startingCost,
+      currentStock,
+      currentCost
+    };
+  };
+
   // Calculates dynamically weighted average cost price on the fly for UI
   const calculatedNouveauPrixRevient = useMemo(() => {
-    if (dialogMode === 'edit_existing') {
-      return prodPrixDeRevient;
-    }
+    const { startingStock, startingCost } = getStartingStockAndCost(prodCode);
+    
     const qtyVal = Number(prodQtyCalculated) || 0;
     const buyPriceVal = Number(prodPrixAchat) || 0;
-    const existingStock = prodStockEnStock || 0;
-    const existingCost = prodPrixDeRevient || 0;
 
-    if (existingStock <= 0 || existingCost <= 0) {
+    if (startingStock <= 0) {
       return buyPriceVal;
     }
     if (qtyVal <= 0) {
-      return existingCost;
+      return startingCost;
     }
-    return Math.round(((existingStock * existingCost) + (qtyVal * buyPriceVal)) / (existingStock + qtyVal));
-  }, [dialogMode, prodQtyCalculated, prodPrixAchat, prodStockEnStock, prodPrixDeRevient]);
+    return Math.round(((startingStock * startingCost) + (qtyVal * buyPriceVal)) / (startingStock + qtyVal));
+  }, [prodCode, prodQtyCalculated, prodPrixAchat, editingVoucherId, products, purchases]);
 
   // Filters the list of catalog items dynamically for insert dialog
   const filteredProductsToInsert = useMemo(() => {
@@ -580,31 +612,6 @@ function PurchaseVoucherWindow({
     }
     
     let baseProductsList = [...products];
-    if (draft.isEditingExisting) {
-      // Revert stock/cost impacts of original closed voucher for the editing workspace
-      const origVoucher = purchases.find(v => String(v.id) === String(draft.id));
-      if (origVoucher) {
-        baseProductsList = products.map(p => {
-          const matchingItems = origVoucher.items.filter(i => i.code === p.code);
-          if (matchingItems.length > 0) {
-            const totalQty = matchingItems.reduce((acc, curr) => acc + curr.qty, 0);
-            const totalCostVal = matchingItems.reduce((acc, curr) => acc + (curr.qty * curr.price), 0);
-            const revStock = p.stock - totalQty;
-            let revCost = p.prixDeRevient;
-            if (revStock > 0 && p.prixDeRevient !== undefined) {
-              revCost = Math.round((p.prixDeRevient * p.stock - totalCostVal) / revStock);
-            }
-            return {
-              ...p,
-              stock: revStock,
-              stockColis: Math.ceil(Math.max(0, revStock) / 12),
-              prixDeRevient: revCost
-            };
-          }
-          return p;
-        });
-      }
-    }
 
     // Resilience: ensure any item inside draftItems that is NOT in the catalog is reconstructed locally
     const draftItemsList = draft.draftItems || [];
@@ -975,18 +982,23 @@ function PurchaseVoucherWindow({
       const matchingItems = savedVoucher.items.filter(item => item.code === p.code);
       if (matchingItems.length > 0) {
         const totalQtyPurchased = matchingItems.reduce((acc, curr) => acc + curr.qty, 0);
-        const finalStock = p.stock + totalQtyPurchased;
         
-        // Calculate the new weighted average cost dynamically to be 100% correct and up to date
-        const oldStock = p.stock;
-        const oldCost = p.prixDeRevient || 0;
-        const totalPurchasedCost = matchingItems.reduce((acc, curr) => acc + (curr.qty * curr.price), 0);
-
-        let finalCostPrice = oldCost;
-        if (oldStock <= 0 || oldCost <= 0) {
+        // Use our starting stock & cost calculator
+        const { startingStock, startingCost, currentStock, currentCost } = getStartingStockAndCost(p.code);
+        
+        // Calculate final stock
+        const finalStock = currentStock - (editingVoucherId ? getOriginalQtyOfItem(p.code) : 0) + totalQtyPurchased;
+        
+        // Calculate the new weighted average cost dynamically
+        let finalCostPrice = currentCost;
+        if (startingStock <= 0) {
+          // No prior stock, so new cost is just the weighted average of this purchase's items
+          const totalPurchasedCost = matchingItems.reduce((acc, curr) => acc + (curr.qty * curr.price), 0);
           finalCostPrice = Math.round(totalPurchasedCost / totalQtyPurchased);
         } else {
-          finalCostPrice = Math.round(((oldStock * oldCost) + totalPurchasedCost) / (oldStock + totalQtyPurchased));
+          // Prior stock existed before this purchase
+          const totalPurchasedCost = matchingItems.reduce((acc, curr) => acc + (curr.qty * curr.price), 0);
+          finalCostPrice = Math.round(((startingStock * startingCost) + totalPurchasedCost) / (startingStock + totalQtyPurchased));
         }
 
         const firstColisage = matchingItems[0].colisage;
@@ -995,7 +1007,7 @@ function PurchaseVoucherWindow({
         return {
           ...p,
           stock: finalStock,
-          stockColis: firstColisage && firstColisage > 0 ? Math.ceil(finalStock / firstColisage) : 0,
+          stockColis: firstColisage && firstColisage > 0 ? Math.ceil(Math.max(0, finalStock) / firstColisage) : 0,
           prixDeRevient: finalCostPrice,
           prixAchat: lastPrice
         };
@@ -1259,6 +1271,19 @@ function PurchaseVoucherWindow({
     const colNum = Number(prodColisage) || 0;
     const nbreColNum = Number(prodNbreColis) || 0;
 
+    // Use our starting stock & cost calculator
+    const { startingStock, startingCost, currentStock, currentCost } = getStartingStockAndCost(cleanCode);
+
+    // Calculate draft cost price
+    let draftCost = cost;
+    if (startingStock > 0) {
+      if (qty > 0) {
+        draftCost = Math.round(((startingStock * startingCost) + (qty * cost)) / (startingStock + qty));
+      } else {
+        draftCost = startingCost;
+      }
+    }
+
     // 1. Registered locally in product catalogue for the duration of this voucher session
     const updatedProducts = [...localProducts];
     const catIdx = updatedProducts.findIndex(p => p.code === cleanCode);
@@ -1281,30 +1306,17 @@ function PurchaseVoucherWindow({
     } else {
       // Update catalog entry (updating designations, edited stocks, and selling prices with weighted average cost price)
       const existingProduct = updatedProducts[catIdx];
-      const existingStock = Number(prodStockEnStock) || 0; // Use modified starting stock
-      const existingCost = Number(prodPrixDeRevient) || 0; // Use modified starting cost price
       
-      let newBalancedCost = cost;
-      if (dialogMode === 'edit_existing') {
-        newBalancedCost = existingCost;
-      } else if (qty <= 0) {
-        newBalancedCost = existingCost;
-      } else if (existingStock <= 0) {
-        newBalancedCost = cost;
-      } else {
-        newBalancedCost = Math.round(((existingStock * existingCost) + (qty * cost)) / (existingStock + qty));
-      }
-
       updatedProducts[catIdx] = {
         ...existingProduct,
         designation: cleanDesignation,
-        stock: existingStock, // Update starting catalog stock!
-        stockColis: colNum > 0 ? Math.ceil(existingStock / colNum) : 0,
+        stock: currentStock, // DO NOT subtract or revert! Keep actual real-time stock!
+        stockColis: colNum > 0 ? Math.ceil(currentStock / colNum) : 0,
         prixVente1: sp1,
         prixVente2: sp2,
         prixVente3: sp3,
         category: prodFamille,
-        prixDeRevient: existingCost, // Keep pre-purchase cost price during draft phase
+        prixDeRevient: draftCost, // Update to the newly calculated draft cost price!
         prixAchat: cost
       };
     }

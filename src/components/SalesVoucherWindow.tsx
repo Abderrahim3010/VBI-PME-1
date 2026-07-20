@@ -1053,6 +1053,53 @@ function SalesVoucherWindow({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, mode, draftItems, newSaleId, newDate, newTime, newClientName, newType, versement, remise, tvaRate, products, isPaymentDialogOpen, paymentVersement, paymentMode, openVouchers]);
 
+  // Handle keyboard navigation for the product chooser dialog
+  useEffect(() => {
+    if (!isProductChooserOpen) return;
+
+    const handleChooserKeyDown = (e: KeyboardEvent) => {
+      if (isConfigPopupOpen) return; // Let the configuration popup form handle its own keys
+
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setIsProductChooserOpen(false);
+      } else if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        if (filteredChooserProducts.length === 0) return;
+        const currentIdx = filteredChooserProducts.findIndex(p => p.code === selectedProductInChooser?.code);
+        let nextIdx = 0;
+        if (currentIdx >= 0 && currentIdx < filteredChooserProducts.length - 1) {
+          nextIdx = currentIdx + 1;
+        }
+        setSelectedProductInChooser(filteredChooserProducts[nextIdx]);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        if (filteredChooserProducts.length === 0) return;
+        const currentIdx = filteredChooserProducts.findIndex(p => p.code === selectedProductInChooser?.code);
+        let prevIdx = filteredChooserProducts.length - 1;
+        if (currentIdx > 0) {
+          prevIdx = currentIdx - 1;
+        }
+        setSelectedProductInChooser(filteredChooserProducts[prevIdx]);
+      } else if (e.key === 'Enter') {
+        if (selectedProductInChooser) {
+          e.preventDefault();
+          if (selectedProductInChooser.blocked) {
+            showRetroAlert(`⚠️ Impossible d'insérer l'article : Le produit "${selectedProductInChooser.designation}" est BLOQUÉ !`, "Article Bloqué");
+            return;
+          }
+          setChooserQty(1);
+          setSelectedPriceType('prixVente1');
+          setCustomSellingPrice(selectedProductInChooser.prixVente1);
+          setIsConfigPopupOpen(true);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleChooserKeyDown);
+    return () => window.removeEventListener('keydown', handleChooserKeyDown);
+  }, [isProductChooserOpen, isConfigPopupOpen, filteredChooserProducts, selectedProductInChooser]);
+
   const handleInsertProduct = () => {
     if (mode !== 'create') {
       showRetroAlert("Ajout d'articles impossible en mode consultation. Veuillez cliquer d'abord sur 'Nouveau bon'.", "Saisie ventes");
@@ -2072,7 +2119,7 @@ function SalesVoucherWindow({
           <div className="w-[850px] max-w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden text-slate-800 dark:text-slate-200 animate-in fade-in zoom-in-95 duration-200">
             
             {/* Header of the dialog */}
-            <div className="bg-m3-primary dark:bg-slate-950 px-5 py-4 flex items-center justify-between select-none">
+            <div className="bg-m3-primary dark:bg-slate-950 px-5 py-3 flex items-center justify-between select-none">
               <div className="flex items-center gap-2 text-white font-bold font-display text-sm">
                 <Package size={15} /> Sélectionner un produit à vendre
               </div>
@@ -2085,7 +2132,7 @@ function SalesVoucherWindow({
             </div>
 
             {/* Inner Content */}
-            <div className="p-4 flex flex-col gap-3 select-none">
+            <div className="p-3.5 flex flex-col gap-2 select-none">
               
               {/* Search Bar inside Chooser */}
               <div className="flex flex-col gap-1.5">
@@ -2104,8 +2151,14 @@ function SalesVoucherWindow({
               </div>
 
               {/* Scrollable list of products */}
-              <div className="border border-slate-200/50 dark:border-slate-800 bg-white dark:bg-slate-950 h-52 overflow-auto shadow-inner rounded-2xl">
-                <table className="w-full text-left font-sans text-xs border-collapse table-fixed">
+              <div 
+                onClick={() => setSelectedProductInChooser(null)}
+                className="border border-slate-200/50 dark:border-slate-800 bg-white dark:bg-slate-950 h-[420px] overflow-auto shadow-inner rounded-2xl"
+              >
+                <table 
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-full text-left font-sans text-xs border-collapse table-fixed"
+                >
                   <thead className="bg-[#dfdfde]/40 dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-extrabold sticky top-0 border-b border-slate-200/60 dark:border-slate-800/80 z-10 select-none">
                     <tr>
                       <th style={{ width: colWidths.code }} className="px-3 py-2 relative select-none truncate font-display text-[9.5px] uppercase tracking-wider">Code-barres</th>
@@ -2130,7 +2183,25 @@ function SalesVoucherWindow({
                         return (
                           <tr
                             key={p.code}
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (p.blocked) {
+                                showRetroAlert(`⚠️ Impossible d'insérer l'article : Le produit "${p.designation}" est BLOQUÉ !`, "Article Bloqué");
+                                return;
+                              }
+                              if (selectedProductInChooser?.code === p.code) {
+                                // Second click: open the configuration popup!
+                                setChooserQty(1);
+                                setSelectedPriceType('prixVente1');
+                                setCustomSellingPrice(p.prixVente1);
+                                setIsConfigPopupOpen(true);
+                              } else {
+                                // First click: just select/highlight
+                                setSelectedProductInChooser(p);
+                              }
+                            }}
+                            onDoubleClick={(e) => {
+                              e.stopPropagation();
                               if (p.blocked) {
                                 showRetroAlert(`⚠️ Impossible d'insérer l'article : Le produit "${p.designation}" est BLOQUÉ !`, "Article Bloqué");
                                 return;
@@ -2143,7 +2214,7 @@ function SalesVoucherWindow({
                             }}
                             className={`cursor-pointer border-b border-slate-100 dark:border-slate-800/40 h-8.5 transition-colors ${
                               isChosenTmp 
-                                ? 'bg-m3-primary/15 dark:bg-sky-500/15 text-m3-primary dark:text-sky-300 font-bold' 
+                                ? 'bg-indigo-600/15 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 font-extrabold border-l-2 border-l-indigo-600 dark:border-l-indigo-400' 
                                 : p.blocked 
                                   ? 'bg-rose-50/20 dark:bg-rose-950/10 text-rose-600 dark:text-rose-450'
                                   : 'hover:bg-slate-50 dark:hover:bg-slate-900/40 text-slate-700 dark:text-slate-300'
@@ -2188,13 +2259,13 @@ function SalesVoucherWindow({
             </div>
 
             {/* Footer actions of popup */}
-            <div className="bg-slate-50 dark:bg-slate-950 p-4 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2.5 select-none">
+            <div className="bg-slate-50 dark:bg-slate-950 py-2 px-5 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2.5 select-none">
               <button
                 type="button"
                 onClick={() => setIsProductChooserOpen(false)}
-                className="px-6 h-9 text-xs font-black bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-800 dark:text-slate-200 border border-slate-300/30 rounded-full transition-all cursor-pointer"
+                className="px-5 h-7 text-[10px] font-bold bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-750 text-slate-800 dark:text-slate-200 border border-slate-300/30 rounded-lg transition-all cursor-pointer"
               >
-                Fermer
+                Fermer (Echap)
               </button>
             </div>
 
