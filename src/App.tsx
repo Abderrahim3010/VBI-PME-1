@@ -1883,8 +1883,10 @@ export default function App() {
             scale={scale}
           >
             <CaisseWindow
-              initialSalesCash={sales.reduce((acc, current) => acc + current.versement, 0)}
-              initialPurchasesCash={purchases.reduce((acc, current) => acc + current.versement, 0)}
+              sales={sales}
+              purchases={purchases}
+              clientPayments={clientPayments}
+              supplierPayments={supplierPayments}
               onClose={() => closeWindow('caisse')}
             />
           </WindowFrame>

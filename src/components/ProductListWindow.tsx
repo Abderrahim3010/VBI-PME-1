@@ -66,6 +66,19 @@ function ProductListWindow({
   const [showSortDropdown, setShowSortDropdown] = useState(false);
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!previewImage) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setPreviewImage(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [previewImage]);
 
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
   const [isAddingNew, setIsAddingNew] = useState(false);
@@ -1487,7 +1500,11 @@ function ProductListWindow({
           <div className="h-22 rounded-xl border border-slate-250 dark:border-slate-850 bg-[#f0f4f9] dark:bg-slate-950/40 overflow-hidden flex items-center justify-center p-1.5 relative shadow-inner group">
             {selectedProduct ? (
               selectedProduct.image ? (
-                <div className="w-full h-full flex items-center justify-center bg-white dark:bg-slate-900 rounded-lg p-0.5 border border-slate-200/60 dark:border-slate-800/60 shadow-xs transition-transform duration-200 hover:scale-[1.03]">
+                <div 
+                  onClick={() => setPreviewImage(selectedProduct.image!)}
+                  title="Cliquez pour agrandir la photo"
+                  className="w-full h-full flex items-center justify-center bg-white dark:bg-slate-900 rounded-lg p-0.5 border border-slate-200/60 dark:border-slate-800/60 shadow-xs transition-all duration-200 hover:scale-[1.04] cursor-pointer hover:border-indigo-500 hover:shadow-md"
+                >
                   <img 
                     referrerPolicy="no-referrer"
                     src={selectedProduct.image} 
@@ -2646,6 +2663,51 @@ function ProductListWindow({
                 Fermer
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* FULL SCREEN PHOTO PREVIEW MODAL */}
+      {previewImage && (
+        <div 
+          className="fixed inset-0 bg-slate-900/80 dark:bg-black/95 backdrop-blur-md flex items-center justify-center z-[5000] p-4 select-none animate-in fade-in duration-200 cursor-zoom-out"
+          onClick={() => setPreviewImage(null)}
+        >
+          <div 
+            className="relative max-w-[90vw] max-h-[85vh] bg-white dark:bg-slate-900 p-2 rounded-3xl shadow-2xl flex flex-col items-center border border-slate-200 dark:border-slate-800 animate-in zoom-in-95 duration-150 cursor-default"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button inside modal */}
+            <button
+              onClick={() => setPreviewImage(null)}
+              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-slate-100/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 hover:text-black dark:hover:text-white flex items-center justify-center transition-all shadow-md cursor-pointer z-10"
+              title="Fermer (Echap)"
+            >
+              <X size={18} />
+            </button>
+            
+            <div className="overflow-hidden rounded-2xl flex items-center justify-center bg-[#fafbfc] dark:bg-slate-950 p-2 border border-slate-150 dark:border-slate-850/60 max-w-full">
+              <img 
+                referrerPolicy="no-referrer"
+                src={previewImage} 
+                alt="Agrandissement produit" 
+                className="max-w-full max-h-[70vh] object-contain rounded-xl select-all shadow-sm"
+              />
+            </div>
+            
+            {/* Display product title */}
+            {selectedProduct && (
+              <div className="mt-3 px-4 pb-2 text-center select-text">
+                <h4 className="font-extrabold text-sm text-slate-850 dark:text-slate-100 font-display">
+                  {selectedProduct.designation}
+                </h4>
+                {selectedProduct.code && (
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 font-mono mt-0.5">
+                    {selectedProduct.code}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Product, SalesVoucher, PurchaseVoucher } from '../types';
-import { TrendingUp, TrendingDown, Layers, AlertCircle, Sparkles, Terminal, Trophy } from 'lucide-react';
+import { TrendingUp, TrendingDown, Layers, AlertCircle, Sparkles, Terminal, Trophy, Calendar } from 'lucide-react';
 
 interface StatsWindowProps {
   products: Product[];
@@ -17,6 +17,30 @@ export default function StatsWindow({
 }: StatsWindowProps) {
   // State for tab selector: 'perf' (Statistiques/Graphiques) or 'audit' (Analyse BON1/CARNETC)
   const [activeTab, setActiveTab] = useState<'perf' | 'audit'>('perf');
+
+  // Time Dimension filter states
+  const [timeFilter, setTimeFilter] = useState<'all' | 'day' | 'month' | 'year' | 'custom'>('all');
+
+  // Get current date strings for default values
+  const todayStr = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }, []);
+
+  const currentMonthStr = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  }, []);
+
+  const currentYearStr = useMemo(() => {
+    return String(new Date().getFullYear());
+  }, []);
+
+  const [selectedDayInput, setSelectedDayInput] = useState<string>(todayStr);
+  const [selectedMonthInput, setSelectedMonthInput] = useState<string>(currentMonthStr);
+  const [selectedYearInput, setSelectedYearInput] = useState<string>(currentYearStr);
+  const [customStartInput, setCustomStartInput] = useState<string>('');
+  const [customEndInput, setCustomEndInput] = useState<string>('');
 
   // Audit Logs database state
   const [auditLogs, setAuditLogs] = useState<Array<{
@@ -49,27 +73,187 @@ export default function StatsWindow({
   const [isRunningAudit, setIsRunningAudit] = useState(false);
   const [auditProgress, setAuditProgress] = useState(0);
 
-  // Financial aggregates
+  // Helper date parsing functions
+  const parseVoucherDate = (dateStr: string) => {
+    if (!dateStr) return null;
+    const parts = dateStr.split('/');
+    if (parts.length === 3) {
+      const day = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10);
+      const year = parseInt(parts[2], 10);
+      return { day, month, year };
+    }
+    return null;
+  };
+
+  const parseInputDate = (dateStr: string) => {
+    if (!dateStr) return null;
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10);
+      const day = parseInt(parts[2], 10);
+      return { day, month, year };
+    }
+    return null;
+  };
+
+  const parseInputMonth = (monthStr: string) => {
+    if (!monthStr) return null;
+    const parts = monthStr.split('-');
+    if (parts.length === 2) {
+      const year = parseInt(parts[0], 10);
+      const month = parseInt(parts[1], 10);
+      return { month, year };
+    }
+    return null;
+  };
+
+  const parseDateToObj = (ddmmyyyy: string) => {
+    const parsed = parseVoucherDate(ddmmyyyy);
+    if (!parsed) return null;
+    return new Date(parsed.year, parsed.month - 1, parsed.day);
+  };
+
+  // Extract unique years from existing sales and purchases to populate dropdown options
+  const availableYears = useMemo(() => {
+    const yearsSet = new Set<string>([currentYearStr]);
+    sales.forEach(s => {
+      const parsed = parseVoucherDate(s.date);
+      if (parsed) yearsSet.add(String(parsed.year));
+    });
+    purchases.forEach(p => {
+      const parsed = parseVoucherDate(p.date);
+      if (parsed) yearsSet.add(String(parsed.year));
+    });
+    return Array.from(yearsSet).sort((a, b) => b.localeCompare(a));
+  }, [sales, purchases, currentYearStr]);
+
+  // Filter Sales based on the active time filter
+  const filteredSales = useMemo(() => {
+    return sales.filter(s => {
+      const parsed = parseVoucherDate(s.date);
+      if (!parsed) return false;
+
+      if (timeFilter === 'all') return true;
+
+      if (timeFilter === 'day') {
+        const selected = parseInputDate(selectedDayInput);
+        if (!selected) return true;
+        return parsed.day === selected.day && parsed.month === selected.month && parsed.year === selected.year;
+      }
+
+      if (timeFilter === 'month') {
+        const selected = parseInputMonth(selectedMonthInput);
+        if (!selected) return true;
+        return parsed.month === selected.month && parsed.year === selected.year;
+      }
+
+      if (timeFilter === 'year') {
+        return parsed.year === Number(selectedYearInput);
+      }
+
+      if (timeFilter === 'custom') {
+        const dObj = parseDateToObj(s.date);
+        if (!dObj) return false;
+        if (customStartInput) {
+          const start = new Date(customStartInput);
+          start.setHours(0, 0, 0, 0);
+          if (dObj < start) return false;
+        }
+        if (customEndInput) {
+          const end = new Date(customEndInput);
+          end.setHours(23, 59, 59, 999);
+          if (dObj > end) return false;
+        }
+        return true;
+      }
+
+      return true;
+    });
+  }, [sales, timeFilter, selectedDayInput, selectedMonthInput, selectedYearInput, customStartInput, customEndInput]);
+
+  // Filter Purchases based on the active time filter
+  const filteredPurchases = useMemo(() => {
+    return purchases.filter(p => {
+      const parsed = parseVoucherDate(p.date);
+      if (!parsed) return false;
+
+      if (timeFilter === 'all') return true;
+
+      if (timeFilter === 'day') {
+        const selected = parseInputDate(selectedDayInput);
+        if (!selected) return true;
+        return parsed.day === selected.day && parsed.month === selected.month && parsed.year === selected.year;
+      }
+
+      if (timeFilter === 'month') {
+        const selected = parseInputMonth(selectedMonthInput);
+        if (!selected) return true;
+        return parsed.month === selected.month && parsed.year === selected.year;
+      }
+
+      if (timeFilter === 'year') {
+        return parsed.year === Number(selectedYearInput);
+      }
+
+      if (timeFilter === 'custom') {
+        const dObj = parseDateToObj(p.date);
+        if (!dObj) return false;
+        if (customStartInput) {
+          const start = new Date(customStartInput);
+          start.setHours(0, 0, 0, 0);
+          if (dObj < start) return false;
+        }
+        if (customEndInput) {
+          const end = new Date(customEndInput);
+          end.setHours(23, 59, 59, 999);
+          if (dObj > end) return false;
+        }
+        return true;
+      }
+
+      return true;
+    });
+  }, [purchases, timeFilter, selectedDayInput, selectedMonthInput, selectedYearInput, customStartInput, customEndInput]);
+
+  // Financial aggregates calculated on filtered dataset
   const financials = useMemo(() => {
     let salesTotal = 0;
-    sales.forEach(s => { salesTotal += s.ttc; });
+    filteredSales.forEach(s => { salesTotal += s.ttc; });
 
     let purchasesTotal = 0;
-    purchases.forEach(p => { purchasesTotal += p.ttc; });
+    filteredPurchases.forEach(p => { purchasesTotal += p.ttc; });
 
     const totalStockQty = products.reduce((acc, p) => acc + p.stock, 0);
-    const lowStockItems = products.filter(p => p.stock === 0).length;
+    const lowStockItems = products.filter(p => p.stockMin !== undefined && p.stock <= p.stockMin).length;
 
-    // Estimate profit margin 28%
-    const estimMargin = salesTotal * 0.28;
+    // Calculate dynamic profit margin using actual cost prices
+    let totalMargin = 0;
+    filteredSales.forEach(s => {
+      s.items.forEach(item => {
+        const p = products.find(prod => prod.code === item.code);
+        if (p) {
+          const buyPrice = p.prixDeRevient || p.prixAchat || 0;
+          if (buyPrice > 0) {
+            totalMargin += (item.price - buyPrice) * item.qty;
+          } else {
+            // fallback cost is 75% of sale price (meaning 25% profit margin)
+            totalMargin += item.total * 0.25;
+          }
+        } else {
+          totalMargin += item.total * 0.25;
+        }
+      });
+    });
 
-    return { salesTotal, purchasesTotal, totalStockQty, lowStockItems, estimMargin };
-  }, [products, sales, purchases]);
+    return { salesTotal, purchasesTotal, totalStockQty, lowStockItems, estimMargin: totalMargin };
+  }, [products, filteredSales, filteredPurchases]);
 
-  // Aggregate items sold
+  // Aggregate items sold based on filtered sales
   const topProducts = useMemo(() => {
     const itemSales: { [code: string]: { name: string, qty: number, total: number } } = {};
-    sales.forEach(s => {
+    filteredSales.forEach(s => {
       s.items.forEach(item => {
         if (!itemSales[item.code]) {
           itemSales[item.code] = { name: item.designation, qty: 0, total: 0 };
@@ -87,7 +271,7 @@ export default function StatsWindow({
     }));
 
     return list.sort((a, b) => b.qty - a.qty).slice(0, 5);
-  }, [sales]);
+  }, [filteredSales]);
 
   const runLiveAudit = () => {
     setIsRunningAudit(true);
@@ -131,13 +315,13 @@ export default function StatsWindow({
   return (
     <div className="flex-1 flex flex-col gap-4 font-sans text-xs select-all bg-white dark:bg-slate-900 h-full overflow-hidden p-4">
       
-      {/* material Segmented Tab control headers */}
+      {/* Tab Control */}
       <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 select-none shrink-0">
         <div className="flex bg-slate-100 dark:bg-slate-950 p-1 rounded-full border border-slate-200/50 dark:border-slate-800">
           <button
             onClick={() => setActiveTab('perf')}
             className={`
-              px-5 py-2.5 rounded-full font-bold text-xs transition-all duration-250 outline-none cursor-pointer flex items-center gap-2
+              px-5 py-2 rounded-full font-bold text-xs transition-all duration-250 outline-none cursor-pointer flex items-center gap-2
               ${activeTab === 'perf'
                 ? 'bg-m3-primary text-white shadow-md shadow-m3-primary/10'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
@@ -149,7 +333,7 @@ export default function StatsWindow({
           <button
             onClick={() => setActiveTab('audit')}
             className={`
-              px-5 py-2.5 rounded-full font-bold text-xs transition-all duration-250 outline-none cursor-pointer flex items-center gap-2
+              px-5 py-2 rounded-full font-bold text-xs transition-all duration-250 outline-none cursor-pointer flex items-center gap-2
               ${activeTab === 'audit'
                 ? 'bg-m3-primary text-white shadow-md shadow-m3-primary/10'
                 : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
@@ -168,48 +352,139 @@ export default function StatsWindow({
       {activeTab === 'perf' ? (
         <div className="flex-1 flex flex-col gap-4 min-h-0 overflow-y-auto pr-0.5">
           
+          {/* Time Range Selector Toolbar */}
+          <div className="bg-slate-50 dark:bg-slate-950/45 p-3.5 rounded-2xl border border-slate-150 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-4 select-none shrink-0">
+            <div className="flex items-center gap-2.5">
+              <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                <Calendar size={13} className="text-slate-400" /> Période:
+              </span>
+              <div className="flex bg-white dark:bg-slate-900 rounded-lg p-0.5 border border-slate-200 dark:border-slate-800 shadow-xs">
+                {[
+                  { id: 'all', label: 'Tout' },
+                  { id: 'day', label: 'Par Jour' },
+                  { id: 'month', label: 'Par Mois' },
+                  { id: 'year', label: 'Par Année' },
+                  { id: 'custom', label: 'Personnalisé' }
+                ].map((btn) => (
+                  <button
+                    key={btn.id}
+                    onClick={() => setTimeFilter(btn.id as any)}
+                    className={`px-3 py-1.5 rounded-md text-[10px] font-bold transition-all cursor-pointer border-none outline-none ${
+                      timeFilter === btn.id
+                        ? 'bg-m3-primary text-white shadow-xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    {btn.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Dynamic input controls */}
+            <div className="flex items-center gap-3">
+              {timeFilter === 'day' && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-semibold text-slate-500">Sélectionner le jour:</span>
+                  <input 
+                    type="date"
+                    value={selectedDayInput}
+                    onChange={(e) => setSelectedDayInput(e.target.value)}
+                    className="bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded-lg px-2.5 py-1 text-xs font-mono font-bold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-m3-primary focus:border-m3-primary"
+                  />
+                </div>
+              )}
+
+              {timeFilter === 'month' && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-semibold text-slate-500">Sélectionner le mois:</span>
+                  <input 
+                    type="month"
+                    value={selectedMonthInput}
+                    onChange={(e) => setSelectedMonthInput(e.target.value)}
+                    className="bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded-lg px-2.5 py-1 text-xs font-mono font-bold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-m3-primary focus:border-m3-primary"
+                  />
+                </div>
+              )}
+
+              {timeFilter === 'year' && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-semibold text-slate-500">Sélectionner l'année:</span>
+                  <select
+                    value={selectedYearInput}
+                    onChange={(e) => setSelectedYearInput(e.target.value)}
+                    className="bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded-lg px-2.5 py-1 text-xs font-mono font-bold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-m3-primary focus:border-m3-primary"
+                  >
+                    {availableYears.map(yr => (
+                      <option key={yr} value={yr}>{yr}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {timeFilter === 'custom' && (
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] font-semibold text-slate-500">Du:</span>
+                  <input 
+                    type="date"
+                    value={customStartInput}
+                    onChange={(e) => setCustomStartInput(e.target.value)}
+                    className="bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded-lg px-2.5 py-1 text-xs font-mono font-bold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-m3-primary focus:border-m3-primary"
+                  />
+                  <span className="text-[10px] font-semibold text-slate-500">Au:</span>
+                  <input 
+                    type="date"
+                    value={customEndInput}
+                    onChange={(e) => setCustomEndInput(e.target.value)}
+                    className="bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded-lg px-2.5 py-1 text-xs font-mono font-bold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-m3-primary focus:border-m3-primary"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* M3 Bento Grid Aggregates */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 select-none shrink-0">
             
             {/* Sales Stat */}
             <div className="bg-gradient-to-br from-indigo-50/50 to-indigo-100/30 dark:from-indigo-950/20 dark:to-teal-950/5 border border-indigo-100 dark:border-indigo-950/45 p-4 flex flex-col justify-between rounded-2xl shadow-sm gap-2">
               <div className="flex justify-between items-center">
-                <span className="text-[10px] font-extrabold text-indigo-800 dark:text-indigo-300 uppercase tracking-wider">Chiffre d'Affaires</span>
+                <span className="text-[10px] font-extrabold text-indigo-800 dark:text-indigo-300 uppercase tracking-wider">Chiffre d'Affaires (BL)</span>
                 <TrendingUp size={16} className="text-indigo-600 dark:text-indigo-400" />
               </div>
               <span className="text-lg font-display font-black text-slate-900 dark:text-slate-100 leading-none">
                 {financials.salesTotal.toLocaleString('fr-FR', { minimumFractionDigits: 1 })} DA
               </span>
               <span className="text-[9.5px] text-indigo-700 dark:text-indigo-300 font-bold bg-indigo-100/40 dark:bg-indigo-950/50 self-start px-2 py-0.5 rounded-full">
-                {sales.length} Bons de Vente
+                {filteredSales.length} Bons de Vente
               </span>
             </div>
 
             {/* Purchases Stat */}
             <div className="bg-gradient-to-br from-rose-50/50 to-rose-100/30 dark:from-rose-950/20 dark:to-orange-950/5 border border-rose-100 dark:border-rose-950/45 p-4 flex flex-col justify-between rounded-2xl shadow-sm gap-2">
               <div className="flex justify-between items-center">
-                <span className="text-[10px] font-extrabold text-rose-800 dark:text-rose-300 uppercase tracking-wider">Registre Achats</span>
+                <span className="text-[10px] font-extrabold text-rose-800 dark:text-rose-300 uppercase tracking-wider">Registre Achats (Entrées)</span>
                 <TrendingDown size={16} className="text-rose-600 dark:text-rose-400" />
               </div>
               <span className="text-lg font-display font-black text-slate-900 dark:text-slate-100 leading-none">
                 {financials.purchasesTotal.toLocaleString('fr-FR', { minimumFractionDigits: 1 })} DA
               </span>
               <span className="text-[9.5px] text-rose-700 dark:text-rose-300 font-bold bg-rose-100/40 dark:bg-rose-950/50 self-start px-2 py-0.5 rounded-full">
-                {purchases.length} Bons d'Achat
+                {filteredPurchases.length} Bons d'Achat
               </span>
             </div>
 
             {/* Profit Margin */}
             <div className="bg-gradient-to-br from-emerald-50/50 to-emerald-100/30 dark:from-emerald-950/20 dark:to-indigo-950/5 border border-emerald-100 dark:border-emerald-950/45 p-4 flex flex-col justify-between rounded-2xl shadow-sm gap-2">
               <div className="flex justify-between items-center">
-                <span className="text-[10px] font-extrabold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">Marge brut estimée (28%)</span>
-                <Sparkles size={16} className="text-emerald-600 dark:text-emerald-400 animate-pulse" />
+                <span className="text-[10px] font-extrabold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">Marge Réelle Calculée</span>
+                <Sparkles size={16} className="text-emerald-600 dark:text-emerald-400" />
               </div>
-              <span className="text-lg font-display font-black text-slate-900 dark:text-slate-100 leading-none">
+              <span className={`text-lg font-display font-black leading-none ${financials.estimMargin >= 0 ? 'text-slate-900 dark:text-slate-100' : 'text-rose-600 dark:text-rose-450'}`}>
                 {financials.estimMargin.toLocaleString('fr-FR', { minimumFractionDigits: 1 })} DA
               </span>
               <span className="text-[9.5px] text-emerald-700 dark:text-emerald-300 font-bold bg-emerald-100/40 dark:bg-emerald-950/50 self-start px-2 py-0.5 rounded-full">
-                Rentabilité calculée
+                Rentabilité dynamique
               </span>
             </div>
 
@@ -222,8 +497,8 @@ export default function StatsWindow({
               <span className="text-lg font-display font-black text-slate-900 dark:text-slate-100 leading-none">
                 {financials.totalStockQty} Unités
               </span>
-              <span className={`text-[9.5px] font-bold self-start px-2 py-0.5 rounded-full ${financials.lowStockItems > 0 ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/65 dark:text-rose-300' : 'bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300'}`}>
-                {financials.lowStockItems} Ruptures critiques
+              <span className={`text-[9.5px] font-bold self-start px-2 py-0.5 rounded-full ${financials.lowStockItems > 0 ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/65 dark:text-rose-300 animate-pulse' : 'bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300'}`}>
+                {financials.lowStockItems} Alertes stock min
               </span>
             </div>
           </div>
@@ -245,7 +520,7 @@ export default function StatsWindow({
                     </div>
                     <div className="w-full bg-slate-100 dark:bg-slate-950 h-5 rounded-full overflow-hidden mt-1 relative border border-slate-200/50 dark:border-slate-850">
                       <div 
-                        style={{ width: `${financials.salesTotal > 0 ? Math.min(100, (financials.salesTotal / Math.max(financials.salesTotal, financials.purchasesTotal)) * 100) : 0}%` }}
+                        style={{ width: `${financials.salesTotal > 0 ? Math.min(100, (financials.salesTotal / Math.max(financials.salesTotal, financials.purchasesTotal || 1)) * 100) : 0}%` }}
                         className="bg-indigo-600 dark:bg-indigo-500 h-full rounded-full transition-all duration-500 ease-out shadow-[0_0_8px_rgba(79,70,229,0.3)]"
                       />
                     </div>
@@ -258,7 +533,7 @@ export default function StatsWindow({
                     </div>
                     <div className="w-full bg-slate-100 dark:bg-slate-950 h-5 rounded-full overflow-hidden mt-1 relative border border-slate-200/50 dark:border-slate-850">
                       <div 
-                        style={{ width: `${financials.purchasesTotal > 0 ? Math.min(100, (financials.purchasesTotal / Math.max(financials.salesTotal, financials.purchasesTotal)) * 100) : 0}%` }}
+                        style={{ width: `${financials.purchasesTotal > 0 ? Math.min(100, (financials.purchasesTotal / Math.max(financials.salesTotal || 1, financials.purchasesTotal)) * 100) : 0}%` }}
                         className="bg-rose-500 dark:bg-rose-600 h-full rounded-full transition-all duration-500 ease-out shadow-[0_0_8px_rgba(244,63,94,0.3)]"
                       />
                     </div>
@@ -280,7 +555,7 @@ export default function StatsWindow({
               <div className="flex-1 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800/60 py-2 px-3 overflow-y-auto rounded-xl shadow-xs">
                 {topProducts.length === 0 ? (
                   <div className="text-center py-12 italic text-slate-450 dark:text-slate-500 font-sans">
-                    Aucun article vendu pour le moment.
+                    Aucun article vendu pour cette période.
                   </div>
                 ) : (
                   <ol className="flex flex-col gap-1.5 divide-y divide-slate-100 dark:divide-slate-800">
@@ -354,7 +629,7 @@ export default function StatsWindow({
               <button
                 onClick={runLiveAudit}
                 disabled={isRunningAudit}
-                className="w-full h-10 bg-m3-primary hover:opacity-90 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all disabled:opacity-50 select-none cursor-pointer"
+                className="w-full h-10 bg-m3-primary hover:opacity-90 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all disabled:opacity-50 select-none cursor-pointer border-none"
               >
                 <span>🚀</span> Lancer l'Analyse indexée
               </button>
