@@ -1438,7 +1438,7 @@ function SalesVoucherWindow({
         {/* 2. Client and Document Metadatas panel - gradient background */}
         <div 
           style={{ height: '128px', width: '100%' }}
-          className="mx-0.5 mt-0.5 mb-2 p-3 bg-gradient-to-r from-sky-100 via-sky-50 to-white dark:from-slate-900/90 dark:via-slate-950 dark:to-slate-900/90 border border-sky-200/80 dark:border-slate-800 rounded-2xl flex flex-nowrap gap-3.5 items-center justify-start text-slate-900 dark:text-slate-100 shadow-sm relative overflow-visible shrink-0"
+          className="mx-0.5 mt-0.5 mb-2 p-3 bg-gradient-to-r from-sky-200 via-sky-100 to-white dark:from-sky-950 dark:via-slate-900 dark:to-slate-950 border border-sky-200/80 dark:border-sky-900/40 rounded-2xl flex flex-nowrap gap-3.5 items-center justify-start text-slate-900 dark:text-slate-100 shadow-sm relative overflow-visible shrink-0"
         >
         
         {/* Left container: Client + metadata on Row 1, and facturation auxiliary cards raised to Row 2 */}
@@ -2042,7 +2042,7 @@ function SalesVoucherWindow({
         </div>
 
         {/* Right pre-visual sidebar & ultimate bill fields */}
-        <div className="col-span-4 bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800/80 rounded-2xl p-3 flex flex-col gap-2 justify-start">
+        <div className="col-span-4 bg-gradient-to-br from-sky-200 via-sky-100 to-white dark:from-sky-950 dark:via-slate-900 dark:to-slate-950 border border-sky-200/80 dark:border-sky-900/40 rounded-2xl p-3 flex flex-col gap-2 justify-start shadow-sm">
           
           {/* Money recaps list matching screenshot exactly */}
           <div className="flex flex-col gap-1.5 font-mono select-all text-xs">
