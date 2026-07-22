@@ -1,11 +1,16 @@
-import React, { useState, useMemo } from 'react';
-import { Product, SalesVoucher, PurchaseVoucher } from '../types';
-import { TrendingUp, TrendingDown, Layers, AlertCircle, Sparkles, Terminal, Trophy, Calendar } from 'lucide-react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Product, SalesVoucher, PurchaseVoucher, Client, Supplier } from '../types';
+import { TrendingUp, TrendingDown, Layers, AlertCircle, Sparkles, Terminal, Trophy, Calendar, ShoppingBag, FileText, BarChart3 } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import ConsultationBonsView from './ConsultationBonsView';
 
 interface StatsWindowProps {
   products: Product[];
   sales: SalesVoucher[];
   purchases: PurchaseVoucher[];
+  clients?: Client[];
+  suppliers?: Supplier[];
+  initialMode?: 'general' | 'achats' | 'ventes';
   onClose: () => void;
 }
 
@@ -13,9 +18,21 @@ export default function StatsWindow({
   products,
   sales,
   purchases,
+  clients = [],
+  suppliers = [],
+  initialMode = 'general',
   onClose
 }: StatsWindowProps) {
-  // State for tab selector: 'perf' (Statistiques/Graphiques) or 'audit' (Analyse BON1/CARNETC)
+  // Main 3-Option Top Mode: 'general' (Statistiques Générales), 'achats' (Consultation des Achats), 'ventes' (Consultation des Ventes)
+  const [mainMode, setMainMode] = useState<'general' | 'achats' | 'ventes'>(initialMode);
+
+  useEffect(() => {
+    if (initialMode) {
+      setMainMode(initialMode);
+    }
+  }, [initialMode]);
+
+  // Sub-tab state inside 'general': 'perf' (Statistiques/Graphiques) or 'audit' (Analyse BON1/CARNETC)
   const [activeTab, setActiveTab] = useState<'perf' | 'audit'>('perf');
 
   // Time Dimension filter states
@@ -313,41 +330,129 @@ export default function StatsWindow({
   const activeLogObj = auditLogs.find(l => l.id === selectedLogId) || auditLogs[0];
 
   return (
-    <div className="flex-1 flex flex-col gap-4 font-sans text-xs select-all bg-white dark:bg-slate-900 h-full overflow-hidden p-4">
+    <div className="flex-1 flex flex-col gap-3 font-sans text-xs select-all bg-white dark:bg-slate-900 h-full overflow-hidden p-3">
       
-      {/* Tab Control */}
-      <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 select-none shrink-0">
-        <div className="flex bg-slate-100 dark:bg-slate-950 p-1 rounded-full border border-slate-200/50 dark:border-slate-800">
+      {/* Primary 3-Option Top Mode Header Navigation Bar */}
+      <div className="flex flex-wrap items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2.5 select-none shrink-0 bg-slate-50 dark:bg-slate-950 p-2 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs">
+        <div className="flex items-center bg-slate-200/70 dark:bg-slate-900 p-1 rounded-xl border border-slate-300/80 dark:border-slate-800 relative">
+          
+          {/* Button 1: Statistiques Générales */}
           <button
-            onClick={() => setActiveTab('perf')}
-            className={`
-              px-5 py-2 rounded-full font-bold text-xs transition-all duration-250 outline-none cursor-pointer flex items-center gap-2
-              ${activeTab === 'perf'
-                ? 'bg-m3-primary text-white shadow-md shadow-m3-primary/10'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-              }
-            `}
+            type="button"
+            onClick={() => setMainMode('general')}
+            className={`relative z-10 px-4 py-2 rounded-lg font-extrabold text-xs transition-colors duration-200 flex items-center gap-2 cursor-pointer outline-none ${
+              mainMode === 'general'
+                ? 'text-white'
+                : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+            }`}
           >
-            <Sparkles size={14} /> Statistiques Magasin
+            {mainMode === 'general' && (
+              <motion.div
+                layoutId="mainModePill"
+                className="absolute inset-0 bg-m3-primary rounded-lg -z-10 shadow-sm"
+                transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+              />
+            )}
+            <BarChart3 size={15} />
+            <span>Statistiques Générales</span>
           </button>
+
+          {/* Button 2: Consultation des Achats */}
           <button
-            onClick={() => setActiveTab('audit')}
-            className={`
-              px-5 py-2 rounded-full font-bold text-xs transition-all duration-250 outline-none cursor-pointer flex items-center gap-2
-              ${activeTab === 'audit'
-                ? 'bg-m3-primary text-white shadow-md shadow-m3-primary/10'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-              }
-            `}
+            type="button"
+            onClick={() => setMainMode('achats')}
+            className={`relative z-10 px-4 py-2 rounded-lg font-extrabold text-xs transition-colors duration-200 flex items-center gap-2 cursor-pointer outline-none ${
+              mainMode === 'achats'
+                ? 'text-white'
+                : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+            }`}
           >
-            <Terminal size={14} /> Analyse BON1 / CARNETC
+            {mainMode === 'achats' && (
+              <motion.div
+                layoutId="mainModePill"
+                className="absolute inset-0 bg-m3-primary rounded-lg -z-10 shadow-sm"
+                transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+              />
+            )}
+            <ShoppingBag size={15} />
+            <span>Consultation des Achats</span>
           </button>
+
+          {/* Button 3: Consultation des Ventes */}
+          <button
+            type="button"
+            onClick={() => setMainMode('ventes')}
+            className={`relative z-10 px-4 py-2 rounded-lg font-extrabold text-xs transition-colors duration-200 flex items-center gap-2 cursor-pointer outline-none ${
+              mainMode === 'ventes'
+                ? 'text-white'
+                : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            {mainMode === 'ventes' && (
+              <motion.div
+                layoutId="mainModePill"
+                className="absolute inset-0 bg-m3-primary rounded-lg -z-10 shadow-sm"
+                transition={{ type: 'spring', stiffness: 450, damping: 32 }}
+              />
+            )}
+            <FileText size={15} />
+            <span>Consultation des Ventes</span>
+          </button>
+
         </div>
 
-        <div className="text-[10px] text-m3-primary dark:text-sky-400 font-mono font-bold tracking-wider uppercase select-none">
-          M3 Expressive Analyzer
+        <div className="flex items-center gap-2.5">
+          <span className="text-[11px] font-mono font-bold tracking-wider uppercase text-m3-primary dark:text-sky-400 bg-m3-primary/10 px-3 py-1 rounded-lg border border-m3-primary/20 select-none">
+            {mainMode === 'general' ? 'M3 Analytique' : mainMode === 'achats' ? 'Consultation Achats' : 'Consultation Ventes'}
+          </span>
         </div>
       </div>
+
+      <AnimatePresence mode="wait">
+        {mainMode === 'general' && (
+          <motion.div
+            key="general-mode"
+            initial={{ opacity: 0, y: 8, scale: 0.995 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.995 }}
+            transition={{ duration: 0.18 }}
+            className="flex-1 flex flex-col gap-3 min-h-0 overflow-hidden"
+          >
+            {/* Sub-tab Control inside Statistiques Générales */}
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2 select-none shrink-0">
+              <div className="flex bg-slate-100 dark:bg-slate-950 p-1 rounded-full border border-slate-200/50 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('perf')}
+                  className={`
+                    px-5 py-1.5 rounded-full font-bold text-xs transition-all duration-200 outline-none cursor-pointer flex items-center gap-2
+                    ${activeTab === 'perf'
+                      ? 'bg-m3-primary text-white shadow-md shadow-m3-primary/10'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                    }
+                  `}
+                >
+                  <Sparkles size={14} /> Statistiques Magasin
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('audit')}
+                  className={`
+                    px-5 py-1.5 rounded-full font-bold text-xs transition-all duration-200 outline-none cursor-pointer flex items-center gap-2
+                    ${activeTab === 'audit'
+                      ? 'bg-m3-primary text-white shadow-md shadow-m3-primary/10'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                    }
+                  `}
+                >
+                  <Terminal size={14} /> Analyse BON1 / CARNETC
+                </button>
+              </div>
+
+              <div className="text-[10px] text-m3-primary dark:text-sky-400 font-mono font-bold tracking-wider uppercase select-none">
+                M3 Expressive Analyzer
+              </div>
+            </div>
 
       {activeTab === 'perf' ? (
         <div className="flex-1 flex flex-col gap-4 min-h-0 overflow-y-auto pr-0.5">
@@ -677,15 +782,58 @@ export default function StatsWindow({
         </div>
       )}
 
-      {/* Footer Close Button */}
-      <div className="flex justify-end select-none shrink-0 border-t pt-3 border-slate-100 dark:border-slate-800">
-        <button
-          onClick={onClose}
-          className="px-6 h-9.5 text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-350 rounded-full flex items-center justify-center shadow-xs active:scale-95 transition-all cursor-pointer border border-transparent"
-        >
-          Fermer l'onglet
-        </button>
-      </div>
+            {/* Footer Close Button for General mode */}
+            <div className="flex justify-end select-none shrink-0 border-t pt-2 border-slate-100 dark:border-slate-800">
+              <button
+                onClick={onClose}
+                className="px-6 h-8 text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-350 rounded-full flex items-center justify-center shadow-xs active:scale-95 transition-all cursor-pointer border border-transparent"
+              >
+                Fermer l'onglet
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {mainMode === 'achats' && (
+          <motion.div
+            key="achats-mode"
+            initial={{ opacity: 0, y: 8, scale: 0.995 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.995 }}
+            transition={{ duration: 0.18 }}
+            className="flex-1 flex flex-col min-h-0 overflow-hidden"
+          >
+            <ConsultationBonsView
+              type="achats"
+              sales={sales}
+              purchases={purchases}
+              clients={clients}
+              suppliers={suppliers}
+              onClose={onClose}
+            />
+          </motion.div>
+        )}
+
+        {mainMode === 'ventes' && (
+          <motion.div
+            key="ventes-mode"
+            initial={{ opacity: 0, y: 8, scale: 0.995 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.995 }}
+            transition={{ duration: 0.18 }}
+            className="flex-1 flex flex-col min-h-0 overflow-hidden"
+          >
+            <ConsultationBonsView
+              type="ventes"
+              sales={sales}
+              purchases={purchases}
+              clients={clients}
+              suppliers={suppliers}
+              onClose={onClose}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

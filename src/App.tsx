@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
 import {
   ShoppingBag,
   ShoppingCart,
@@ -19,7 +20,9 @@ import {
   Database,
   Key,
   LogOut,
-  Gem
+  Gem,
+  ChevronDown,
+  FileText
 } from 'lucide-react';
 import {
   INITIAL_PRODUCTS,
@@ -444,6 +447,21 @@ export default function App() {
   const [fichierDropdownOpen, setFichierDropdownOpen] = useState(false);
   const [unauthorizedModal, setUnauthorizedModal] = useState<{ isOpen: boolean; moduleName: string; code: string } | null>(null);
 
+  // States for F8 Statistiques multi-option button
+  const [statsInitialMode, setStatsInitialMode] = useState<'general' | 'achats' | 'ventes'>('general');
+  const [statsMenuOpen, setStatsMenuOpen] = useState(false);
+  const statsDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (statsDropdownRef.current && !statsDropdownRef.current.contains(e.target as Node)) {
+        setStatsMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const getDeviceMemoryStats = () => {
     const totalRAM = (navigator as any).deviceMemory || 8;
     
@@ -743,7 +761,7 @@ export default function App() {
         launchWindow('situation_clients');
       } else if (e.key === 'F8') {
         e.preventDefault();
-        launchWindow('stats');
+        setStatsMenuOpen(prev => !prev);
       } else if (e.key === 'F9') {
         e.preventDefault();
         launchWindow('products');
@@ -1261,7 +1279,7 @@ export default function App() {
       </div>
 
       {/* 2. OS Quick Toolbar with Icons (Image 2 and 3 style) */}
-      <div className="bg-gradient-to-r from-sky-100 via-sky-50 to-white dark:from-sky-950 dark:via-slate-900 dark:to-slate-950 border-b border-sky-200/80 dark:border-sky-900/50 py-1.5 px-2 flex items-center gap-2 flex-nowrap overflow-x-auto scrollbar-none shrink-0 z-30 select-none shadow-md transition-colors duration-300">
+      <div className="bg-gradient-to-r from-sky-100 via-sky-50 to-white dark:from-sky-950 dark:via-slate-900 dark:to-slate-950 border-b border-sky-200/80 dark:border-sky-900/50 py-1.5 px-2 flex items-center gap-2 flex-nowrap overflow-visible shrink-0 z-30 select-none shadow-md transition-colors duration-300">
         
         {config?.affichage?.visibleButtons?.purchases !== false && (
           <button
@@ -1343,14 +1361,97 @@ export default function App() {
         )}
   
         {config?.affichage?.visibleButtons?.stats !== false && (
-          <button
-            onClick={() => launchWindow('stats')}
-            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/70 dark:bg-slate-950/60 hover:bg-white dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-sky-200/80 dark:border-slate-800 hover:border-sky-400 dark:hover:border-slate-700 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
-          >
-            <BarChart3 className="text-purple-500 dark:text-purple-400 shrink-0" size={26} />
-            <span style={{ fontSize: '14px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Statistiques</span>
-            <span className="text-[8px] text-slate-500 font-bold tracking-tight mt-1">F8</span>
-          </button>
+          <div className="relative" ref={statsDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setStatsMenuOpen(prev => !prev)}
+              className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/70 dark:bg-slate-950/60 hover:bg-white dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-sky-200/80 dark:border-slate-800 hover:border-sky-400 dark:hover:border-slate-700 rounded-xl shadow-md transition-all duration-200 cursor-pointer relative"
+              title="Statistiques & Consultation (F8)"
+            >
+              <div className="flex items-center gap-1">
+                <BarChart3 className="text-purple-500 dark:text-purple-400 shrink-0" size={24} />
+                <ChevronDown size={12} className={`text-slate-400 transition-transform duration-200 ${statsMenuOpen ? 'rotate-180 text-purple-600' : ''}`} />
+              </div>
+              <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-1 whitespace-nowrap">Statistiques</span>
+              <span className="text-[8px] text-slate-500 font-bold tracking-tight mt-0.5">F8</span>
+            </button>
+
+            <AnimatePresence>
+              {statsMenuOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 6, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 6, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute top-full left-0 mt-2 w-72 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border-2 border-purple-200 dark:border-purple-900/60 p-2 z-[9999] flex flex-col gap-1.5 select-none divide-y divide-slate-100 dark:divide-slate-800/80"
+                >
+                  <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-black text-purple-700 dark:text-purple-300 uppercase tracking-wider">
+                    <span>Choix du Mode [F8]</span>
+                    <span className="text-[9px] font-mono text-slate-400">3 options</span>
+                  </div>
+
+                  <div className="pt-1.5 flex flex-col gap-1">
+                    {/* Option 1: Statistiques Générales */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStatsInitialMode('general');
+                        launchWindow('stats');
+                        setStatsMenuOpen(false);
+                      }}
+                      className="w-full px-3 py-2.5 rounded-xl flex items-center gap-3 hover:bg-purple-50 dark:hover:bg-purple-950/50 text-slate-800 dark:text-slate-100 font-bold text-xs transition-all text-left cursor-pointer group border border-transparent hover:border-purple-300 dark:hover:border-purple-800 shadow-2xs"
+                    >
+                      <div className="p-2.5 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-purple-600 dark:text-purple-300 group-hover:scale-110 transition-transform shrink-0 shadow-xs">
+                        <BarChart3 size={18} />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-black text-purple-950 dark:text-purple-100 text-[13px]">Statistiques Générales</span>
+                        <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">Graphiques, Chiffre d'affaires & Audit</span>
+                      </div>
+                    </button>
+
+                    {/* Option 2: Consultation des Achats */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStatsInitialMode('achats');
+                        launchWindow('stats');
+                        setStatsMenuOpen(false);
+                      }}
+                      className="w-full px-3 py-2.5 rounded-xl flex items-center gap-3 hover:bg-blue-50 dark:hover:bg-blue-950/50 text-slate-800 dark:text-slate-100 font-bold text-xs transition-all text-left cursor-pointer group border border-transparent hover:border-blue-300 dark:hover:border-blue-800 shadow-2xs"
+                    >
+                      <div className="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-300 group-hover:scale-110 transition-transform shrink-0 shadow-xs">
+                        <ShoppingBag size={18} />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-black text-blue-950 dark:text-blue-100 text-[13px]">Consultation des Achats</span>
+                        <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">Bons & Factures d'Achat (Fournisseurs)</span>
+                      </div>
+                    </button>
+
+                    {/* Option 3: Consultation des Ventes */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setStatsInitialMode('ventes');
+                        launchWindow('stats');
+                        setStatsMenuOpen(false);
+                      }}
+                      className="w-full px-3 py-2.5 rounded-xl flex items-center gap-3 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 text-slate-800 dark:text-slate-100 font-bold text-xs transition-all text-left cursor-pointer group border border-transparent hover:border-emerald-300 dark:hover:border-emerald-800 shadow-2xs"
+                    >
+                      <div className="p-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-300 group-hover:scale-110 transition-transform shrink-0 shadow-xs">
+                        <ShoppingCart size={18} />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-black text-emerald-950 dark:text-emerald-100 text-[13px]">Consultation des Ventes</span>
+                        <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">Bons & Factures de Vente (Clients)</span>
+                      </div>
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         )}
   
         {config?.affichage?.visibleButtons?.inventaire !== false && (
@@ -1854,15 +1955,15 @@ export default function App() {
           {/* 6. Dashboard / Stats Window */}
           <WindowFrame
             id="stats"
-            title="Analytique - Statistiques Stock & Performances Magasin"
+            title="Analytique & Consultation - Statistiques, Achats & Ventes"
             isOpen={windows.find(w => w.id === 'stats')?.isOpen || false}
             isMinimized={windows.find(w => w.id === 'stats')?.isMinimized || false}
             isMaximized={windows.find(w => w.id === 'stats')?.isMaximized || false}
             zIndex={windows.find(w => w.id === 'stats')?.zIndex || 10}
             initialX={windows.find(w => w.id === 'stats')?.x || 190}
             initialY={windows.find(w => w.id === 'stats')?.y || 60}
-            width="w-[920px]"
-            height="h-[600px]"
+            width="w-[1040px]"
+            height="h-[680px]"
             onClose={() => closeWindow('stats')}
             onMinimize={() => minimizeWindow('stats')}
             onMaximize={() => toggleMaximizeWindow('stats')}
@@ -1873,6 +1974,9 @@ export default function App() {
               products={products}
               sales={sales}
               purchases={purchases}
+              clients={clients}
+              suppliers={suppliers}
+              initialMode={statsInitialMode}
               onClose={() => closeWindow('stats')}
             />
           </WindowFrame>
