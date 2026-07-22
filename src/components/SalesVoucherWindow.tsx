@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { Product, Client, SalesVoucher, VoucherItem, User } from '../types';
+import { useResizableColumns } from '../hooks/useResizableColumns';
 import { 
   Edit, Edit3, RefreshCw, BarChart3, Printer, Plug, Search, Plus, Minus, Trash2, 
   Package, Coins, DollarSign, User as UserIcon, Users, AlertTriangle, Lightbulb, 
@@ -355,6 +356,24 @@ function SalesVoucherWindow({
     document.addEventListener('pointermove', handlePointerMove);
     document.addEventListener('pointerup', handlePointerUp);
   };
+
+  // Table column widths for active sales voucher items
+  const { columnWidths: salesItemColWidths, startResizing: startResizingSalesItem } = useResizableColumns({
+    num: 45,
+    code: 120,
+    designation: 280,
+    colis: 60,
+    colisage: 65,
+    pieces: 65,
+    qte: 65,
+    punit: 100,
+    prixAchat: 105,
+    prixRevient: 105,
+    montant: 110
+  }, 20, 'sales_items');
+
+  // Toggle for showing Prix d'Achat and Prix de Revient columns in sold items table (Ctrl + A)
+  const [showCostPrices, setShowCostPrices] = useState(false);
 
   // Search input query to search/filter products already sold in the current voucher
   const [soldItemsSearchQuery, setSoldItemsSearchQuery] = useState('');
@@ -1007,6 +1026,15 @@ function SalesVoucherWindow({
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!isOpen) return;
+
+      // Ctrl + A shortcut to toggle Prix d'Achat and Prix de Revient columns in sold items
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'a' || e.key === 'A')) {
+        e.preventDefault();
+        e.stopPropagation();
+        setShowCostPrices(prev => !prev);
+        return;
+      }
+
       // If we are editing inside some text inputs, don't trigger global hotkeys unless barcode input
       const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
       if (tag === 'input' && !(e.target as HTMLInputElement).readOnly && !isProductChooserOpen && !isPaymentDialogOpen) {
@@ -1276,19 +1304,19 @@ function SalesVoucherWindow({
       className="flex-1 flex flex-col font-sans text-xs bg-slate-50 dark:bg-slate-900/40 text-slate-800 dark:text-slate-100 h-full overflow-hidden select-none outline-none"
     >
       
-      {/* 1. Header Toolbar Ribbon - Modernized with Material 3 styling */}
+      {/* 1. Header Toolbar Ribbon - Modernized with rich gradient styling */}
       <div 
         style={{ marginTop: '0px', marginBottom: '2px', width: '100%' }}
-        className="flex items-center justify-between bg-white dark:bg-slate-900 py-1 px-2 rounded-xl border border-slate-200/50 dark:border-slate-800/85 gap-1.5 select-none shadow-xs h-[46px] shrink-0 flex-nowrap overflow-x-auto scrollbar-none"
+        className="flex items-center justify-between bg-gradient-to-r from-slate-200/90 via-slate-100 to-slate-200/90 dark:from-slate-900 dark:via-slate-850 dark:to-slate-900 py-1 px-2 rounded-xl border border-slate-300/80 dark:border-slate-700/80 gap-1.5 select-none shadow-sm h-[46px] shrink-0 flex-nowrap overflow-x-auto scrollbar-none"
       >
         
         {/* Media Buttons: Deb, Prec, Suiv, Fin grouped together */}
         <div className="flex items-center gap-1.5 flex-nowrap shrink-0">
-          <div className="flex bg-slate-105 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200/20 gap-0.5 dev-pager-group shadow-inner">
+          <div className="flex bg-slate-200/60 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-300/60 dark:border-slate-800 gap-0.5 dev-pager-group shadow-inner">
             <button
               onClick={handleFirst}
               disabled={navigableVouchers.length <= 1 || activeNavIndex <= 0}
-              className="w-9 h-7.5 flex flex-col justify-center items-center rounded bg-white dark:bg-slate-900 border border-slate-200/30 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer"
+              className="w-9 h-7.5 flex flex-col justify-center items-center rounded bg-white dark:bg-slate-900 border border-slate-300/50 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer shadow-2xs"
               title="Premier Bon"
             >
               <span className="text-xs font-sans leading-none text-slate-800 dark:text-sky-400 font-extrabold">⏮</span>
@@ -1297,7 +1325,7 @@ function SalesVoucherWindow({
             <button
               onClick={handlePrev}
               disabled={navigableVouchers.length <= 1 || activeNavIndex <= 0}
-              className="w-9 h-7.5 flex flex-col justify-center items-center rounded bg-white dark:bg-slate-900 border border-slate-200/30 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer"
+              className="w-9 h-7.5 flex flex-col justify-center items-center rounded bg-white dark:bg-slate-900 border border-slate-300/50 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer shadow-2xs"
               title="Bon Précédent"
             >
               <span className="text-[10px] font-sans leading-none text-slate-800 dark:text-sky-400 font-extrabold">◀</span>
@@ -1306,7 +1334,7 @@ function SalesVoucherWindow({
             <button
               onClick={handleNext}
               disabled={navigableVouchers.length <= 1 || activeNavIndex === -1 || activeNavIndex >= navigableVouchers.length - 1}
-              className="w-9 h-7.5 flex flex-col justify-center items-center rounded bg-white dark:bg-slate-900 border border-slate-200/30 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer"
+              className="w-9 h-7.5 flex flex-col justify-center items-center rounded bg-white dark:bg-slate-900 border border-slate-300/50 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer shadow-2xs"
               title="Bon Suivant"
             >
               <span className="text-[10px] font-sans leading-none text-slate-800 dark:text-sky-400 font-extrabold">▶</span>
@@ -1315,16 +1343,16 @@ function SalesVoucherWindow({
             <button
               onClick={handleLast}
               disabled={navigableVouchers.length <= 1 || activeNavIndex === -1 || activeNavIndex >= navigableVouchers.length - 1}
-              className="w-9 h-7.5 flex flex-col justify-center items-center rounded bg-white dark:bg-slate-900 border border-slate-200/30 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer"
+              className="w-9 h-7.5 flex flex-col justify-center items-center rounded bg-white dark:bg-slate-900 border border-slate-300/50 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer shadow-2xs"
               title="Dernier Bon"
             >
               <span className="text-xs font-sans leading-none text-slate-800 dark:text-sky-400 font-extrabold">⏭</span>
               <span className="text-[6.5px] font-black text-slate-500 uppercase tracking-tight">Fin</span>
             </button>
           </div>
- 
+
           <div className="h-6 w-[1px] bg-slate-300 dark:bg-slate-700 mx-1 shrink-0" />
- 
+
           {/* Action Buttons: F1, F2, F3... */}
           <div className="flex items-center gap-1 flex-nowrap shrink-0">
             <button
@@ -1346,7 +1374,7 @@ function SalesVoucherWindow({
               className={`px-2.5 h-8 flex items-center justify-center gap-1.5 rounded-lg shadow-sm transition-transform duration-100 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap shrink-0 ${
                 mode === 'create'
                   ? 'bg-gradient-to-br from-[#1e293b] to-slate-800 text-white cursor-pointer'
-                  : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-950 cursor-default'
+                  : 'bg-white dark:bg-slate-900 border border-slate-300/60 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-950 cursor-default'
               }`}
             >
               <span className="text-xs">🔒</span>
@@ -1361,7 +1389,7 @@ function SalesVoucherWindow({
               type="button"
               disabled={mode === 'create'}
               onClick={() => setIsBonPreviewOpen(true)}
-              className="px-2.5 h-8 flex items-center justify-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-950 shadow-xs cursor-pointer transition-transform duration-100 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap shrink-0"
+              className="px-2.5 h-8 flex items-center justify-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-300/60 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-950 shadow-2xs cursor-pointer transition-transform duration-100 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap shrink-0"
             >
               <Printer size={13} className="text-slate-500 dark:text-slate-400" />
               <div className="flex flex-col text-left">
@@ -1375,7 +1403,7 @@ function SalesVoucherWindow({
             <button
               onClick={handleEditVoucher}
               disabled={mode === 'create' || !selectedSale}
-              className="px-2.5 h-8 flex items-center justify-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-950 shadow-xs cursor-pointer disabled:opacity-40 transition-transform duration-100 active:scale-95 whitespace-nowrap shrink-0"
+              className="px-2.5 h-8 flex items-center justify-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-300/60 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-950 shadow-2xs cursor-pointer disabled:opacity-40 transition-transform duration-100 active:scale-95 whitespace-nowrap shrink-0"
             >
               <Edit size={13} className="text-slate-500 dark:text-slate-400" />
               <div className="flex flex-col text-left">
@@ -1392,7 +1420,7 @@ function SalesVoucherWindow({
                 setTvaRate(nextTva);
                 showRetroAlert(`TVA changé à ${nextTva}%`, "Configuration");
               }}
-              className="px-2.5 h-8 flex items-center justify-center gap-1.5 bg-slate-100 dark:bg-slate-950/60 text-slate-700 dark:text-slate-300 rounded-lg hover:opacity-90 shadow-xs cursor-pointer transition-transform duration-100 active:scale-95 whitespace-nowrap shrink-0"
+              className="px-2.5 h-8 flex items-center justify-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-300/60 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 shadow-2xs cursor-pointer transition-transform duration-100 active:scale-95 whitespace-nowrap shrink-0"
             >
               <RefreshCw size={13} className="text-m3-primary dark:text-sky-400" />
               <div className="flex flex-col text-left">
@@ -1407,10 +1435,10 @@ function SalesVoucherWindow({
       {/* Main Workspace Area with closed status styles */}
       <div className="flex-1 flex flex-col min-h-0 relative">
 
-        {/* 2. Client and Document Metadatas panel */}
+        {/* 2. Client and Document Metadatas panel - gradient background */}
         <div 
           style={{ height: '128px', width: '100%' }}
-          className="mx-0.5 mt-0.5 mb-2 p-3 bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800/80 rounded-2xl flex flex-nowrap gap-3.5 items-center justify-start text-slate-900 dark:text-slate-100 shadow-xs relative overflow-visible shrink-0"
+          className="mx-0.5 mt-0.5 mb-2 p-3 bg-gradient-to-r from-slate-100/95 via-slate-50 to-slate-100/95 dark:from-slate-900/90 dark:via-slate-950 dark:to-slate-900/90 border border-slate-300/80 dark:border-slate-800 rounded-2xl flex flex-nowrap gap-3.5 items-center justify-start text-slate-900 dark:text-slate-100 shadow-sm relative overflow-visible shrink-0"
         >
         
         {/* Left container: Client + metadata on Row 1, and facturation auxiliary cards raised to Row 2 */}
@@ -1874,25 +1902,64 @@ function SalesVoucherWindow({
           >
             <table 
               onClick={(e) => e.stopPropagation()}
-              className="w-full text-left font-sans text-xs border-collapse"
+              className="w-full text-left font-sans text-xs border-collapse table-fixed"
             >
               <thead className="sticky top-0 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-extrabold select-none border-b border-slate-200/60 dark:border-slate-800/80 z-10">
                 <tr>
-                  <th className="w-10 px-3 py-2 text-center text-[10px] uppercase tracking-wider">N°</th>
-                  <th className="w-28 px-3 py-2 font-mono text-[10px] uppercase tracking-wider">Code</th>
-                  <th className="px-3 py-2 font-sans text-[10px] uppercase tracking-wider">Désignation</th>
-                  <th className="w-14 px-1 py-2 text-center text-[10px] uppercase tracking-wider">Colis</th>
-                  <th className="w-14 px-1 py-2 text-center text-[10px] uppercase tracking-wider">Colisage</th>
-                  <th className="w-14 px-1 py-2 text-center text-[10px] uppercase tracking-wider">Pièces</th>
-                  <th className="w-14 px-1 py-2 text-center text-[10px] uppercase tracking-wider">Qté</th>
-                  <th className="w-24 px-3 py-2 text-right text-[10px] uppercase tracking-wider">P. Unit</th>
-                  <th className="w-24 px-3 py-2 text-right text-[10px] uppercase tracking-wider">Montant</th>
+                  <th style={{ width: `${salesItemColWidths.num}px`, minWidth: `${salesItemColWidths.num}px` }} className="px-3 py-2 text-center text-[10px] uppercase tracking-wider relative group">
+                    N°
+                    <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingSalesItem('num', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                  </th>
+                  <th style={{ width: `${salesItemColWidths.code}px`, minWidth: `${salesItemColWidths.code}px` }} className="px-3 py-2 font-mono text-[10px] uppercase tracking-wider relative group">
+                    Code
+                    <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingSalesItem('code', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                  </th>
+                  <th style={{ width: `${salesItemColWidths.designation}px`, minWidth: `${salesItemColWidths.designation}px` }} className="px-3 py-2 font-sans text-[10px] uppercase tracking-wider relative group">
+                    Désignation
+                    <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingSalesItem('designation', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                  </th>
+                  <th style={{ width: `${salesItemColWidths.colis}px`, minWidth: `${salesItemColWidths.colis}px` }} className="px-1 py-2 text-center text-[10px] uppercase tracking-wider relative group">
+                    Colis
+                    <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingSalesItem('colis', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                  </th>
+                  <th style={{ width: `${salesItemColWidths.colisage}px`, minWidth: `${salesItemColWidths.colisage}px` }} className="px-1 py-2 text-center text-[10px] uppercase tracking-wider relative group">
+                    Colisage
+                    <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingSalesItem('colisage', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                  </th>
+                  <th style={{ width: `${salesItemColWidths.pieces}px`, minWidth: `${salesItemColWidths.pieces}px` }} className="px-1 py-2 text-center text-[10px] uppercase tracking-wider relative group">
+                    Pièces
+                    <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingSalesItem('pieces', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                  </th>
+                  <th style={{ width: `${salesItemColWidths.qte}px`, minWidth: `${salesItemColWidths.qte}px` }} className="px-1 py-2 text-center text-[10px] uppercase tracking-wider relative group">
+                    Qté
+                    <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingSalesItem('qte', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                  </th>
+                  <th style={{ width: `${salesItemColWidths.punit}px`, minWidth: `${salesItemColWidths.punit}px` }} className="px-3 py-2 text-right text-[10px] uppercase tracking-wider relative group">
+                    P. Unit
+                    <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingSalesItem('punit', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                  </th>
+                  {showCostPrices && (
+                    <>
+                      <th style={{ width: `${salesItemColWidths.prixAchat}px`, minWidth: `${salesItemColWidths.prixAchat}px` }} className="px-2 py-2 text-right text-[10px] uppercase tracking-wider relative group text-emerald-600 dark:text-emerald-400 bg-emerald-50/60 dark:bg-emerald-950/30">
+                        Prix Achat
+                        <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingSalesItem('prixAchat', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                      </th>
+                      <th style={{ width: `${salesItemColWidths.prixRevient}px`, minWidth: `${salesItemColWidths.prixRevient}px` }} className="px-2 py-2 text-right text-[10px] uppercase tracking-wider relative group text-amber-600 dark:text-amber-400 bg-amber-50/60 dark:bg-amber-950/30">
+                        Prix Revient
+                        <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingSalesItem('prixRevient', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                      </th>
+                    </>
+                  )}
+                  <th style={{ width: `${salesItemColWidths.montant}px`, minWidth: `${salesItemColWidths.montant}px` }} className="px-3 py-2 text-right text-[10px] uppercase tracking-wider relative group">
+                    Montant
+                    <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingSalesItem('montant', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                  </th>
                 </tr>
               </thead>
               <tbody>
                 {displayedItems.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="text-center py-16 text-slate-400 dark:text-slate-600 italic font-sans select-all">
+                    <td colSpan={showCostPrices ? 11 : 9} className="text-center py-16 text-slate-400 dark:text-slate-600 italic font-sans select-all">
                       {soldItemsSearchQuery ? "Aucun article correspondant à votre recherche." : "Aucun article enregistré pour ce bon. Cliquez sur \"Nouveau Bon\" puis \"Insérer Produit\"."}
                     </td>
                   </tr>
@@ -1901,6 +1968,8 @@ function SalesVoucherWindow({
                     const isSelected = selectedItemIndex === item.originalIndex;
                     const matchingProduct = products.find(p => p.code === item.code);
                     const isBlocked = matchingProduct?.blocked === true;
+                    const itemAchat = item.purchasePrice ?? matchingProduct?.prixAchat ?? matchingProduct?.prixDeRevient ?? 0;
+                    const itemRevient = item.costPrice ?? matchingProduct?.prixDeRevient ?? matchingProduct?.prixAchat ?? 0;
                     return (
                       <tr
                         key={item.id}
@@ -1957,6 +2026,16 @@ function SalesVoucherWindow({
                         <td className="px-3 py-2 text-right font-mono select-all">
                           {(item.price ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 1 })}
                         </td>
+                        {showCostPrices && (
+                          <>
+                            <td className="px-2 py-2 text-right font-mono font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50/20 dark:bg-emerald-950/10 truncate select-all">
+                              {itemAchat.toLocaleString('fr-FR', { minimumFractionDigits: 1 })}
+                            </td>
+                            <td className="px-2 py-2 text-right font-mono font-semibold text-amber-600 dark:text-amber-400 bg-amber-50/20 dark:bg-amber-950/10 truncate select-all">
+                              {itemRevient.toLocaleString('fr-FR', { minimumFractionDigits: 1 })}
+                            </td>
+                          </>
+                        )}
                         <td className="px-3 py-2 text-right font-mono font-extrabold select-all">
                           {(item.total ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 1 })}
                         </td>
@@ -2161,12 +2240,30 @@ function SalesVoucherWindow({
                 >
                   <thead className="bg-[#dfdfde]/40 dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-extrabold sticky top-0 border-b border-slate-200/60 dark:border-slate-800/80 z-10 select-none">
                     <tr>
-                      <th style={{ width: colWidths.code }} className="px-3 py-2 relative select-none truncate font-display text-[9.5px] uppercase tracking-wider">Code-barres</th>
-                      <th style={{ width: colWidths.designation }} className="px-3 py-2 relative select-none truncate font-display text-[9.5px] uppercase tracking-wider">Designation de l'article</th>
-                      <th style={{ width: colWidths.prixUnitaire }} className="px-3 py-2 text-right relative select-none truncate font-display text-[9.5px] uppercase tracking-wider">Prix Unitaire</th>
-                      <th style={{ width: colWidths.prixAchat }} className="px-3 py-2 text-right relative select-none truncate font-display text-[9.5px] uppercase tracking-wider">Prix d'Achat</th>
-                      <th style={{ width: colWidths.prixRevient }} className="px-3 py-2 text-right relative select-none truncate font-display text-[9.5px] uppercase tracking-wider">Prix de Revient</th>
-                      <th style={{ width: colWidths.stock }} className="px-3 py-2 text-center relative select-none truncate font-display text-[9.5px] uppercase tracking-wider">Stock</th>
+                      <th style={{ width: colWidths.code }} className="px-3 py-2 relative select-none truncate font-display text-[9.5px] uppercase tracking-wider group">
+                        Code-barres
+                        <div onMouseDown={(e) => handleResizeStart(e as any, 'code')} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                      </th>
+                      <th style={{ width: colWidths.designation }} className="px-3 py-2 relative select-none truncate font-display text-[9.5px] uppercase tracking-wider group">
+                        Designation de l'article
+                        <div onMouseDown={(e) => handleResizeStart(e as any, 'designation')} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                      </th>
+                      <th style={{ width: colWidths.prixUnitaire }} className="px-3 py-2 text-right relative select-none truncate font-display text-[9.5px] uppercase tracking-wider group">
+                        Prix Unitaire
+                        <div onMouseDown={(e) => handleResizeStart(e as any, 'prixUnitaire')} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                      </th>
+                      <th style={{ width: colWidths.prixAchat }} className="px-3 py-2 text-right relative select-none truncate font-display text-[9.5px] uppercase tracking-wider group">
+                        Prix d'Achat
+                        <div onMouseDown={(e) => handleResizeStart(e as any, 'prixAchat')} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                      </th>
+                      <th style={{ width: colWidths.prixRevient }} className="px-3 py-2 text-right relative select-none truncate font-display text-[9.5px] uppercase tracking-wider group">
+                        Prix de Revient
+                        <div onMouseDown={(e) => handleResizeStart(e as any, 'prixRevient')} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                      </th>
+                      <th style={{ width: colWidths.stock }} className="px-3 py-2 text-center relative select-none truncate font-display text-[9.5px] uppercase tracking-wider group">
+                        Stock
+                        <div onMouseDown={(e) => handleResizeStart(e as any, 'stock')} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                      </th>
                     </tr>
                   </thead>
                   <tbody>

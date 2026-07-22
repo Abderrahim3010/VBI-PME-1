@@ -7,8 +7,10 @@ import {
   Sparkles, AlertTriangle, ArrowRight, FolderPlus,
   Package, Info, Camera, Folder, Coins, TrendingUp, RefreshCw,
   Filter, ArrowUpDown, FileDown, BarChart3, FileSpreadsheet, FileText,
-  TrendingDown, ShieldAlert
+  TrendingDown, ShieldAlert, Barcode
 } from 'lucide-react';
+import { BarcodeLabelModal, BarcodeProduct } from './BarcodeLabelModal';
+import { useResizableColumns } from '../hooks/useResizableColumns';
 
 interface ProductListWindowProps {
   products: Product[];
@@ -67,6 +69,22 @@ function ProductListWindow({
   const [showExportDropdown, setShowExportDropdown] = useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+
+  // Barcode label modal state
+  const [showBarcodeModal, setShowBarcodeModal] = useState(false);
+  const [barcodeProduct, setBarcodeProduct] = useState<BarcodeProduct | null>(null);
+
+  // Column width state for Catalogue F3 table
+  const { columnWidths: colWidths, startResizing } = useResizableColumns({
+    code: 140,
+    designation: 280,
+    famille: 130,
+    prixAchat: 120,
+    prixRevient: 120,
+    prixVente: 120,
+    stock: 90,
+    actions: 100
+  }, 40, 'catalogue');
 
   useEffect(() => {
     if (!previewImage) return;
@@ -1315,14 +1333,38 @@ function ProductListWindow({
         >
           <thead className="sticky top-0 bg-[#f8fafc] dark:bg-slate-950/60 text-xs font-bold border-b border-slate-200 dark:border-slate-800 text-slate-600 select-none z-10 shadow-xs font-display">
             <tr>
-              <th className="w-32 px-4 py-3 text-slate-500 truncate">Référence</th>
-              <th className="px-4 py-3 text-slate-500 truncate">Désignation / Article</th>
-              <th className="w-24 px-3 py-3 text-right text-slate-505 truncate">Famille</th>
-              <th className="w-28 px-3 py-3 text-right text-slate-500 truncate">Prix d'Achat</th>
-              <th className="w-28 px-3 py-3 text-right text-slate-500 truncate">Prix de Revient</th>
-              <th className="w-28 px-3 py-3 text-right text-slate-500 truncate">Prix de Vente</th>
-              <th className="w-20 px-3 py-3 text-center text-slate-500 truncate">Stock</th>
-              <th className="w-20 px-3 py-3 text-center text-slate-500 truncate font-sans">Actions</th>
+              <th style={{ width: `${colWidths.code}px`, minWidth: `${colWidths.code}px` }} className="px-4 py-3 text-slate-500 truncate relative group">
+                Référence
+                <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizing('code', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+              </th>
+              <th style={{ width: `${colWidths.designation}px`, minWidth: `${colWidths.designation}px` }} className="px-4 py-3 text-slate-500 truncate relative group">
+                Désignation / Article
+                <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizing('designation', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+              </th>
+              <th style={{ width: `${colWidths.famille}px`, minWidth: `${colWidths.famille}px` }} className="px-3 py-3 text-right text-slate-500 truncate relative group">
+                Famille
+                <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizing('famille', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+              </th>
+              <th style={{ width: `${colWidths.prixAchat}px`, minWidth: `${colWidths.prixAchat}px` }} className="px-3 py-3 text-right text-slate-500 truncate relative group">
+                Prix d'Achat
+                <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizing('prixAchat', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+              </th>
+              <th style={{ width: `${colWidths.prixRevient}px`, minWidth: `${colWidths.prixRevient}px` }} className="px-3 py-3 text-right text-slate-500 truncate relative group">
+                Prix de Revient
+                <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizing('prixRevient', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+              </th>
+              <th style={{ width: `${colWidths.prixVente}px`, minWidth: `${colWidths.prixVente}px` }} className="px-3 py-3 text-right text-slate-500 truncate relative group">
+                Prix de Vente
+                <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizing('prixVente', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+              </th>
+              <th style={{ width: `${colWidths.stock}px`, minWidth: `${colWidths.stock}px` }} className="px-3 py-3 text-center text-slate-500 truncate relative group">
+                Stock
+                <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizing('stock', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+              </th>
+              <th style={{ width: `${colWidths.actions}px`, minWidth: `${colWidths.actions}px` }} className="px-3 py-3 text-center text-slate-500 truncate font-sans relative group">
+                Actions
+                <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizing('actions', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+              </th>
             </tr>
           </thead>
           <tbody className="text-xs font-mono text-slate-700 dark:text-slate-200 divide-y divide-slate-100 dark:divide-slate-800">
@@ -1368,6 +1410,25 @@ function ProductListWindow({
                     </span>
                   </td>
                   <td className="px-3 py-2 text-center flex items-center justify-center gap-1.5 h-10 select-none">
+                    {/* Barcode Label Button */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        e.preventDefault();
+                        setBarcodeProduct(p);
+                        setShowBarcodeModal(true);
+                      }}
+                      className={`p-1.5 rounded-lg active:scale-90 transition-all cursor-pointer inline-flex items-center justify-center ${
+                        reqSelected 
+                          ? 'hover:bg-white/25 text-white' 
+                          : 'hover:bg-indigo-50 dark:hover:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400'
+                      }`}
+                      title="Générer & imprimer étiquette code-barres"
+                      type="button"
+                    >
+                      <Barcode size={13} />
+                    </button>
+
                     {/* Modify Button */}
                     <button
                       onClick={(e) => {
@@ -1535,6 +1596,19 @@ function ProductListWindow({
             className="h-9.5 px-4.5 bg-m3-primary hover:bg-m3-primary/95 text-white font-bold text-xs rounded-xl border border-transparent shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all whitespace-nowrap shrink-0"
           >
             <Plus size={14} /> Nouveau
+          </button>
+          
+          <button
+            onClick={() => {
+              if (selectedProduct) {
+                setBarcodeProduct(selectedProduct);
+                setShowBarcodeModal(true);
+              }
+            }}
+            disabled={!selectedProduct}
+            className="h-9.5 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 disabled:pointer-events-none text-white font-bold text-xs rounded-xl border border-transparent shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all whitespace-nowrap shrink-0"
+          >
+            <Barcode size={14} /> Étiquette Code-barres
           </button>
         </div>
 
@@ -2711,6 +2785,14 @@ function ProductListWindow({
           </div>
         </div>
       )}
+
+      {/* BARCODE LABEL MODAL */}
+      <BarcodeLabelModal
+        isOpen={showBarcodeModal}
+        onClose={() => setShowBarcodeModal(false)}
+        product={barcodeProduct}
+        storeName={config?.storeName || 'VBI PME'}
+      />
 
     </div>
   );

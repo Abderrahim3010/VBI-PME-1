@@ -1,8 +1,10 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Search, Package, Plus, X } from 'lucide-react';
+import { Search, Package, Plus, X, Barcode } from 'lucide-react';
 import { Product, Supplier, PurchaseVoucher, VoucherItem } from '../types';
 import { getStorageJson, getStorageString, saveData, saveJson } from '../services/localDb';
+import { BarcodeLabelModal, BarcodeProduct } from './BarcodeLabelModal';
+import { useResizableColumns } from '../hooks/useResizableColumns';
 
 interface PurchaseVoucherWindowProps {
   products: Product[];
@@ -86,9 +88,58 @@ function PurchaseVoucherWindow({
   const [paymentSource, setPaymentSource] = useState('COFFRE N°1');
   const [paymentVersement, setPaymentVersement] = useState<number>(0);
 
+  // Column widths state for Purchase Voucher List table
+  const { columnWidths: purchaseListColWidths, startResizing: startResizingPurchaseList } = useResizableColumns({
+    num: 50,
+    date: 90,
+    time: 75,
+    supplier: 220,
+    itemsCount: 75,
+    total: 110
+  }, 30, 'purchase_list');
+
+  // Column widths state for Purchase Items table
+  const { columnWidths: purchaseItemColWidths, startResizing: startResizingPurchaseItem } = useResizableColumns({
+    num: 45,
+    code: 120,
+    designation: 280,
+    colis: 65,
+    colisage: 65,
+    qte: 65,
+    punit: 100,
+    montant: 110,
+    action: 50
+  }, 30, 'purchase_items');
+
   // Voucher editing state tracker
   const [editingVoucherId, setEditingVoucherId] = useState<string | null>(null);
   const [isPrintPreviewOpen, setIsPrintPreviewOpen] = useState(false);
+
+  // Barcode Label Modal State
+  const [showBarcodeModal, setShowBarcodeModal] = useState(false);
+  const [barcodeProduct, setBarcodeProduct] = useState<BarcodeProduct | null>(null);
+  const [barcodeInitialQty, setBarcodeInitialQty] = useState<number>(1);
+
+  // Print barcode label helper
+  const handlePrintBarcodeLabel = (itemToPrint?: VoucherItem) => {
+    const itemsList = mode === 'create' ? draftItems : (selectedVoucher?.items || []);
+    const targetItem = itemToPrint || ((selectedDraftIdx >= 0 && selectedDraftIdx < itemsList.length) ? itemsList[selectedDraftIdx] : itemsList[0]);
+    if (!targetItem) {
+      showRetroAlert("Veuillez sélectionner un article dans la liste pour imprimer son étiquette code-barres.", "Saisie achats");
+      return;
+    }
+    const catalogProd = products.find(p => p.code === targetItem.code);
+    setBarcodeProduct({
+      code: targetItem.code,
+      designation: targetItem.designation,
+      prixVente1: catalogProd?.prixVente1,
+      prixAchat: targetItem.price ?? catalogProd?.prixAchat,
+      stock: catalogProd?.stock,
+      category: catalogProd?.category
+    });
+    setBarcodeInitialQty(targetItem.qty > 0 ? targetItem.qty : 1);
+    setShowBarcodeModal(true);
+  };
 
   // List of currently open drafts/bons (can have multiple active drafts open at once)
   const [openDrafts, setOpenDrafts] = useState<any[]>(() => {
@@ -1463,6 +1514,10 @@ function PurchaseVoucherWindow({
         e.preventDefault();
         if (mode === 'create') handleOpenProductDialog('edit_existing');
       }
+      if (e.key === 'F10') {
+        e.preventDefault();
+        handlePrintBarcodeLabel();
+      }
       if (e.key === 'Delete') {
         if (mode === 'create' && selectedDraftIdx >= 0) {
           e.preventDefault();
@@ -1805,15 +1860,33 @@ function PurchaseVoucherWindow({
               setEditingVoucherId(null);
             }}
           >
-            <table className="w-full text-left font-sans text-xs border-collapse">
+            <table className="w-full text-left font-sans text-xs border-collapse table-fixed">
               <thead className="bg-slate-100/60 dark:bg-slate-900 font-semibold text-slate-500 dark:text-slate-400 sticky top-0 select-none border-b border-slate-200/40 dark:border-slate-800/40 z-10 text-[10.5px] uppercase tracking-wider">
                 <tr>
-                  <th className="px-3 py-2">N°</th>
-                  <th className="px-3 py-2">Date</th>
-                  <th className="px-3 py-2">Heure</th>
-                  <th className="px-3 py-2">Fournisseur</th>
-                  <th className="px-3 py-2 text-center">Nbre P</th>
-                  <th className="px-3 py-2 text-right">Total</th>
+                  <th style={{ width: `${purchaseListColWidths.num}px`, minWidth: `${purchaseListColWidths.num}px` }} className="px-3 py-2 relative group">
+                    N°
+                    <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingPurchaseList('num', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                  </th>
+                  <th style={{ width: `${purchaseListColWidths.date}px`, minWidth: `${purchaseListColWidths.date}px` }} className="px-3 py-2 relative group">
+                    Date
+                    <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingPurchaseList('date', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                  </th>
+                  <th style={{ width: `${purchaseListColWidths.time}px`, minWidth: `${purchaseListColWidths.time}px` }} className="px-3 py-2 relative group">
+                    Heure
+                    <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingPurchaseList('time', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                  </th>
+                  <th style={{ width: `${purchaseListColWidths.supplier}px`, minWidth: `${purchaseListColWidths.supplier}px` }} className="px-3 py-2 relative group">
+                    Fournisseur
+                    <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingPurchaseList('supplier', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                  </th>
+                  <th style={{ width: `${purchaseListColWidths.itemsCount}px`, minWidth: `${purchaseListColWidths.itemsCount}px` }} className="px-3 py-2 text-center relative group">
+                    Nbre P
+                    <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingPurchaseList('itemsCount', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                  </th>
+                  <th style={{ width: `${purchaseListColWidths.total}px`, minWidth: `${purchaseListColWidths.total}px` }} className="px-3 py-2 text-right relative group">
+                    Total
+                    <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingPurchaseList('total', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                  </th>
                 </tr>
               </thead>
               <tbody className="font-sans text-[11.5px]">
@@ -2078,8 +2151,9 @@ function PurchaseVoucherWindow({
 
           <button
             type="button"
-            onClick={() => {}}
-            className="px-2.5 h-7.5 rounded-lg font-bold bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 shadow-xs cursor-pointer flex items-center gap-1 active:scale-95 transition-all text-[9.5px] shrink-0"
+            onClick={() => handlePrintBarcodeLabel()}
+            disabled={mode === 'create' ? draftItems.length === 0 : (!selectedVoucher || selectedVoucher.items.length === 0)}
+            className="px-2.5 h-7.5 rounded-lg font-bold bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800 shadow-xs cursor-pointer disabled:opacity-30 flex items-center gap-1 active:scale-95 transition-all text-[9.5px] shrink-0 hover:bg-slate-50 dark:hover:bg-slate-800"
           >
             <span>🖨️ Étiquettes</span>
             <span className="text-[7.5px] opacity-80 font-mono">[F10]</span>
@@ -2135,17 +2209,45 @@ function PurchaseVoucherWindow({
             className="flex-1 overflow-auto"
             onClick={() => setSelectedDraftIdx(-1)}
           >
-            <table className="w-full text-left font-sans text-xs border-collapse">
+            <table className="w-full text-left font-sans text-xs border-collapse table-fixed">
               <thead className="bg-slate-100/60 dark:bg-slate-900 font-semibold text-slate-500 dark:text-slate-400 sticky top-0 select-none border-b border-slate-200/40 dark:border-slate-800/40 z-10 text-[10.5px] uppercase tracking-wider">
                 <tr>
-                  <th className="w-10 px-3 py-2 text-center">N°</th>
-                  <th className="w-28 px-3 py-2 font-mono">Code produit</th>
-                  <th className="px-3 py-2">Désignation Produit</th>
-                  <th className="w-16 px-1 py-2 text-center">Colis</th>
-                  <th className="w-16 px-1 py-2 text-center">Colisage</th>
-                  <th className="w-16 px-1 py-2 text-center">Qté</th>
-                  <th className="w-24 px-3 py-2 text-right">Prix Unit</th>
-                  <th className="w-24 px-3 py-2 text-right">Montant HT</th>
+                  <th style={{ width: `${purchaseItemColWidths.num}px`, minWidth: `${purchaseItemColWidths.num}px` }} className="px-3 py-2 text-center relative group">
+                    N°
+                    <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingPurchaseItem('num', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                  </th>
+                  <th style={{ width: `${purchaseItemColWidths.code}px`, minWidth: `${purchaseItemColWidths.code}px` }} className="px-3 py-2 font-mono relative group">
+                    Code produit
+                    <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingPurchaseItem('code', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                  </th>
+                  <th style={{ width: `${purchaseItemColWidths.designation}px`, minWidth: `${purchaseItemColWidths.designation}px` }} className="px-3 py-2 relative group">
+                    Désignation Produit
+                    <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingPurchaseItem('designation', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                  </th>
+                  <th style={{ width: `${purchaseItemColWidths.colis}px`, minWidth: `${purchaseItemColWidths.colis}px` }} className="px-1 py-2 text-center relative group">
+                    Colis
+                    <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingPurchaseItem('colis', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                  </th>
+                  <th style={{ width: `${purchaseItemColWidths.colisage}px`, minWidth: `${purchaseItemColWidths.colisage}px` }} className="px-1 py-2 text-center relative group">
+                    Colisage
+                    <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingPurchaseItem('colisage', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                  </th>
+                  <th style={{ width: `${purchaseItemColWidths.qte}px`, minWidth: `${purchaseItemColWidths.qte}px` }} className="px-1 py-2 text-center relative group">
+                    Qté
+                    <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingPurchaseItem('qte', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                  </th>
+                  <th style={{ width: `${purchaseItemColWidths.punit}px`, minWidth: `${purchaseItemColWidths.punit}px` }} className="px-3 py-2 text-right relative group">
+                    Prix Unit
+                    <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingPurchaseItem('punit', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                  </th>
+                  <th style={{ width: `${purchaseItemColWidths.montant}px`, minWidth: `${purchaseItemColWidths.montant}px` }} className="px-3 py-2 text-right relative group">
+                    Montant HT
+                    <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingPurchaseItem('montant', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                  </th>
+                  <th style={{ width: `${purchaseItemColWidths.action}px`, minWidth: `${purchaseItemColWidths.action}px` }} className="px-1 py-2 text-center relative group">
+                    Action
+                    <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingPurchaseItem('action', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
+                  </th>
                 </tr>
               </thead>
               <tbody className="font-sans text-[11.5px] text-slate-705 dark:text-slate-300">
@@ -2185,6 +2287,19 @@ function PurchaseVoucherWindow({
                         </td>
                         <td className={`px-3 py-2 text-right font-mono font-black ${isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-900 dark:text-slate-100'}`}>
                           {(item.total ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
+                        </td>
+                        <td className="px-1 py-2 text-center">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePrintBarcodeLabel(item);
+                            }}
+                            className="p-1 rounded-md text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 cursor-pointer transition-colors"
+                            title="Imprimer l'étiquette code-barres"
+                          >
+                            <Barcode size={13} />
+                          </button>
                         </td>
                       </tr>
                     );
@@ -3731,6 +3846,15 @@ function PurchaseVoucherWindow({
         </div>,
         document.body
       )}
+
+      {/* Barcode Label Modal */}
+      <BarcodeLabelModal
+        isOpen={showBarcodeModal}
+        onClose={() => setShowBarcodeModal(false)}
+        product={barcodeProduct}
+        initialQty={barcodeInitialQty}
+        storeName={config?.storeName || 'VBI PME'}
+      />
 
     </div>
   );
