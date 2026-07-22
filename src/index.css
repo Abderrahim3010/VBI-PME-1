@@ -67,6 +67,12 @@ body {
   background-color: #f1f5f9; /* Matte Slate 100 instead of reflective Slate 50 */
   overflow: hidden;
   transition: background-color 0.3s ease;
+  font-variant-numeric: tabular-nums no-slashed-zero;
+}
+
+.font-mono, [class*="font-mono"] {
+  font-variant-numeric: tabular-nums no-slashed-zero;
+  font-feature-settings: "zero" 0;
 }
 
 .dark body {
@@ -318,8 +324,8 @@ html:not(.dark) table {
   border-spacing: 0 !important;
 }
 
-html:not(.dark) th,
-html:not(.dark) thead tr {
+html:not(.dark) th:not([class*="bg-"]),
+html:not(.dark) thead tr:not([class*="bg-"]) th:not([class*="bg-"]) {
   background-color: #e2e8f0 !important; /* Solid desktop gray for headers */
   color: #1e293b !important; /* Slate 800 */
   font-weight: 700 !important;
@@ -327,7 +333,7 @@ html:not(.dark) thead tr {
   border-top: 1px solid #cbd5e1 !important;
 }
 
-html:not(.dark) td {
+html:not(.dark) td:not([class*="bg-"]) {
   border-bottom: 1px solid #cbd5e1 !important;
   border-right: 1px solid #e2e8f0 !important;
   color: #0f172a !important; /* Deep dark slate for reading product names */
@@ -347,19 +353,11 @@ html:not(.dark) tbody tr:hover {
 }
 
 /* Highlight style for active / selected row in a table grid list */
-html:not(.dark) tbody tr.bg-m3-primary,
-html:not(.dark) tbody tr[data-selected="true"],
-html:not(.dark) tr[class*="bg-sky-500"],
-html:not(.dark) tr[class*="bg-indigo-600"],
-html:not(.dark) tr[class*="bg-m3-primary"] {
-  background-color: #0284c7 !important; /* Deep sky blue selection */
-  color: #ffffff !important;
-}
-html:not(.dark) tbody tr.bg-m3-primary td,
-html:not(.dark) tbody tr[data-selected="true"] td,
-html:not(.dark) tr[class*="bg-sky-500"] td,
-html:not(.dark) tr[class*="bg-indigo-600"] td,
-html:not(.dark) tr[class*="bg-m3-primary"] td {
+html:not(.dark) tbody tr.bg-m3-primary td:not([class*="bg-"]),
+html:not(.dark) tbody tr[data-selected="true"] td:not([class*="bg-"]),
+html:not(.dark) tr[class*="bg-sky-500"] td:not([class*="bg-"]),
+html:not(.dark) tr[class*="bg-indigo-600"] td:not([class*="bg-"]),
+html:not(.dark) tr[class*="bg-m3-primary"] td:not([class*="bg-"]) {
   background-color: #0284c7 !important;
   color: #ffffff !important;
 }
@@ -423,7 +421,7 @@ html:not(.dark) [id^="window-"] tr:not(.bg-m3-primary):not([data-selected="true"
 html:not(.dark) [id^="window-"] tr:nth-child(even):not(.bg-m3-primary):not([data-selected="true"]):not([class*="bg-sky-"]):not([class*="bg-indigo-"]) {
   background-color: #f1f5f9 !important; /* Soft Slate 100 instead of 50 to reduce glare */
 }
-html:not(.dark) [id^="window-"] td {
+html:not(.dark) [id^="window-"] td:not([class*="bg-"]) {
   color: #0f172a !important;
   border-bottom: 1.5px solid #cbd5e1 !important; /* Solid desktop borders */
   border-right: 1.5px solid #e2e8f0 !important;

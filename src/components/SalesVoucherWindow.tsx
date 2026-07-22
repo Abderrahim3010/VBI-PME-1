@@ -1438,7 +1438,7 @@ function SalesVoucherWindow({
         {/* 2. Client and Document Metadatas panel - gradient background */}
         <div 
           style={{ height: '128px', width: '100%' }}
-          className="mx-0.5 mt-0.5 mb-2 p-3 bg-gradient-to-r from-slate-100/95 via-slate-50 to-slate-100/95 dark:from-slate-900/90 dark:via-slate-950 dark:to-slate-900/90 border border-slate-300/80 dark:border-slate-800 rounded-2xl flex flex-nowrap gap-3.5 items-center justify-start text-slate-900 dark:text-slate-100 shadow-sm relative overflow-visible shrink-0"
+          className="mx-0.5 mt-0.5 mb-2 p-3 bg-gradient-to-r from-sky-100 via-sky-50 to-white dark:from-slate-900/90 dark:via-slate-950 dark:to-slate-900/90 border border-sky-200/80 dark:border-slate-800 rounded-2xl flex flex-nowrap gap-3.5 items-center justify-start text-slate-900 dark:text-slate-100 shadow-sm relative overflow-visible shrink-0"
         >
         
         {/* Left container: Client + metadata on Row 1, and facturation auxiliary cards raised to Row 2 */}
@@ -1906,51 +1906,51 @@ function SalesVoucherWindow({
             >
               <thead className="sticky top-0 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-extrabold select-none border-b border-slate-200/60 dark:border-slate-800/80 z-10">
                 <tr>
-                  <th style={{ width: `${salesItemColWidths.num}px`, minWidth: `${salesItemColWidths.num}px` }} className="px-3 py-2 text-center text-[10px] uppercase tracking-wider relative group">
+                  <th style={{ width: `${salesItemColWidths.num}px`, minWidth: `${salesItemColWidths.num}px` }} className="px-2 py-2 text-center text-[10px] uppercase tracking-wider relative group truncate whitespace-nowrap overflow-hidden">
                     N°
                     <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingSalesItem('num', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
                   </th>
-                  <th style={{ width: `${salesItemColWidths.code}px`, minWidth: `${salesItemColWidths.code}px` }} className="px-3 py-2 font-mono text-[10px] uppercase tracking-wider relative group">
+                  <th style={{ width: `${salesItemColWidths.code}px`, minWidth: `${salesItemColWidths.code}px` }} className="px-2 py-2 font-mono text-[10px] uppercase tracking-wider relative group truncate whitespace-nowrap overflow-hidden">
                     Code
                     <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingSalesItem('code', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
                   </th>
-                  <th style={{ width: `${salesItemColWidths.designation}px`, minWidth: `${salesItemColWidths.designation}px` }} className="px-3 py-2 font-sans text-[10px] uppercase tracking-wider relative group">
+                  <th style={{ width: `${salesItemColWidths.designation}px`, minWidth: `${salesItemColWidths.designation}px` }} className="px-2 py-2 font-sans text-[10px] uppercase tracking-wider relative group truncate whitespace-nowrap overflow-hidden">
                     Désignation
                     <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingSalesItem('designation', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
                   </th>
-                  <th style={{ width: `${salesItemColWidths.colis}px`, minWidth: `${salesItemColWidths.colis}px` }} className="px-1 py-2 text-center text-[10px] uppercase tracking-wider relative group">
+                  <th style={{ width: `${salesItemColWidths.colis}px`, minWidth: `${salesItemColWidths.colis}px` }} className="px-1 py-2 text-center text-[10px] uppercase tracking-wider relative group truncate whitespace-nowrap overflow-hidden">
                     Colis
                     <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingSalesItem('colis', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
                   </th>
-                  <th style={{ width: `${salesItemColWidths.colisage}px`, minWidth: `${salesItemColWidths.colisage}px` }} className="px-1 py-2 text-center text-[10px] uppercase tracking-wider relative group">
+                  <th style={{ width: `${salesItemColWidths.colisage}px`, minWidth: `${salesItemColWidths.colisage}px` }} className="px-1 py-2 text-center text-[10px] uppercase tracking-wider relative group truncate whitespace-nowrap overflow-hidden">
                     Colisage
                     <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingSalesItem('colisage', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
                   </th>
-                  <th style={{ width: `${salesItemColWidths.pieces}px`, minWidth: `${salesItemColWidths.pieces}px` }} className="px-1 py-2 text-center text-[10px] uppercase tracking-wider relative group">
+                  <th style={{ width: `${salesItemColWidths.pieces}px`, minWidth: `${salesItemColWidths.pieces}px` }} className="px-1 py-2 text-center text-[10px] uppercase tracking-wider relative group truncate whitespace-nowrap overflow-hidden">
                     Pièces
                     <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingSalesItem('pieces', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
                   </th>
-                  <th style={{ width: `${salesItemColWidths.qte}px`, minWidth: `${salesItemColWidths.qte}px` }} className="px-1 py-2 text-center text-[10px] uppercase tracking-wider relative group">
+                  <th style={{ width: `${salesItemColWidths.qte}px`, minWidth: `${salesItemColWidths.qte}px` }} className="px-1 py-2 text-center text-[10px] uppercase tracking-wider relative group truncate whitespace-nowrap overflow-hidden">
                     Qté
                     <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingSalesItem('qte', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
                   </th>
-                  <th style={{ width: `${salesItemColWidths.punit}px`, minWidth: `${salesItemColWidths.punit}px` }} className="px-3 py-2 text-right text-[10px] uppercase tracking-wider relative group">
+                  <th style={{ width: `${salesItemColWidths.punit}px`, minWidth: `${salesItemColWidths.punit}px` }} className="px-2 py-2 text-right text-[10px] uppercase tracking-wider relative group truncate whitespace-nowrap overflow-hidden">
                     P. Unit
                     <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingSalesItem('punit', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
                   </th>
                   {showCostPrices && (
                     <>
-                      <th style={{ width: `${salesItemColWidths.prixAchat}px`, minWidth: `${salesItemColWidths.prixAchat}px` }} className="px-2 py-2 text-right text-[10px] uppercase tracking-wider relative group text-emerald-600 dark:text-emerald-400 bg-emerald-50/60 dark:bg-emerald-950/30">
+                      <th style={{ width: `${salesItemColWidths.prixAchat}px`, minWidth: `${salesItemColWidths.prixAchat}px` }} className="px-2 py-2 text-right text-[10px] uppercase tracking-wider relative group text-emerald-950 dark:text-emerald-300 font-black bg-[#84e183] dark:bg-emerald-950 border-x border-emerald-400 dark:border-emerald-800/80 truncate whitespace-nowrap overflow-hidden">
                         Prix Achat
                         <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingSalesItem('prixAchat', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
                       </th>
-                      <th style={{ width: `${salesItemColWidths.prixRevient}px`, minWidth: `${salesItemColWidths.prixRevient}px` }} className="px-2 py-2 text-right text-[10px] uppercase tracking-wider relative group text-amber-600 dark:text-amber-400 bg-amber-50/60 dark:bg-amber-950/30">
+                      <th style={{ width: `${salesItemColWidths.prixRevient}px`, minWidth: `${salesItemColWidths.prixRevient}px` }} className="px-2 py-2 text-right text-[10px] uppercase tracking-wider relative group text-amber-950 dark:text-amber-300 font-black bg-[#e6bb29] dark:bg-amber-950 border-x border-amber-400 dark:border-amber-800/80 truncate whitespace-nowrap overflow-hidden">
                         Prix Revient
                         <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingSalesItem('prixRevient', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
                       </th>
                     </>
                   )}
-                  <th style={{ width: `${salesItemColWidths.montant}px`, minWidth: `${salesItemColWidths.montant}px` }} className="px-3 py-2 text-right text-[10px] uppercase tracking-wider relative group">
+                  <th style={{ width: `${salesItemColWidths.montant}px`, minWidth: `${salesItemColWidths.montant}px` }} className="px-2 py-2 text-right text-[10px] uppercase tracking-wider relative group truncate whitespace-nowrap overflow-hidden">
                     Montant
                     <div onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); startResizingSalesItem('montant', e.clientX); }} className="absolute right-0 top-0 bottom-0 w-2.5 cursor-col-resize hover:bg-indigo-500/50 group-hover:bg-slate-300 dark:group-hover:bg-slate-700 active:bg-indigo-600 z-20" title="Redimensionner" />
                   </th>
@@ -1985,58 +1985,51 @@ function SalesVoucherWindow({
                         }`}
                       >
                         <td 
-                          style={item.originalIndex === 0 || item.originalIndex === 1 ? { fontSize: '14px' } : undefined}
-                          className="px-3 py-2 text-center select-none font-bold"
+                          className="px-2 py-2 text-center select-none font-bold truncate whitespace-nowrap overflow-hidden"
                         >
                           {item.originalIndex + 1}
                         </td>
                         <td 
-                          style={{
-                            ...(item.originalIndex === 0 || item.originalIndex === 1 ? { fontSize: '13px', fontFamily: 'Arial' } : {}),
-                            ...(isBlocked ? { color: '#e11d48', fontWeight: 'bold' } : {})
-                          }}
-                          className={`px-3 py-2 font-mono text-[11px] truncate select-all ${isBlocked ? 'text-rose-600 dark:text-rose-400 bg-rose-50/30 dark:bg-rose-950/20 border-l-2 border-rose-500' : ''}`}
+                          style={isBlocked ? { color: '#e11d48', fontWeight: 'bold' } : undefined}
+                          className={`px-2 py-2 font-mono text-[11px] truncate whitespace-nowrap overflow-hidden select-all ${isBlocked ? 'text-rose-600 dark:text-rose-400 bg-rose-50/30 dark:bg-rose-950/20 border-l-2 border-rose-500' : ''}`}
                         >
                           {item.code}
                         </td>
                         <td 
-                          style={item.originalIndex === 0 || item.originalIndex === 1 ? { fontSize: '14px', fontFamily: 'Arial' } : undefined}
-                          className="px-3 py-2 font-sans truncate select-all"
+                          className="px-2 py-2 font-sans truncate whitespace-nowrap overflow-hidden select-all"
                         >
                           {item.designation}
                         </td>
                         <td 
-                          style={item.originalIndex === 0 ? { fontSize: '13px' } : item.originalIndex === 1 ? { fontSize: '13px', fontFamily: 'Arial' } : undefined}
-                          className="px-1 py-1 sm:py-2 text-center font-mono select-all text-slate-300/10 dark:text-slate-800/10"
+                          className="px-1 py-1 sm:py-2 text-center font-mono select-all text-slate-700 dark:text-slate-300 truncate whitespace-nowrap overflow-hidden"
                         >
-                          {/* Colis is always blank */}
+                          {item.nbreColis ?? ''}
                         </td>
                         <td 
-                          style={item.originalIndex === 0 || item.originalIndex === 1 ? { fontSize: '13px' } : undefined}
-                          className="px-1 py-1 sm:py-2 text-center font-mono text-slate-300/10 dark:text-slate-800/10 select-all"
+                          className="px-1 py-1 sm:py-2 text-center font-mono text-slate-700 dark:text-slate-300 select-all truncate whitespace-nowrap overflow-hidden"
                         >
-                          {/* Colisage is always blank */}
+                          {item.colisage ?? ''}
                         </td>
-                        <td className="px-1 py-2 text-center font-mono select-all text-slate-300/10 dark:text-slate-800/10">
-                          {/* Pièces is always blank */}
+                        <td className="px-1 py-2 text-center font-mono select-all text-slate-700 dark:text-slate-300 truncate whitespace-nowrap overflow-hidden">
+                          {item.pieces ?? ''}
                         </td>
-                        <td className={`px-1 py-2 text-center font-mono font-bold select-all ${isSelected ? 'text-m3-primary dark:text-sky-400' : 'text-slate-900 dark:text-slate-200'}`}>
+                        <td className={`px-1 py-2 text-center font-mono font-bold select-all truncate whitespace-nowrap overflow-hidden ${isSelected ? 'text-m3-primary dark:text-sky-400' : 'text-slate-900 dark:text-slate-200'}`}>
                           {item.qty}
                         </td>
-                        <td className="px-3 py-2 text-right font-mono select-all">
+                        <td className="px-2 py-2 text-right font-mono select-all truncate whitespace-nowrap overflow-hidden">
                           {(item.price ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 1 })}
                         </td>
                         {showCostPrices && (
                           <>
-                            <td className="px-2 py-2 text-right font-mono font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50/20 dark:bg-emerald-950/10 truncate select-all">
+                            <td className="px-2 py-2 text-right font-mono font-bold text-emerald-950 dark:text-emerald-300 bg-[#84e183] dark:bg-emerald-950/60 border-x border-emerald-300/80 dark:border-emerald-900/50 truncate whitespace-nowrap overflow-hidden select-all">
                               {itemAchat.toLocaleString('fr-FR', { minimumFractionDigits: 1 })}
                             </td>
-                            <td className="px-2 py-2 text-right font-mono font-semibold text-amber-600 dark:text-amber-400 bg-amber-50/20 dark:bg-amber-950/10 truncate select-all">
+                            <td className="px-2 py-2 text-right font-mono font-bold text-amber-950 dark:text-amber-300 bg-[#e6bb29] dark:bg-amber-950/60 border-x border-amber-300/80 dark:border-amber-900/50 truncate whitespace-nowrap overflow-hidden select-all">
                               {itemRevient.toLocaleString('fr-FR', { minimumFractionDigits: 1 })}
                             </td>
                           </>
                         )}
-                        <td className="px-3 py-2 text-right font-mono font-extrabold select-all">
+                        <td className="px-2 py-2 text-right font-mono font-extrabold select-all truncate whitespace-nowrap overflow-hidden">
                           {(item.total ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 1 })}
                         </td>
                       </tr>
