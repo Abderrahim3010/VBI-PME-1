@@ -414,14 +414,14 @@ html:not(.dark) [id^="window-"] [data-selected="true"] {
 }
 
 /* Grid Table Rows - Ensure rows are glare-free off-white with crisp zebra striping to pop beautifully */
-html:not(.dark) [id^="window-"] tr:not(.bg-m3-primary):not([data-selected="true"]):not([class*="bg-sky-"]):not([class*="bg-indigo-"]) {
+html:not(.dark) [id^="window-"] tr:not(.bg-m3-primary):not([data-selected="true"]):not([class*="bg-sky-"]):not([class*="bg-indigo-"]):not(:has(td[colspan])) {
   background-color: #fafbfc !important; /* Soft off-white */
   color: #0f172a !important;
 }
-html:not(.dark) [id^="window-"] tr:nth-child(even):not(.bg-m3-primary):not([data-selected="true"]):not([class*="bg-sky-"]):not([class*="bg-indigo-"]) {
+html:not(.dark) [id^="window-"] tr:nth-child(even):not(.bg-m3-primary):not([data-selected="true"]):not([class*="bg-sky-"]):not([class*="bg-indigo-"]):not(:has(td[colspan])) {
   background-color: #f1f5f9 !important; /* Soft Slate 100 instead of 50 to reduce glare */
 }
-html:not(.dark) [id^="window-"] td:not([class*="bg-"]) {
+html:not(.dark) [id^="window-"] td:not([class*="bg-"]):not([colspan]) {
   color: #0f172a !important;
   border-bottom: 1.5px solid #cbd5e1 !important; /* Solid desktop borders */
   border-right: 1.5px solid #e2e8f0 !important;
@@ -431,11 +431,19 @@ html:not(.dark) [id^="window-"] td:not([class*="bg-"]) {
    inside windows in light mode to have the exact same clear, solid outer boundary.
    We precisely exclude single-edge borders, colored borders, and fully rounded pills to prevent visual alignment issues. */
 html:not(.dark) [id^="window-"] div[class*="border"]:not(button):not(input):not(select):not(textarea):not(span):not(table):not(tr):not(td):not(li):not(ul):not(.no-gray-override):not([class*="border-t"]):not([class*="border-b"]):not([class*="border-l"]):not([class*="border-r"]):not([class*="border-x"]):not([class*="border-y"]):not([class*="border-dashed"]):not([class*="border-dotted"]):not([class*="border-none"]):not([class*="border-transparent"]):not([class*="rounded-full"]):not([class*="rounded-t-"]):not([class*="rounded-b-"]):not([class*="rounded-l-"]):not([class*="rounded-r-"]):not([class*="border-emerald"]):not([class*="border-rose"]):not([class*="border-red"]):not([class*="border-green"]):not([class*="border-blue"]):not([class*="border-amber"]):not([class*="border-yellow"]):not([class*="border-indigo"]):not([class*="border-teal"]):not([class*="border-sky"]):not([class*="border-purple"]):not([class*="border-violet"]):not([class*="border-orange"]),
-html:not(.dark) [id^="window-"] .overflow-hidden:has(table),
-html:not(.dark) [id^="window-"] .overflow-auto:has(table) {
-  border: 2px solid #94a3b8 !important;
+html:not(.dark) [id^="window-"] .overflow-hidden:has(table) {
+  border-width: 2px !important;
+  border-style: solid !important;
+  border-color: #94a3b8 !important;
   border-radius: 16px !important;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
+}
+
+/* Prevent double borders when an overflow-auto table wrapper is inside an overflow-hidden card */
+html:not(.dark) [id^="window-"] .overflow-hidden:has(table) .overflow-auto,
+html:not(.dark) [id^="window-"] div[class*="border"] .overflow-auto:has(table) {
+  border: none !important;
+  box-shadow: none !important;
 }
 
 /* Ensure nested elements do not get too busy but retain their standard visual grouping */
@@ -444,11 +452,14 @@ html:not(.dark) [id^="window-"] div[class*="border"]:not([class*="border-t"]):no
   border-color: #cbd5e1 !important;
 }
 
-/* Ensure the table element itself has no outer border to prevent double-line / clipping artifacts */
-html:not(.dark) [id^="window-"] table {
-  border: none !important;
-  border-radius: 0 !important;
-  box-shadow: none !important;
+/* Fix empty table state cut-off line and background breaking across all windows */
+html:not(.dark) [id^="window-"] tbody tr:has(td[colspan]),
+html:not(.dark) [id^="window-"] tbody td[colspan],
+html:not(.dark) tbody tr:has(td[colspan]),
+html:not(.dark) tbody td[colspan] {
+  border-bottom: none !important;
+  border-right: none !important;
+  background-color: transparent !important;
 }
 
 /* ==========================================================================

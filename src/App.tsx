@@ -15,6 +15,8 @@ import {
   Smartphone,
   Settings,
   Lock,
+  ShieldCheck,
+  Database,
   Key,
   LogOut,
   Gem
@@ -1259,12 +1261,12 @@ export default function App() {
       </div>
 
       {/* 2. OS Quick Toolbar with Icons (Image 2 and 3 style) */}
-      <div className="bg-slate-205/85 dark:bg-slate-900/80 backdrop-blur-md py-0.5 px-2 border-b border-slate-300 dark:border-slate-800 flex items-center gap-2 flex-nowrap overflow-x-auto scrollbar-none shrink-0 z-30 select-none shadow-md transition-colors duration-300">
+      <div className="bg-gradient-to-r from-sky-100 via-sky-50 to-white dark:from-sky-950 dark:via-slate-900 dark:to-slate-950 border-b border-sky-200/80 dark:border-sky-900/50 py-1.5 px-2 flex items-center gap-2 flex-nowrap overflow-x-auto scrollbar-none shrink-0 z-30 select-none shadow-md transition-colors duration-300">
         
         {config?.affichage?.visibleButtons?.purchases !== false && (
           <button
             onClick={() => launchWindow('purchases')}
-            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
+            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/70 dark:bg-slate-950/60 hover:bg-white dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-sky-200/80 dark:border-slate-800 hover:border-sky-400 dark:hover:border-slate-700 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
             <ShoppingBag className="text-amber-500 dark:text-amber-400 shrink-0" size={26} />
             <span style={{ fontSize: '14px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Saisie Achats</span>
@@ -1275,7 +1277,7 @@ export default function App() {
         {config?.affichage?.visibleButtons?.sales !== false && (
           <button
             onClick={() => launchWindow('sales')}
-            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
+            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/70 dark:bg-slate-950/60 hover:bg-white dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-sky-200/80 dark:border-slate-800 hover:border-sky-400 dark:hover:border-slate-700 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
             <ShoppingCart className="text-emerald-500 dark:text-emerald-400 shrink-0" size={26} />
             <span style={{ fontSize: '14px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Saisie Ventes</span>
@@ -1286,7 +1288,7 @@ export default function App() {
         {config?.affichage?.visibleButtons?.products !== false && (
           <button
             onClick={() => launchWindow('products')}
-            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
+            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/70 dark:bg-slate-950/60 hover:bg-white dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-sky-200/80 dark:border-slate-800 hover:border-sky-400 dark:hover:border-slate-700 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
             <Package className="text-orange-500 dark:text-orange-400 shrink-0" size={26} />
             <span style={{ fontSize: '14px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Catalogue</span>
@@ -1297,7 +1299,7 @@ export default function App() {
         {config?.affichage?.visibleButtons?.suppliers !== false && (
           <button
             onClick={() => launchWindow('suppliers')}
-            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
+            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/70 dark:bg-slate-950/60 hover:bg-white dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-sky-200/80 dark:border-slate-800 hover:border-sky-400 dark:hover:border-slate-700 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
             <Truck className="text-indigo-500 dark:text-indigo-400 shrink-0" size={26} />
             <span style={{ fontSize: '14px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Fournisseurs</span>
@@ -1308,7 +1310,7 @@ export default function App() {
         {config?.affichage?.visibleButtons?.clients !== false && (
           <button
             onClick={() => launchWindow('clients')}
-            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
+            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/70 dark:bg-slate-950/60 hover:bg-white dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-sky-200/80 dark:border-slate-800 hover:border-sky-400 dark:hover:border-slate-700 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
             <Users className="text-teal-500 dark:text-teal-400 shrink-0" size={26} />
             <span style={{ fontSize: '14px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Clients</span>
@@ -1316,12 +1318,12 @@ export default function App() {
           </button>
         )}
   
-        <div className="h-10 w-[1px] bg-slate-350 dark:bg-slate-800 mx-2" />
+        <div className="h-10 w-[1.5px] bg-sky-400/80 dark:bg-sky-700/80 mx-2 shrink-0" />
   
         {config?.affichage?.visibleButtons?.situation !== false && (
           <button
             onClick={() => launchWindow('situation')}
-            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
+            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/70 dark:bg-slate-950/60 hover:bg-white dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-sky-200/80 dark:border-slate-800 hover:border-sky-400 dark:hover:border-slate-700 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
             <BookOpen className="text-rose-500 dark:text-rose-400 shrink-0" size={26} />
             <span style={{ fontSize: '14px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Situation Fourn.</span>
@@ -1332,7 +1334,7 @@ export default function App() {
         {config?.affichage?.visibleButtons?.situation_clients !== false && (
           <button
             onClick={() => launchWindow('situation_clients')}
-            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
+            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/70 dark:bg-slate-950/60 hover:bg-white dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-sky-200/80 dark:border-slate-800 hover:border-sky-400 dark:hover:border-slate-700 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
             <BookOpen className="text-emerald-500 dark:text-emerald-400 shrink-0" size={26} />
             <span style={{ fontSize: '14px', lineHeight: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Situation Client</span>
@@ -1343,7 +1345,7 @@ export default function App() {
         {config?.affichage?.visibleButtons?.stats !== false && (
           <button
             onClick={() => launchWindow('stats')}
-            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
+            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/70 dark:bg-slate-950/60 hover:bg-white dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-sky-200/80 dark:border-slate-800 hover:border-sky-400 dark:hover:border-slate-700 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
             <BarChart3 className="text-purple-500 dark:text-purple-400 shrink-0" size={26} />
             <span style={{ fontSize: '14px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Statistiques</span>
@@ -1354,7 +1356,7 @@ export default function App() {
         {config?.affichage?.visibleButtons?.inventaire !== false && (
           <button
             onClick={() => launchWindow('products')}
-            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
+            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/70 dark:bg-slate-950/60 hover:bg-white dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-sky-200/80 dark:border-slate-800 hover:border-sky-400 dark:hover:border-slate-700 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
             <Search className="text-cyan-500 dark:text-cyan-400 shrink-0" size={26} />
             <span style={{ fontSize: '14px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Inventaire</span>
@@ -1365,7 +1367,7 @@ export default function App() {
         {config?.affichage?.visibleButtons?.coffre !== false && (
           <button
             onClick={() => launchWindow('caisse')}
-            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/50 dark:bg-slate-950/40 hover:bg-slate-200/60 dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-slate-300 dark:border-slate-800 hover:border-slate-450 dark:hover:border-slate-705 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
+            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/70 dark:bg-slate-950/60 hover:bg-white dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-sky-200/80 dark:border-slate-800 hover:border-sky-400 dark:hover:border-slate-700 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
             <Coins className="text-emerald-600 dark:text-emerald-400 shrink-0" size={26} />
             <span style={{ fontSize: '14px', fontStyle: 'normal', textDecorationLine: 'none', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Coffre Caisse</span>
@@ -1513,24 +1515,35 @@ export default function App() {
           </div>
 
           {/* Quick Vertical actions buttons */}
-          <div className="flex flex-col gap-1.5 mt-4 select-none min-w-[226px]">
+          <div className="flex flex-col gap-2 mt-4 select-none min-w-[226px]">
             <button
               onClick={() => launchWindow('configuration')}
-              className="py-1 px-2.5 text-center text-xs font-semibold bg-slate-200/80 hover:bg-slate-300 hover:text-slate-900 active:bg-slate-400 dark:bg-gray-700 dark:active:bg-gray-800 dark:hover:bg-gray-650 text-slate-800 dark:text-white rounded border border-slate-300 dark:border-gray-600 truncate transition-colors duration-200 cursor-pointer"
+              className="group relative overflow-hidden py-2 px-3.5 flex items-center justify-start gap-2.5 text-xs font-bold text-slate-800 dark:text-sky-100 bg-gradient-to-r from-sky-100/90 via-white/80 to-sky-50/80 dark:from-slate-900/90 dark:via-sky-950/70 dark:to-slate-900/90 backdrop-blur-md rounded-xl border border-white/90 dark:border-sky-800/60 shadow-[inset_0_1px_1px_rgba(255,255,255,0.9),0_2px_8px_rgba(14,165,233,0.12)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_4px_16px_rgba(14,165,233,0.25)] hover:border-sky-300 dark:hover:border-sky-500 transition-all duration-200 cursor-pointer active:scale-[0.98]"
             >
-              ⚙️ Configuration
+              <div className="w-6 h-6 rounded-lg bg-sky-500/10 dark:bg-sky-400/20 flex items-center justify-center shrink-0 border border-sky-300/40 dark:border-sky-500/30">
+                <Settings className="w-3.5 h-3.5 text-sky-600 dark:text-sky-300 group-hover:rotate-90 transition-transform duration-500" />
+              </div>
+              <span className="truncate tracking-wide">Configuration</span>
             </button>
+
             <button
               onClick={handleLockSession}
-              className="py-1 px-2.5 text-center text-xs font-semibold bg-slate-200/80 hover:bg-slate-300 hover:text-slate-900 active:bg-slate-400 dark:bg-gray-750 dark:active:bg-gray-800 dark:hover:bg-gray-700 text-slate-800 dark:text-white rounded border border-slate-300 dark:border-gray-600 truncate transition-colors duration-200 cursor-pointer"
+              className="group relative overflow-hidden py-2 px-3.5 flex items-center justify-start gap-2.5 text-xs font-bold text-slate-800 dark:text-amber-100 bg-gradient-to-r from-amber-100/80 via-white/80 to-amber-50/70 dark:from-amber-950/60 dark:via-slate-900/90 dark:to-slate-950/90 backdrop-blur-md rounded-xl border border-white/90 dark:border-amber-800/50 shadow-[inset_0_1px_1px_rgba(255,255,255,0.9),0_2px_8px_rgba(217,119,6,0.12)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_4px_16px_rgba(217,119,6,0.25)] hover:border-amber-300 dark:hover:border-amber-500 transition-all duration-200 cursor-pointer active:scale-[0.98]"
             >
-              🔒 Verrouiller la PME
+              <div className="w-6 h-6 rounded-lg bg-amber-500/10 dark:bg-amber-400/20 flex items-center justify-center shrink-0 border border-amber-300/40 dark:border-amber-500/30">
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform duration-300" />
+              </div>
+              <span className="truncate tracking-wide">Verrouiller la PME</span>
             </button>
+
             <button
               onClick={() => alert("Sauvegarde complète des tables locales exportée dans l'iframe sandbox.")}
-              className="py-1 px-2.5 text-center text-xs font-semibold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 dark:bg-blue-900 dark:active:bg-blue-950 dark:hover:bg-blue-800 text-white rounded border border-blue-505 dark:border-blue-700 truncate transition-all duration-200 cursor-pointer"
+              className="group relative overflow-hidden py-2 px-3.5 flex items-center justify-start gap-2.5 text-xs font-bold text-sky-950 dark:text-sky-100 bg-gradient-to-r from-sky-200/90 via-sky-100/80 to-blue-50/80 dark:from-sky-950/80 dark:via-blue-950/80 dark:to-slate-900/90 backdrop-blur-md rounded-xl border border-white/90 dark:border-sky-700/60 shadow-[inset_0_1px_1px_rgba(255,255,255,0.95),0_2px_10px_rgba(2,132,199,0.2)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_4px_18px_rgba(2,132,199,0.35)] hover:border-sky-400 dark:hover:border-sky-400 transition-all duration-200 cursor-pointer active:scale-[0.98]"
             >
-              💾 Sauvegarde Directe
+              <div className="w-6 h-6 rounded-lg bg-sky-600/15 dark:bg-sky-400/20 flex items-center justify-center shrink-0 border border-sky-400/40 dark:border-sky-400/30">
+                <Database className="w-3.5 h-3.5 text-sky-600 dark:text-sky-300 group-hover:scale-110 transition-transform duration-300" />
+              </div>
+              <span className="truncate tracking-wide">Sauvegarde Directe</span>
             </button>
           </div>
         </div>

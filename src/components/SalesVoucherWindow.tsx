@@ -1307,12 +1307,12 @@ function SalesVoucherWindow({
       {/* 1. Header Toolbar Ribbon - Modernized with rich gradient styling */}
       <div 
         style={{ marginTop: '0px', marginBottom: '2px', width: '100%' }}
-        className="flex items-center justify-between bg-gradient-to-r from-slate-200/90 via-slate-100 to-slate-200/90 dark:from-slate-900 dark:via-slate-850 dark:to-slate-900 py-1 px-2 rounded-xl border border-slate-300/80 dark:border-slate-700/80 gap-1.5 select-none shadow-sm h-[46px] shrink-0 flex-nowrap overflow-x-auto scrollbar-none"
+        className="flex items-center justify-between bg-gradient-to-r from-sky-200 via-sky-100 to-white dark:from-sky-950 dark:via-slate-900 dark:to-slate-950 py-1 px-2 rounded-xl border border-sky-200/80 dark:border-sky-900/40 gap-1.5 select-none shadow-sm h-[46px] shrink-0 flex-nowrap overflow-x-auto scrollbar-none"
       >
         
         {/* Media Buttons: Deb, Prec, Suiv, Fin grouped together */}
         <div className="flex items-center gap-1.5 flex-nowrap shrink-0">
-          <div className="flex bg-slate-200/60 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-300/60 dark:border-slate-800 gap-0.5 dev-pager-group shadow-inner">
+          <div className="flex bg-white/70 dark:bg-slate-950/80 p-0.5 rounded-lg border border-sky-300/80 dark:border-sky-800/80 gap-0.5 dev-pager-group shadow-inner">
             <button
               onClick={handleFirst}
               disabled={navigableVouchers.length <= 1 || activeNavIndex <= 0}
@@ -1351,7 +1351,7 @@ function SalesVoucherWindow({
             </button>
           </div>
 
-          <div className="h-6 w-[1px] bg-slate-300 dark:bg-slate-700 mx-1 shrink-0" />
+          <div className="h-6 w-[1.5px] bg-slate-400 dark:bg-slate-600 mx-1 shrink-0 rounded-full" />
 
           {/* Action Buttons: F1, F2, F3... */}
           <div className="flex items-center gap-1 flex-nowrap shrink-0">
@@ -1366,7 +1366,7 @@ function SalesVoucherWindow({
               </div>
             </button>
 
-            <div className="h-6 w-[1px] bg-slate-300 dark:bg-slate-700 mx-0.5 shrink-0" />
+            <div className="h-6 w-[1.5px] bg-slate-400 dark:bg-slate-600 mx-1 shrink-0 rounded-full" />
 
             <button
               onClick={handleFermerLeBon}
@@ -1383,7 +1383,7 @@ function SalesVoucherWindow({
                 <span className="text-[7px] font-bold opacity-80 tracking-wider">[ F2 ]</span>
               </div>
             </button>
-            <div className="h-6 w-[1px] bg-slate-300 dark:bg-slate-700 mx-0.5 shrink-0" />
+            <div className="h-6 w-[1.5px] bg-slate-400 dark:bg-slate-600 mx-1 shrink-0 rounded-full" />
 
             <button
               type="button"
@@ -1398,7 +1398,7 @@ function SalesVoucherWindow({
               </div>
             </button>
 
-            <div className="h-6 w-[1px] bg-slate-300 dark:bg-slate-700 mx-0.5 shrink-0" />
+            <div className="h-6 w-[1.5px] bg-slate-400 dark:bg-slate-600 mx-1 shrink-0 rounded-full" />
 
             <button
               onClick={handleEditVoucher}
@@ -1412,7 +1412,7 @@ function SalesVoucherWindow({
               </div>
             </button>
 
-            <div className="h-6 w-[1px] bg-slate-300 dark:bg-slate-700 mx-0.5 shrink-0" />
+            <div className="h-6 w-[1.5px] bg-slate-400 dark:bg-slate-600 mx-1 shrink-0 rounded-full" />
 
             <button
               onClick={() => {
@@ -1888,10 +1888,10 @@ function SalesVoucherWindow({
       <div className="grid grid-cols-12 gap-3.5 mx-0.5 min-h-[160px] flex-1 mt-1">
         
         {/* Main Products Grid Table */}
-        <div className={`col-span-8 flex flex-col border border-slate-200/50 dark:border-slate-800/80 bg-white dark:bg-slate-950 shadow-inner rounded-2xl overflow-hidden transition-all duration-300 ${
+        <div className={`col-span-8 flex flex-col border-2 border-solid shadow-inner rounded-2xl overflow-hidden transition-all duration-300 ${
           mode === 'view' 
-            ? 'grayscale opacity-50 dark:opacity-30 bg-slate-200/30 dark:bg-black/20 pointer-events-none' 
-            : ''
+            ? 'grayscale opacity-50 dark:opacity-30 bg-slate-200/30 dark:bg-black/20 pointer-events-none border-slate-300 dark:border-slate-800' 
+            : 'bg-gradient-to-r from-sky-100 via-sky-50 to-white dark:from-sky-950 dark:via-slate-900 dark:to-slate-950 border-sky-300 dark:border-sky-800'
         }`}>
           <div 
             onClick={() => {
@@ -1956,7 +1956,7 @@ function SalesVoucherWindow({
                   </th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="bg-white/90 dark:bg-slate-950/90">
                 {displayedItems.length === 0 ? (
                   <tr>
                     <td colSpan={showCostPrices ? 11 : 9} className="text-center py-16 text-slate-400 dark:text-slate-600 italic font-sans select-all">
@@ -2349,7 +2349,25 @@ function SalesVoucherWindow({
             </div>
 
             {/* Footer actions of popup */}
-            <div className="bg-slate-50 dark:bg-slate-950 py-2 px-5 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-2.5 select-none">
+            <div className="bg-slate-50 dark:bg-slate-950 py-2 px-5 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-2.5 select-none">
+              {selectedProductInChooser && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selectedProductInChooser.blocked) {
+                      showRetroAlert(`⚠️ Impossible d'insérer l'article : Le produit "${selectedProductInChooser.designation}" est BLOQUÉ !`, "Article Bloqué");
+                      return;
+                    }
+                    setChooserQty(1);
+                    setSelectedPriceType('prixVente1');
+                    setCustomSellingPrice(selectedProductInChooser.prixVente1);
+                    setIsConfigPopupOpen(true);
+                  }}
+                  className="px-4 h-7 text-[10px] font-bold bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white border border-emerald-500 rounded-lg shadow-sm transition-all cursor-pointer flex items-center gap-1.5 animate-in fade-in zoom-in-95 duration-150"
+                >
+                  <Check size={13} /> Insérer au bon
+                </button>
+              )}
               <button
                 type="button"
                 onClick={() => setIsProductChooserOpen(false)}
