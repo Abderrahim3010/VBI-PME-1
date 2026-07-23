@@ -36,6 +36,15 @@ export const BarcodeLabelModal: React.FC<BarcodeLabelModalProps> = ({
   const [copiedCode, setCopiedCode] = useState(false);
 
   const svgRef = useRef<SVGSVGElement | null>(null);
+  const copiedCodeTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (copiedCodeTimeoutRef.current !== null) {
+        window.clearTimeout(copiedCodeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // Sync initial qty when product or initialQty changes
   useEffect(() => {
@@ -98,7 +107,13 @@ export const BarcodeLabelModal: React.FC<BarcodeLabelModalProps> = ({
     if (product?.code) {
       navigator.clipboard.writeText(product.code);
       setCopiedCode(true);
-      setTimeout(() => setCopiedCode(false), 2000);
+      if (copiedCodeTimeoutRef.current !== null) {
+        window.clearTimeout(copiedCodeTimeoutRef.current);
+      }
+      copiedCodeTimeoutRef.current = window.setTimeout(() => {
+        setCopiedCode(false);
+        copiedCodeTimeoutRef.current = null;
+      }, 2000);
     }
   };
 

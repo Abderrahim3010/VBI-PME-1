@@ -21,8 +21,7 @@ import {
   Key,
   LogOut,
   Gem,
-  ChevronDown,
-  FileText
+  ChevronDown
 } from 'lucide-react';
 import {
   INITIAL_PRODUCTS,
@@ -46,18 +45,16 @@ import {
 
 // Windows sub-components
 import WindowFrame from './components/WindowFrame';
-import ProductListWindow from './components/ProductListWindow';
-import PurchaseVoucherWindow from './components/PurchaseVoucherWindow';
-import SalesVoucherWindow from './components/SalesVoucherWindow';
-import StatsWindow from './components/StatsWindow';
 import ClientsSuppliersWindow from './components/ClientsSuppliersWindow';
 import CaisseWindow from './components/CaisseWindow';
 import WelcomeWindow from './components/WelcomeWindow';
 import ConfigWindow from './components/ConfigWindow';
-import SituationFournisseursWindow, { SupplierPayment } from './components/SituationFournisseursWindow';
+import SituationFournisseursWindow from './components/SituationFournisseursWindow';
+import type { SupplierPayment } from './components/SituationFournisseursWindow';
 import SituationClientsWindow from './components/SituationClientsWindow';
 import { LoginOverlay } from './components/LoginOverlay';
 import { UserManagementWindow } from './components/UserManagementWindow';
+import MemoryUsageIndicator from './components/MemoryUsageIndicator';
 import {
   getStorageJson,
   getStorageString,
@@ -67,6 +64,19 @@ import {
   saveJson,
   safeStringify
 } from './services/localDb';
+
+const ProductListWindow = React.lazy(() => import('./components/ProductListWindow'));
+const PurchaseVoucherWindow = React.lazy(() => import('./components/PurchaseVoucherWindow'));
+const SalesVoucherWindow = React.lazy(() => import('./components/SalesVoucherWindow'));
+const StatsWindow = React.lazy(() => import('./components/StatsWindow'));
+
+function WindowLoadingFallback() {
+  return (
+    <div className="flex-1 flex items-center justify-center text-xs font-bold text-slate-500 dark:text-slate-400">
+      Chargement…
+    </div>
+  );
+}
 
 export default function App() {
   // Keep the old clean-version marker without wiping user data.
@@ -291,19 +301,31 @@ export default function App() {
     return getStorageJson('compos_familles', []);
   });
 
+  const productsSaveTimeoutRef = useRef<number | null>(null);
+  const clientsSaveTimeoutRef = useRef<number | null>(null);
+  const salesSaveTimeoutRef = useRef<number | null>(null);
+
   // Save to Cache on states update (highly optimized 250ms debounced storage persistence)
   useEffect(() => {
-    const handler = setTimeout(() => {
+    productsSaveTimeoutRef.current = window.setTimeout(() => {
       if (persistentStorageReady) saveJson('compos_products', products);
+      productsSaveTimeoutRef.current = null;
     }, 250);
-    return () => clearTimeout(handler);
+    return () => {
+      if (productsSaveTimeoutRef.current !== null) window.clearTimeout(productsSaveTimeoutRef.current);
+      productsSaveTimeoutRef.current = null;
+    };
   }, [products, persistentStorageReady]);
 
   useEffect(() => {
-    const handler = setTimeout(() => {
+    clientsSaveTimeoutRef.current = window.setTimeout(() => {
       if (persistentStorageReady) saveJson('compos_clients', clients);
+      clientsSaveTimeoutRef.current = null;
     }, 250);
-    return () => clearTimeout(handler);
+    return () => {
+      if (clientsSaveTimeoutRef.current !== null) window.clearTimeout(clientsSaveTimeoutRef.current);
+      clientsSaveTimeoutRef.current = null;
+    };
   }, [clients, persistentStorageReady]);
 
   useEffect(() => {
@@ -321,10 +343,14 @@ export default function App() {
   }, [purchases, persistentStorageReady]);
 
   useEffect(() => {
-    const handler = setTimeout(() => {
+    salesSaveTimeoutRef.current = window.setTimeout(() => {
       if (persistentStorageReady) saveJson('compos_sales', sales);
+      salesSaveTimeoutRef.current = null;
     }, 250);
-    return () => clearTimeout(handler);
+    return () => {
+      if (salesSaveTimeoutRef.current !== null) window.clearTimeout(salesSaveTimeoutRef.current);
+      salesSaveTimeoutRef.current = null;
+    };
   }, [sales, persistentStorageReady]);
 
   useEffect(() => {
@@ -462,70 +488,6 @@ export default function App() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const getDeviceMemoryStats = () => {
-    const totalRAM = (navigator as any).deviceMemory || 8;
-    
-    // Estimate background OS memory based on physical RAM (higher RAM systems buffer more cache)
-    let systemBackgroundGB = 3.2; // default for 8GB
-    if (totalRAM >= 16) {
-      systemBackgroundGB = 5.8;
-    } else if (totalRAM >= 12) {
-      systemBackgroundGB = 4.8;
-    } else if (totalRAM <= 4) {
-      systemBackgroundGB = 1.6;
-    } else if (totalRAM <= 2) {
-      systemBackgroundGB = 0.8;
-    }
-
-    // Query actual browser tab memory allocation in real-time
-    const perf = (window.performance as any);
-    let tabUsedGB = 0.12; 
-    if (perf && perf.memory) {
-      tabUsedGB = perf.memory.usedJSHeapSize / (1024 * 1024 * 1024);
-    }
-
-    // Compute browser process shell overhead + other active tabs representation
-    const browserOverheadGB = tabUsedGB * 3.8 + 0.45;
-
-    // Calculate total memory used with dynamic fluctuation
-    let totalUsedGB = systemBackgroundGB + browserOverheadGB;
-    const fluctuationGB = Math.sin(Date.now() / 25000) * 0.12 + (Math.random() * 0.08);
-    totalUsedGB += fluctuationGB;
-
-    // Guard rails
-    totalUsedGB = Math.min(totalRAM - 0.4, Math.max(0.3, totalUsedGB));
-
-    const percent = Math.min(99, Math.max(5, Math.round((totalUsedGB / totalRAM) * 100)));
-    const used = parseFloat(totalUsedGB.toFixed(1));
-
-    return {
-      percent,
-      used,
-      total: totalRAM
-    };
-  };
-
-  const [memoryUsage, setMemoryUsage] = useState(getDeviceMemoryStats);
-
-  const [tabMemory, setTabMemory] = useState<number | null>(null);
-
-  useEffect(() => {
-    const updateMemory = () => {
-      setMemoryUsage(getDeviceMemoryStats());
-
-      // Query real JS Heap memory allocated to this tab
-      const perf = (window.performance as any);
-      if (perf && perf.memory) {
-        const usedMB = Math.round(perf.memory.usedJSHeapSize / (1024 * 1024));
-        setTabMemory(usedMB);
-      }
-    };
-
-    updateMemory();
-    const interval = setInterval(updateMemory, 3000);
-    return () => clearInterval(interval);
-  }, []);
-
   const [zoomMode, setZoomMode] = useState<'auto' | '100' | '90' | '80' | '75'>(() => {
     try {
       return (getStorageString('vbi_zoom_mode') as any) || 'auto';
@@ -561,6 +523,7 @@ export default function App() {
     } catch {}
     return 'dark';
   });
+  const themeTransitionTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (theme === 'dark') {
@@ -570,6 +533,15 @@ export default function App() {
     }
     if (persistentStorageReady) saveData('vbi_theme_mode', theme);
   }, [theme, persistentStorageReady]);
+
+  useEffect(() => {
+    return () => {
+      if (themeTransitionTimeoutRef.current !== null) {
+        window.clearTimeout(themeTransitionTimeoutRef.current);
+      }
+      document.documentElement.classList.remove('theme-transition-active');
+    };
+  }, []);
 
   // Premium, buttery-smooth transition between themes
   const toggleTheme = () => {
@@ -584,8 +556,12 @@ export default function App() {
       const root = document.documentElement;
       root.classList.add('theme-transition-active');
       setTheme(nextTheme);
-      setTimeout(() => {
+      if (themeTransitionTimeoutRef.current !== null) {
+        window.clearTimeout(themeTransitionTimeoutRef.current);
+      }
+      themeTransitionTimeoutRef.current = window.setTimeout(() => {
         root.classList.remove('theme-transition-active');
+        themeTransitionTimeoutRef.current = null;
       }, 300);
     }
   };
@@ -709,6 +685,9 @@ export default function App() {
   };
 
   const closeWindow = (id: ActiveWindowId) => {
+    if (id === 'sales') {
+      window.dispatchEvent(new Event('vbi:sales-window-closing'));
+    }
     setWindows(prev => prev.map(w => {
       if (w.id === id) {
         return { ...w, isOpen: false };
@@ -980,6 +959,23 @@ export default function App() {
     addLog(`Suppression Bon de Livraison N° ${id} (Client: ${target.client})`);
   };
 
+  const cancelPendingSalesReservationSaves = (includeFinalizedState: boolean) => {
+    if (productsSaveTimeoutRef.current !== null) {
+      window.clearTimeout(productsSaveTimeoutRef.current);
+      productsSaveTimeoutRef.current = null;
+    }
+    if (includeFinalizedState) {
+      if (clientsSaveTimeoutRef.current !== null) {
+        window.clearTimeout(clientsSaveTimeoutRef.current);
+        clientsSaveTimeoutRef.current = null;
+      }
+      if (salesSaveTimeoutRef.current !== null) {
+        window.clearTimeout(salesSaveTimeoutRef.current);
+        salesSaveTimeoutRef.current = null;
+      }
+    }
+  };
+
   const handleAddClient = (client: Client) => {
     setClients(prev => [...prev, client]);
   };
@@ -1096,6 +1092,7 @@ export default function App() {
         saveJson('compos_suppliers', INITIAL_SUPPLIERS),
         saveJson('compos_purchases', INITIAL_PURCHASES),
         saveJson('compos_sales', INITIAL_SALES),
+        saveJson('sales_open_drafts', []),
         saveJson('compos_config', DEFAULT_CONFIG),
         saveJson('compos_familles', []),
         saveJson('compos_supplier_payments', []),
@@ -1572,15 +1569,7 @@ export default function App() {
                 </span>
               </div>
 
-              <div className="flex flex-col">
-                <span className="text-blue-700 dark:text-blue-300 font-extrabold">Niveau d'utilisation mémoire :</span>
-                <span className="text-emerald-600 dark:text-green-400 font-bold">📊 {memoryUsage.percent}% ({memoryUsage.used} Go / {memoryUsage.total} Go)</span>
-                {tabMemory !== null && (
-                  <span className="text-sky-600 dark:text-sky-400 font-mono text-[9px] font-bold mt-0.5">
-                    ↳ Onglet navigateur (Réel) : {tabMemory} Mo
-                  </span>
-                )}
-              </div>
+              <MemoryUsageIndicator />
 
               <div className="flex flex-col">
                 <span className="text-blue-700 dark:text-blue-300 font-extrabold">Sauvegarde de base :</span>
@@ -1745,17 +1734,19 @@ export default function App() {
             onFocus={() => focusWindow('products')}
             scale={scale}
           >
-            <ProductListWindow
-              products={products}
-              onAddProduct={(p) => setProducts([...products, p])}
-              onEditProduct={(p) => setProducts(products.map(o => o.code === p.code ? p : o))}
-              onProductsUpdate={setProducts}
-              onDeleteProduct={(code) => setProducts(products.filter(p => p.code !== code))}
-              onClose={() => closeWindow('products')}
-              createdFamilles={createdFamilles}
-              onCreatedFamillesChange={setCreatedFamilles}
-              config={config}
-            />
+            <React.Suspense fallback={<WindowLoadingFallback />}>
+              <ProductListWindow
+                products={products}
+                onAddProduct={(p) => setProducts([...products, p])}
+                onEditProduct={(p) => setProducts(products.map(o => o.code === p.code ? p : o))}
+                onProductsUpdate={setProducts}
+                onDeleteProduct={(code) => setProducts(products.filter(p => p.code !== code))}
+                onClose={() => closeWindow('products')}
+                createdFamilles={createdFamilles}
+                onCreatedFamillesChange={setCreatedFamilles}
+                config={config}
+              />
+            </React.Suspense>
           </WindowFrame>
  
           {/* 3. Purchases Bill (Bon d'Achat) Window */}
@@ -1776,21 +1767,23 @@ export default function App() {
             onFocus={() => focusWindow('purchases')}
             scale={scale}
           >
-            <PurchaseVoucherWindow
-              isOpen={windows.find(w => w.id === 'purchases')?.isOpen || false}
-              products={products}
-              suppliers={suppliers}
-              purchases={purchases}
-              onAddPurchase={handleAddPurchaseVoucher}
-              onUpdatePurchase={handleUpdatePurchaseVoucher}
-              onDeletePurchase={handleDeletePurchaseVoucher}
-              onClose={() => closeWindow('purchases')}
-              onProductsUpdate={setProducts}
-              onAddSupplier={handleAddSupplier}
-              createdFamilles={createdFamilles}
-              onCreatedFamillesChange={setCreatedFamilles}
-              config={config}
-            />
+            <React.Suspense fallback={<WindowLoadingFallback />}>
+              <PurchaseVoucherWindow
+                isOpen={windows.find(w => w.id === 'purchases')?.isOpen || false}
+                products={products}
+                suppliers={suppliers}
+                purchases={purchases}
+                onAddPurchase={handleAddPurchaseVoucher}
+                onUpdatePurchase={handleUpdatePurchaseVoucher}
+                onDeletePurchase={handleDeletePurchaseVoucher}
+                onClose={() => closeWindow('purchases')}
+                onProductsUpdate={setProducts}
+                onAddSupplier={handleAddSupplier}
+                createdFamilles={createdFamilles}
+                onCreatedFamillesChange={setCreatedFamilles}
+                config={config}
+              />
+            </React.Suspense>
           </WindowFrame>
 
           {/* 4. Sales Delivery (Bon de Livraison/Vente) Window */}
@@ -1812,20 +1805,24 @@ export default function App() {
             scale={scale}
             overflowVisible={true}
           >
-            <SalesVoucherWindow
-              isOpen={windows.find(w => w.id === 'sales')?.isOpen || false}
-              products={products}
-              clients={clients}
-              sales={sales}
-              onAddSale={handleAddSalesVoucher}
-              onUpdateSale={handleUpdateSalesVoucher}
-              onDeleteSale={handleDeleteSalesVoucher}
-              onProductsUpdate={setProducts}
-              onClientsUpdate={setClients}
-              onClose={() => closeWindow('sales')}
-              config={config}
-              currentUser={currentUser}
-            />
+            <React.Suspense fallback={<WindowLoadingFallback />}>
+              <SalesVoucherWindow
+                isOpen={windows.find(w => w.id === 'sales')?.isOpen || false}
+                products={products}
+                clients={clients}
+                sales={sales}
+                onAddSale={handleAddSalesVoucher}
+                onUpdateSale={handleUpdateSalesVoucher}
+                onDeleteSale={handleDeleteSalesVoucher}
+                onProductsUpdate={setProducts}
+                onClientsUpdate={setClients}
+                onClose={() => closeWindow('sales')}
+                config={config}
+                currentUser={currentUser}
+                storageReady={persistentStorageReady}
+                onBeforeReservationPersist={cancelPendingSalesReservationSaves}
+              />
+            </React.Suspense>
           </WindowFrame>
 
           {/* 5. Clients Manager Window */}
@@ -1970,15 +1967,17 @@ export default function App() {
             onFocus={() => focusWindow('stats')}
             scale={scale}
           >
-            <StatsWindow
-              products={products}
-              sales={sales}
-              purchases={purchases}
-              clients={clients}
-              suppliers={suppliers}
-              initialMode={statsInitialMode}
-              onClose={() => closeWindow('stats')}
-            />
+            <React.Suspense fallback={<WindowLoadingFallback />}>
+              <StatsWindow
+                products={products}
+                sales={sales}
+                purchases={purchases}
+                clients={clients}
+                suppliers={suppliers}
+                initialMode={statsInitialMode}
+                onClose={() => closeWindow('stats')}
+              />
+            </React.Suspense>
           </WindowFrame>
 
           {/* 7. Cash Register & safe window */}

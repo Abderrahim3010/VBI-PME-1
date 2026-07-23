@@ -7,6 +7,7 @@ export const PERSISTENT_STORAGE_KEYS = [
   'compos_suppliers',
   'compos_purchases',
   'compos_sales',
+  'sales_open_drafts',
   'compos_config',
   'compos_familles',
   'compos_supplier_payments',
@@ -22,6 +23,22 @@ export const PERSISTENT_STORAGE_KEYS = [
 
 type PersistentKey = typeof PERSISTENT_STORAGE_KEYS[number];
 type DataMap = Record<string, string>;
+
+type SalesReservationState = {
+  products: unknown[];
+  openDrafts: unknown[];
+  sales?: unknown[];
+  clients?: unknown[];
+};
+
+type SerializedSalesReservationState = {
+  products: string;
+  openDrafts: string;
+  sales?: string;
+  clients?: string;
+};
+
+const SALES_RESERVATION_JOURNAL_KEY = 'sales_reservation_journal';
 
 export type DbOperationResult = {
   success: boolean;
@@ -51,6 +68,7 @@ declare global {
       getDatabaseInfo: () => Promise<DbOperationResult>;
       exportBackup: () => Promise<DbOperationResult>;
       restoreBackup: () => Promise<DbOperationResult>;
+      saveSalesReservationState: (payload: SerializedSalesReservationState) => Promise<boolean>;
     };
   }
 }
@@ -59,6 +77,28 @@ const MIGRATION_META_KEY = 'localStorage_migration_v1';
 
 function hasBridge() {
   return typeof window !== 'undefined' && !!window.vbiDb;
+}
+
+function recoverLocalSalesReservationJournal(): void {
+  try {
+    const raw = localStorage.getItem(SALES_RESERVATION_JOURNAL_KEY);
+    if (!raw) return;
+
+    const journal = JSON.parse(raw) as { values?: Record<string, unknown> };
+    const values = journal.values;
+    if (!values || typeof values !== 'object') return;
+
+    const allowedKeys = ['compos_products', 'sales_open_drafts', 'compos_sales', 'compos_clients'];
+    for (const key of allowedKeys) {
+      const value = values[key];
+      if (typeof value === 'string') {
+        localStorage.setItem(key, value);
+      }
+    }
+    localStorage.removeItem(SALES_RESERVATION_JOURNAL_KEY);
+  } catch (error) {
+    console.error('[localDb] Sales reservation journal recovery failed:', error instanceof Error ? error.message : String(error));
+  }
 }
 
 export function getStorageString(key: PersistentKey | string, fallback: string | null = null): string | null {
@@ -128,6 +168,45 @@ export async function saveJson(key: PersistentKey | string, value: unknown): Pro
   await saveData(key, safeStringify(value));
 }
 
+export async function saveSalesReservationState(state: SalesReservationState): Promise<void> {
+  const serialized: SerializedSalesReservationState = {
+    products: safeStringify(state.products),
+    openDrafts: safeStringify(state.openDrafts),
+    ...(state.sales ? { sales: safeStringify(state.sales) } : {}),
+    ...(state.clients ? { clients: safeStringify(state.clients) } : {})
+  };
+
+  const values: Record<string, string> = {
+    compos_products: serialized.products,
+    sales_open_drafts: serialized.openDrafts,
+    ...(serialized.sales ? { compos_sales: serialized.sales } : {}),
+    ...(serialized.clients ? { compos_clients: serialized.clients } : {})
+  };
+
+  if (hasBridge()) {
+    await window.vbiDb!.saveSalesReservationState(serialized);
+    try {
+      for (const [key, value] of Object.entries(values)) {
+        localStorage.setItem(key, value);
+      }
+    } catch (error) {
+      console.error('[localDb] Sales reservation localStorage mirror failed:', error instanceof Error ? error.message : String(error));
+    }
+    return;
+  }
+
+  const journal = safeStringify({
+    version: 1,
+    createdAt: new Date().toISOString(),
+    values
+  });
+  localStorage.setItem(SALES_RESERVATION_JOURNAL_KEY, journal);
+  for (const [key, value] of Object.entries(values)) {
+    localStorage.setItem(key, value);
+  }
+  localStorage.removeItem(SALES_RESERVATION_JOURNAL_KEY);
+}
+
 export async function getData(key: PersistentKey | string): Promise<string | null> {
   if (hasBridge()) {
     try {
@@ -147,6 +226,7 @@ export async function getData(key: PersistentKey | string): Promise<string | nul
 }
 
 export async function loadPersistentData(keys: readonly string[] = PERSISTENT_STORAGE_KEYS): Promise<DataMap> {
+  recoverLocalSalesReservationJournal();
   if (hasBridge()) {
     try {
       const data = await window.vbiDb!.getAllData([...keys]);
@@ -169,6 +249,7 @@ export async function loadPersistentData(keys: readonly string[] = PERSISTENT_ST
 }
 
 export async function migrateLocalStorageToSqlite(keys: readonly string[] = PERSISTENT_STORAGE_KEYS): Promise<void> {
+  recoverLocalSalesReservationJournal();
   if (!hasBridge()) return;
 
   try {

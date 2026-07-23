@@ -19,7 +19,7 @@ interface CaisseWindowProps {
   onClose: () => void;
 }
 
-export default function CaisseWindow({
+function CaisseWindow({
   sales,
   purchases,
   clientPayments,
@@ -365,3 +365,10 @@ export default function CaisseWindow({
     </div>
   );
 }
+
+export default React.memo(CaisseWindow, (prev, next) => {
+  return prev.sales === next.sales &&
+         prev.purchases === next.purchases &&
+         prev.clientPayments === next.clientPayments &&
+         prev.supplierPayments === next.supplierPayments;
+});

@@ -71,6 +71,32 @@ function saveData(key, value) {
   return true;
 }
 
+function saveSalesReservationState(payload) {
+  ensureInitialized();
+  const entries = [
+    ['compos_products', payload.products],
+    ['sales_open_drafts', payload.openDrafts]
+  ];
+  if (payload.sales !== undefined) entries.push(['compos_sales', payload.sales]);
+  if (payload.clients !== undefined) entries.push(['compos_clients', payload.clients]);
+
+  const statement = db.prepare(`
+    INSERT INTO app_data (key, value, updated_at)
+    VALUES (?, ?, ?)
+    ON CONFLICT(key) DO UPDATE SET
+      value = excluded.value,
+      updated_at = excluded.updated_at
+  `);
+  const saveTransaction = db.transaction((rows) => {
+    const updatedAt = nowIso();
+    for (const [key, value] of rows) {
+      statement.run(key, value, updatedAt);
+    }
+  });
+  saveTransaction(entries);
+  return true;
+}
+
 function deleteData(key) {
   ensureInitialized();
   db.prepare('DELETE FROM app_data WHERE key = ?').run(key);
@@ -191,6 +217,7 @@ module.exports = {
   getData,
   getAllData,
   saveData,
+  saveSalesReservationState,
   deleteData,
   getMeta,
   setMeta,

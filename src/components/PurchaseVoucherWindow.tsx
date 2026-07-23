@@ -390,10 +390,14 @@ function PurchaseVoucherWindow({
     if (isResizingTopHeight || isResizingBottomHeight || isResizingTopWidth || isResizingBottomWidth) {
       document.addEventListener('pointermove', handlePointerMove);
       document.addEventListener('pointerup', handlePointerUp);
+      document.addEventListener('pointercancel', handlePointerUp);
+      window.addEventListener('blur', handlePointerUp);
     }
     return () => {
       document.removeEventListener('pointermove', handlePointerMove);
       document.removeEventListener('pointerup', handlePointerUp);
+      document.removeEventListener('pointercancel', handlePointerUp);
+      window.removeEventListener('blur', handlePointerUp);
     };
   }, [isResizingTopHeight, isResizingBottomHeight, isResizingTopWidth, isResizingBottomWidth]);
 
@@ -968,17 +972,14 @@ function PurchaseVoucherWindow({
     showRetroConfirm(
       `Voulez-vous supprimer l'article ${itemToRemove.designation} de ce bon ?`,
       () => {
-        const updated = draftItems.filter((_, idx) => idx !== index);
-        setDraftItems(updated);
-        setSelectedDraftIdx(updated.length > 0 ? updated.length - 1 : -1);
+        setDraftItems(currentItems => {
+          const currentIndex = currentItems.findIndex(item => item.id === itemToRemove.id);
+          if (currentIndex < 0) return currentItems;
 
-        // When deleting articles from it, they should be deleted from catalogue,
-        // but not necessarily from sales (saisie ventes F2)
-        const codeToDelete = itemToRemove.code;
-        if (onProductsUpdate) {
-          onProductsUpdate(products.filter(p => p.code !== codeToDelete));
-        }
-        setLocalProducts(prev => prev.filter(p => p.code !== codeToDelete));
+          const updated = currentItems.filter((_, itemIndex) => itemIndex !== currentIndex);
+          setSelectedDraftIdx(updated.length > 0 ? updated.length - 1 : -1);
+          return updated;
+        });
       },
       "Suppression d'article"
     );
@@ -1711,23 +1712,6 @@ function PurchaseVoucherWindow({
                         `Voulez-vous vraiment supprimer le Brouillon de Bon d'Achat N° ${newVoucherId} ?`,
                         () => {
                           const idToDelete = newVoucherId;
-                          const draftToDel = openDrafts.find(d => String(d.id) === String(idToDelete));
-                          if (draftToDel && onProductsUpdate) {
-                            const otherPurchasesCodes = new Set(purchases.flatMap(p => p.items.map(i => String(i.code))));
-                            const otherDraftsCodes = new Set(
-                              openDrafts
-                                .filter(d => String(d.id) !== String(idToDelete))
-                                .flatMap(d => (d.draftItems || []).map((i: any) => String(i.code)))
-                            );
-                            const cleanedProducts = products.filter(p => {
-                              const inThisDraft = (draftToDel.draftItems || []).some((i: any) => String(i.code) === String(p.code));
-                              if (inThisDraft) {
-                                return otherPurchasesCodes.has(String(p.code)) || otherDraftsCodes.has(String(p.code));
-                              }
-                              return true;
-                            });
-                            onProductsUpdate(cleanedProducts);
-                          }
                           setOpenDrafts(prev => prev.filter(d => String(d.id) !== String(idToDelete)));
                           setMode('view');
                           setEditingVoucherId(null);

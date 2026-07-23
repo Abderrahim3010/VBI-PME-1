@@ -78,9 +78,19 @@ function SituationClientsWindow({
   // Interactive Resizers split percentage (starts at 50% / 50% split)
   const [splitPercentage, setSplitPercentage] = useState(50);
   const splitContainerRef = useRef<HTMLDivElement>(null);
+  const splitResizeCleanupRef = useRef<(() => void) | null>(null);
+  const refreshTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      splitResizeCleanupRef.current?.();
+      if (refreshTimeoutRef.current !== null) window.clearTimeout(refreshTimeoutRef.current);
+    };
+  }, []);
 
   const startResizeSplit = (e: React.PointerEvent<HTMLDivElement>) => {
     e.preventDefault();
+    splitResizeCleanupRef.current?.();
     const container = splitContainerRef.current;
     if (!container) return;
 
@@ -98,16 +108,26 @@ function SituationClientsWindow({
       setSplitPercentage(Math.max(15, Math.min(85, percentage)));
     };
 
-    const onPointerUp = (upEvent: PointerEvent) => {
+    function removeResizeListeners() {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+      window.removeEventListener('blur', onPointerUp);
+      splitResizeCleanupRef.current = null;
+    }
+
+    function onPointerUp() {
       try {
         (e.target as HTMLElement).releasePointerCapture(e.pointerId);
       } catch (err) {}
-      window.removeEventListener('pointermove', onPointerMove);
-      window.removeEventListener('pointerup', onPointerUp);
-    };
+      removeResizeListeners();
+    }
 
     window.addEventListener('pointermove', onPointerMove);
     window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
+    window.addEventListener('blur', onPointerUp);
+    splitResizeCleanupRef.current = removeResizeListeners;
   };
 
   // Sync default client selection if none is loaded
@@ -462,8 +482,10 @@ function SituationClientsWindow({
     setSearchDate('');
     setSearchRemark('');
     setSelectedRowId(null);
-    setTimeout(() => {
+    if (refreshTimeoutRef.current !== null) window.clearTimeout(refreshTimeoutRef.current);
+    refreshTimeoutRef.current = window.setTimeout(() => {
       setIsRefreshing(false);
+      refreshTimeoutRef.current = null;
     }, 600);
   };
 

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { Product, SalesVoucher, PurchaseVoucher, Client, Supplier } from '../types';
 import { TrendingUp, TrendingDown, Layers, AlertCircle, Sparkles, Terminal, Trophy, Calendar, ShoppingBag, FileText, BarChart3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -14,7 +14,7 @@ interface StatsWindowProps {
   onClose: () => void;
 }
 
-export default function StatsWindow({
+function StatsWindow({
   products,
   sales,
   purchases,
@@ -89,6 +89,15 @@ export default function StatsWindow({
   const [selectedLogId, setSelectedLogId] = useState<string>('log-2');
   const [isRunningAudit, setIsRunningAudit] = useState(false);
   const [auditProgress, setAuditProgress] = useState(0);
+  const auditIntervalRef = useRef<number | null>(null);
+  const auditCompletionTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (auditIntervalRef.current !== null) window.clearInterval(auditIntervalRef.current);
+      if (auditCompletionTimeoutRef.current !== null) window.clearTimeout(auditCompletionTimeoutRef.current);
+    };
+  }, []);
 
   // Helper date parsing functions
   const parseVoucherDate = (dateStr: string) => {
@@ -291,14 +300,19 @@ export default function StatsWindow({
   }, [filteredSales]);
 
   const runLiveAudit = () => {
+    if (auditIntervalRef.current !== null) window.clearInterval(auditIntervalRef.current);
+    if (auditCompletionTimeoutRef.current !== null) window.clearTimeout(auditCompletionTimeoutRef.current);
     setIsRunningAudit(true);
     setAuditProgress(0);
 
-    const interval = setInterval(() => {
+    auditIntervalRef.current = window.setInterval(() => {
       setAuditProgress(prev => {
         if (prev >= 100) {
-          clearInterval(interval);
-          setTimeout(() => {
+          if (auditIntervalRef.current !== null) {
+            window.clearInterval(auditIntervalRef.current);
+            auditIntervalRef.current = null;
+          }
+          auditCompletionTimeoutRef.current = window.setTimeout(() => {
             const d = new Date();
             const dateStr = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
             const timeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
@@ -319,6 +333,7 @@ export default function StatsWindow({
             ]);
             setSelectedLogId(newLogId);
             setIsRunningAudit(false);
+            auditCompletionTimeoutRef.current = null;
           }, 450);
           return 100;
         }
@@ -837,3 +852,12 @@ export default function StatsWindow({
     </div>
   );
 }
+
+export default React.memo(StatsWindow, (prev, next) => {
+  return prev.products === next.products &&
+         prev.sales === next.sales &&
+         prev.purchases === next.purchases &&
+         prev.clients === next.clients &&
+         prev.suppliers === next.suppliers &&
+         prev.initialMode === next.initialMode;
+});

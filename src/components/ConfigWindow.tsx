@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { 
   Settings, Save, LogOut, Upload, Trash2, Image, Sliders, 
   CheckSquare, Square, Users, Truck, FileText, Check, HelpCircle, 
@@ -13,7 +13,7 @@ interface ConfigWindowProps {
   onResetDemo?: () => void;
 }
 
-export default function ConfigWindow({
+function ConfigWindow({
   config,
   onUpdateConfig,
   onClose,
@@ -21,6 +21,15 @@ export default function ConfigWindow({
 }: ConfigWindowProps) {
   const [activeTab, setActiveTab] = useState<'delivery' | 'invoice' | 'affichage'>('delivery');
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const saveSuccessTimeoutRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (saveSuccessTimeoutRef.current !== null) {
+        window.clearTimeout(saveSuccessTimeoutRef.current);
+      }
+    };
+  }, []);
   
   // Activation modal states
   const [isActivationOpen, setIsActivationOpen] = useState(false);
@@ -159,7 +168,13 @@ export default function ConfigWindow({
     };
     onUpdateConfig(updatedConfig);
     setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 3000);
+    if (saveSuccessTimeoutRef.current !== null) {
+      window.clearTimeout(saveSuccessTimeoutRef.current);
+    }
+    saveSuccessTimeoutRef.current = window.setTimeout(() => {
+      setSaveSuccess(false);
+      saveSuccessTimeoutRef.current = null;
+    }, 3000);
   };
 
   const handleActivationSubmit = (e: React.FormEvent) => {
@@ -1092,3 +1107,5 @@ export default function ConfigWindow({
     </div>
   );
 }
+
+export default React.memo(ConfigWindow, (prev, next) => prev.config === next.config);

@@ -11,7 +11,8 @@ const {
   getDatabaseInfo,
   exportBackup,
   restoreBackup,
-  getDefaultBackupName
+  getDefaultBackupName,
+  saveSalesReservationState
 } = require('./db/database.cjs');
 
 app.setName('VBI PME');
@@ -26,6 +27,32 @@ app.commandLine.appendSwitch('disable-background-timer-throttled-processes');
 let mainWindow;
 
 function registerDbIpcHandlers() {
+  ipcMain.handle('vbi-db:save-sales-reservation-state', (_event, payload) => {
+    if (!payload || typeof payload !== 'object') {
+      throw new Error('Invalid sales reservation payload');
+    }
+
+    const required = ['products', 'openDrafts'];
+    const optional = ['sales', 'clients'];
+    for (const key of required) {
+      if (typeof payload[key] !== 'string') {
+        throw new Error(`Invalid sales reservation ${key} payload`);
+      }
+    }
+    for (const key of optional) {
+      if (payload[key] !== undefined && typeof payload[key] !== 'string') {
+        throw new Error(`Invalid sales reservation ${key} payload`);
+      }
+    }
+
+    for (const key of [...required, ...optional]) {
+      if (payload[key] !== undefined && !Array.isArray(JSON.parse(payload[key]))) {
+        throw new Error(`Sales reservation ${key} must be a JSON array`);
+      }
+    }
+    return saveSalesReservationState(payload);
+  });
+
   ipcMain.handle('vbi-db:get-all-data', (_event, keys) => {
     return getAllData(keys);
   });

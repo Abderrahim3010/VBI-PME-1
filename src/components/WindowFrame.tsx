@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Minus, Square, X, Minimize2, Move, Layers } from 'lucide-react';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
+import { X } from 'lucide-react';
 
 interface WindowFrameProps {
   id: string;
@@ -51,6 +51,7 @@ export default function WindowFrame({
 }: WindowFrameProps) {
   const [position, setPosition] = useState({ x: initialX, y: initialY });
   const windowRef = useRef<HTMLDivElement>(null);
+  const dragCleanupRef = useRef<(() => void) | null>(null);
 
   // High performance sizing state
   const [size, setSize] = useState(() => {
@@ -74,7 +75,7 @@ export default function WindowFrame({
   }, [position]);
 
   // Dynamically compute and fit size/position to the active stage bounds
-  const fitToScreen = () => {
+  const fitToScreen = useCallback(() => {
     const s = scale || 1;
     const stageW = Math.max(500, (window.innerWidth / s) - 260); // 260px is modern M3 sidebar width
     const stageH = Math.max(350, (window.innerHeight - 100) / s);
@@ -116,7 +117,7 @@ export default function WindowFrame({
     const fittedY = Math.max(8, Math.min(targetY, stageH - finalH - 8));
 
     setPosition({ x: fittedX, y: fittedY });
-  };
+  }, [height, initialX, initialY, scale, width]);
 
   // Run on mount, layout props update, or screen size/scale resize
   useEffect(() => {
@@ -125,7 +126,13 @@ export default function WindowFrame({
     return () => {
       window.removeEventListener('resize', fitToScreen);
     };
-  }, [width, height, initialX, initialY, scale]);
+  }, [fitToScreen]);
+
+  useEffect(() => {
+    return () => {
+      dragCleanupRef.current?.();
+    };
+  }, []);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     // Only drag with left click on the title bar main area and when not maximized
@@ -136,6 +143,7 @@ export default function WindowFrame({
     if (target.closest('button')) return;
 
     onFocus();
+    dragCleanupRef.current?.();
 
     const startX = e.clientX;
     const startY = e.clientY;
@@ -163,17 +171,27 @@ export default function WindowFrame({
       positionRef.current = { x: currentX, y: currentY };
     };
 
-    const handlePointerUp = () => {
+    function removeDragListeners() {
       document.removeEventListener('pointermove', handlePointerMove);
       document.removeEventListener('pointerup', handlePointerUp);
+      document.removeEventListener('pointercancel', handlePointerUp);
+      window.removeEventListener('blur', handlePointerUp);
+      dragCleanupRef.current = null;
+    }
+
+    function handlePointerUp() {
+      removeDragListeners();
       
       // Update React state at the end of the drag session
       setPosition({ x: currentX, y: currentY });
       hasManuallyDraggedRef.current = true;
-    };
+    }
 
     document.addEventListener('pointermove', handlePointerMove);
     document.addEventListener('pointerup', handlePointerUp);
+    document.addEventListener('pointercancel', handlePointerUp);
+    window.addEventListener('blur', handlePointerUp);
+    dragCleanupRef.current = removeDragListeners;
     
     e.preventDefault();
   };

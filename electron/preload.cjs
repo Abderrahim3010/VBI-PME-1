@@ -9,5 +9,6 @@ contextBridge.exposeInMainWorld('vbiDb', {
   setMeta: (key, value) => ipcRenderer.invoke('vbi-db:set-meta', key, value),
   getDatabaseInfo: () => ipcRenderer.invoke('vbi-db:get-database-info'),
   exportBackup: () => ipcRenderer.invoke('vbi-db:export-backup'),
-  restoreBackup: () => ipcRenderer.invoke('vbi-db:restore-backup')
+  restoreBackup: () => ipcRenderer.invoke('vbi-db:restore-backup'),
+  saveSalesReservationState: (payload) => ipcRenderer.invoke('vbi-db:save-sales-reservation-state', payload)
 });

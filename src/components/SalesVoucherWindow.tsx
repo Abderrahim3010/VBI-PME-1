@@ -1,28 +1,23 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Product, Client, SalesVoucher, VoucherItem, User } from '../types';
 import { useResizableColumns } from '../hooks/useResizableColumns';
+import {
+  applyReservationTransition,
+  calculateDraftReservations,
+  createSalesDraftId,
+  persistSalesReservationMutation,
+  readPersistedSalesDrafts,
+  releaseDraftReservations,
+  type SalesOpenDraft
+} from '../services/salesDraftReservations';
 import { 
   Edit, Edit3, RefreshCw, BarChart3, Printer, Plug, Search, Plus, Minus, Trash2, 
   Package, Coins, DollarSign, User as UserIcon, Users, AlertTriangle, Lightbulb, 
   Folder, FileText, MessageSquare, HelpCircle, X, Check, Eye
 } from 'lucide-react';
 
-interface OpenVoucher {
-  id: string; // The draft ID or edited ID
-  isEditingExisting: boolean;
-  date: string;
-  time: string;
-  clientName: string;
-  type: 'VENTE' | 'RETOUR';
-  vendeurName: string;
-  observations: string;
-  versement: number;
-  remise: number;
-  tvaRate: number;
-  draftItems: VoucherItem[];
-  paymentMode?: 'ESPECE' | 'A_TERME';
-}
+type OpenVoucher = SalesOpenDraft;
 
 interface SalesVoucherWindowProps {
   products: Product[];
@@ -37,6 +32,8 @@ interface SalesVoucherWindowProps {
   isOpen?: boolean;
   config?: any;
   currentUser?: User | null;
+  storageReady?: boolean;
+  onBeforeReservationPersist?: (includeFinalizedState: boolean) => void;
 }
 
 function SalesVoucherWindow({
@@ -51,7 +48,9 @@ function SalesVoucherWindow({
   onClose,
   isOpen = false,
   config,
-  currentUser
+  currentUser,
+  storageReady = true,
+  onBeforeReservationPersist
 }: SalesVoucherWindowProps) {
   // Selection/navigation between previous invoices
   const [selectedSaleId, setSelectedSaleId] = useState<string>(() => {
@@ -64,6 +63,10 @@ function SalesVoucherWindow({
   // List of currently open drafts/bons (can have multiple active drafts open at once)
   const [openVouchers, setOpenVouchers] = useState<OpenVoucher[]>([]);
   const [activeDraftId, setActiveDraftId] = useState<string | null>(null);
+  const openVouchersRef = useRef<OpenVoucher[]>([]);
+  const productsRef = useRef<Product[]>(products);
+  const reservationOperationPendingRef = useRef(false);
+  const draftsHydratedRef = useRef(false);
 
   // Local replicas of products to calculate stock changes in draft / edit mode correctly
   const [localProducts, setLocalProducts] = useState<Product[]>(products);
@@ -71,34 +74,9 @@ function SalesVoucherWindow({
 
   // Synchronize local products with props dynamically
   useEffect(() => {
+    productsRef.current = products;
     setLocalProducts(products);
   }, [products]);
-
-  // When the window is closed (isOpen goes from true to false), restore all draft stocks and clear drafts
-  useEffect(() => {
-    if (!isOpen) {
-      // Gather all items to restore and subtract
-      const allRestore: VoucherItem[] = [];
-      const allSubtract: VoucherItem[] = [];
-      
-      openVouchers.forEach(v => {
-        allRestore.push(...v.draftItems);
-        if (v.isEditingExisting) {
-          const origSale = sales.find(s => String(s.id) === String(v.id));
-          if (origSale) {
-            allSubtract.push(...origSale.items);
-          }
-        }
-      });
-      
-      if (allRestore.length > 0 || allSubtract.length > 0) {
-        restoreVoucherItemsToStock(allRestore, allSubtract);
-      }
-      setOpenVouchers([]);
-      setActiveDraftId(null);
-      setDraftItems([]);
-    }
-  }, [isOpen]);
 
   // Mode de paiement modal states
   const [isPaymentDialogOpen, setIsPaymentDialogOpen] = useState(false);
@@ -231,46 +209,135 @@ function SalesVoucherWindow({
     });
   };
 
-  const adjustProductStockInParent = (code: string, change: number) => {
-    const updatedProducts = products.map(p => {
-      if (p.code === code) {
-        const finalStock = p.stock + change;
-        return {
-          ...p,
-          stock: finalStock,
-          stockColis: Math.ceil(finalStock / 12)
-        };
-      }
-      return p;
-    });
-    onProductsUpdate(updatedProducts);
-    setLocalProducts(updatedProducts);
+  const publishReservationState = (nextProducts: Product[], nextDrafts: OpenVoucher[]) => {
+    productsRef.current = nextProducts;
+    openVouchersRef.current = nextDrafts;
+    setLocalProducts(nextProducts);
+    setOpenVouchers(nextDrafts);
+    onProductsUpdate(nextProducts);
   };
 
-  const restoreVoucherItemsToStock = (items: VoucherItem[], originalItemsToSubtract?: VoucherItem[]) => {
-    if (items.length === 0 && (!originalItemsToSubtract || originalItemsToSubtract.length === 0)) return;
-    const updatedProducts = products.map(p => {
-      let finalStock = p.stock;
-      
-      const matchingItemsToRestore = items.filter(i => i.code === p.code);
-      if (matchingItemsToRestore.length > 0) {
-        finalStock += matchingItemsToRestore.reduce((sum, item) => sum + item.qty, 0);
-      }
-      
-      if (originalItemsToSubtract) {
-        const matchingItemsToSubtract = originalItemsToSubtract.filter(i => i.code === p.code);
-        if (matchingItemsToSubtract.length > 0) {
-          finalStock -= matchingItemsToSubtract.reduce((sum, item) => sum + item.qty, 0);
-        }
-      }
-      return {
-        ...p,
-        stock: finalStock,
-        stockColis: Math.ceil(finalStock / 12)
-      };
-    });
-    onProductsUpdate(updatedProducts);
-    setLocalProducts(updatedProducts);
+  const persistReservationState = (
+    nextProducts: Product[],
+    nextDrafts: OpenVoucher[],
+    finalized?: { sales: SalesVoucher[]; clients: Client[] }
+  ) => {
+    onBeforeReservationPersist?.(Boolean(finalized));
+    return persistSalesReservationMutation(nextProducts, nextDrafts, finalized);
+  };
+
+  const withCurrentFormState = (draft: OpenVoucher, nextItems: VoucherItem[]): OpenVoucher => ({
+    ...draft,
+    date: newDate,
+    time: newTime,
+    clientName: newClientName,
+    type: newType,
+    vendeurName,
+    observations,
+    versement,
+    remise,
+    tvaRate,
+    draftItems: nextItems,
+    reservations: calculateDraftReservations(nextItems, draft.originalItems),
+    paymentMode,
+    updatedAt: new Date().toISOString()
+  });
+
+  const updateActiveDraftItems = async (nextItems: VoucherItem[]): Promise<boolean> => {
+    if (!activeDraftId || reservationOperationPendingRef.current) return false;
+    const currentDraft = openVouchersRef.current.find(draft => draft.draftId === activeDraftId);
+    if (!currentDraft || currentDraft.reservationStatus !== 'reserved') return false;
+
+    reservationOperationPendingRef.current = true;
+    try {
+      const nextDraft = withCurrentFormState(currentDraft, nextItems);
+      const nextDrafts = openVouchersRef.current.map(draft =>
+        draft.draftId === activeDraftId ? nextDraft : draft
+      );
+      const nextProducts = applyReservationTransition(
+        productsRef.current,
+        currentDraft.reservations,
+        nextDraft.reservations
+      );
+      await persistReservationState(nextProducts, nextDrafts);
+      publishReservationState(nextProducts, nextDrafts);
+      setDraftItems(nextItems);
+      return true;
+    } catch (error) {
+      showRetroAlert(
+        `La réservation de stock n'a pas pu être enregistrée. Aucune modification n'a été appliquée.\n\n${error instanceof Error ? error.message : String(error)}`,
+        'Réservation de stock'
+      );
+      return false;
+    } finally {
+      reservationOperationPendingRef.current = false;
+    }
+  };
+
+  const waitForReservationOperation = async () => {
+    while (reservationOperationPendingRef.current) {
+      await new Promise<void>(resolve => window.setTimeout(resolve, 10));
+    }
+  };
+
+  const persistCurrentDraftMetadata = async () => {
+    await waitForReservationOperation();
+    reservationOperationPendingRef.current = true;
+    try {
+      await persistReservationState(productsRef.current, openVouchersRef.current);
+    } catch (error) {
+      console.error(
+        '[SalesVoucherWindow] Draft metadata persistence failed:',
+        error instanceof Error ? error.message : String(error)
+      );
+    } finally {
+      reservationOperationPendingRef.current = false;
+    }
+  };
+
+  const releaseDraft = async (draftId: string): Promise<boolean> => {
+    await waitForReservationOperation();
+    const draft = openVouchersRef.current.find(item => item.draftId === draftId);
+    if (!draft) return true;
+
+    reservationOperationPendingRef.current = true;
+    try {
+      const nextProducts = applyReservationTransition(productsRef.current, draft.reservations, []);
+      const nextDrafts = openVouchersRef.current.filter(item => item.draftId !== draftId);
+      await persistReservationState(nextProducts, nextDrafts);
+      publishReservationState(nextProducts, nextDrafts);
+      return true;
+    } catch (error) {
+      showRetroAlert(
+        `Le brouillon n'a pas pu être annulé en toute sécurité. Il reste ouvert et son stock reste réservé.\n\n${error instanceof Error ? error.message : String(error)}`,
+        'Annulation du brouillon'
+      );
+      return false;
+    } finally {
+      reservationOperationPendingRef.current = false;
+    }
+  };
+
+  const releaseAllDrafts = async (): Promise<boolean> => {
+    await waitForReservationOperation();
+    const draftsToRelease = openVouchersRef.current;
+    if (draftsToRelease.length === 0) return true;
+
+    reservationOperationPendingRef.current = true;
+    try {
+      const nextProducts = releaseDraftReservations(productsRef.current, draftsToRelease);
+      await persistReservationState(nextProducts, []);
+      publishReservationState(nextProducts, []);
+      return true;
+    } catch (error) {
+      showRetroAlert(
+        `Les brouillons n'ont pas pu être annulés en toute sécurité. Leur stock reste réservé.\n\n${error instanceof Error ? error.message : String(error)}`,
+        'Annulation des brouillons'
+      );
+      return false;
+    } finally {
+      reservationOperationPendingRef.current = false;
+    }
   };
 
   const handleSelectClient = (clientName: string) => {
@@ -333,10 +400,18 @@ function SalesVoucherWindow({
     prixRevient: 110,
     stock: 75
   });
+  const columnResizeCleanupRef = React.useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    return () => {
+      columnResizeCleanupRef.current?.();
+    };
+  }, []);
 
   const handleResizeStart = (e: React.PointerEvent<HTMLDivElement>, colName: keyof typeof colWidths) => {
     e.preventDefault();
     e.stopPropagation();
+    columnResizeCleanupRef.current?.();
     const startX = e.clientX;
     const startWidth = colWidths[colName];
 
@@ -348,13 +423,23 @@ function SalesVoucherWindow({
       }));
     };
 
-    const handlePointerUp = () => {
+    function removeResizeListeners() {
       document.removeEventListener('pointermove', handlePointerMove);
       document.removeEventListener('pointerup', handlePointerUp);
-    };
+      document.removeEventListener('pointercancel', handlePointerUp);
+      window.removeEventListener('blur', handlePointerUp);
+      columnResizeCleanupRef.current = null;
+    }
+
+    function handlePointerUp() {
+      removeResizeListeners();
+    }
 
     document.addEventListener('pointermove', handlePointerMove);
     document.addEventListener('pointerup', handlePointerUp);
+    document.addEventListener('pointercancel', handlePointerUp);
+    window.addEventListener('blur', handlePointerUp);
+    columnResizeCleanupRef.current = removeResizeListeners;
   };
 
   // Table column widths for active sales voucher items
@@ -449,7 +534,7 @@ function SalesVoucherWindow({
         setSelectedItemIndex(-1);
         setViewingItemCode('');
         
-        setActiveDraftId(draft.id);
+        setActiveDraftId(draft.draftId);
         setMode('create');
       } else {
         // Closed sale
@@ -478,8 +563,9 @@ function SalesVoucherWindow({
   // Keep active draft synchronized inside the openVouchers array
   useEffect(() => {
     if (activeDraftId) {
-      setOpenVouchers(prev => prev.map(v => {
-        if (v.id === activeDraftId) {
+      setOpenVouchers(prev => {
+        const nextDrafts = prev.map(v => {
+        if (v.draftId === activeDraftId) {
           return {
             ...v,
             date: newDate,
@@ -492,11 +578,15 @@ function SalesVoucherWindow({
             remise: remise,
             tvaRate: tvaRate,
             draftItems: draftItems,
-            paymentMode: paymentMode
+            paymentMode: paymentMode,
+            updatedAt: new Date().toISOString()
           };
         }
         return v;
-      }));
+        });
+        openVouchersRef.current = nextDrafts;
+        return nextDrafts;
+      });
     }
   }, [
     activeDraftId,
@@ -512,6 +602,14 @@ function SalesVoucherWindow({
     draftItems,
     paymentMode
   ]);
+
+  useEffect(() => {
+    if (!draftsHydratedRef.current) return;
+    const handler = window.setTimeout(() => {
+      void persistCurrentDraftMetadata();
+    }, 150);
+    return () => window.clearTimeout(handler);
+  }, [openVouchers]);
 
   const loadDraft = (draft: OpenVoucher) => {
     setSelectedSaleId(draft.id);
@@ -535,24 +633,88 @@ function SalesVoucherWindow({
     setSelectedItemIndex(-1);
     setViewingItemCode('');
     
-    setActiveDraftId(draft.id);
+    setActiveDraftId(draft.draftId);
     setMode('create');
   };
 
-  const removeDraft = (id: string) => {
-    const draftToRestore = openVouchers.find(v => String(v.id) === String(id));
-    if (draftToRestore) {
-      restoreVoucherItemsToStock(draftToRestore.draftItems);
-    }
-    setOpenVouchers(prev => prev.filter(v => String(v.id) !== String(id)));
-    if (String(activeDraftId) === String(id)) {
+  const removeDraft = async (draftId: string) => {
+    if (!await releaseDraft(draftId)) return;
+    if (activeDraftId === draftId) {
       setActiveDraftId(null);
+      setDraftItems([]);
       setMode('view');
-      if (sales.length > 0) {
-        setSelectedSaleId(sales[sales.length - 1].id);
-      }
+      if (sales.length > 0) setSelectedSaleId(sales[sales.length - 1].id);
     }
   };
+
+  useEffect(() => {
+    if (!storageReady || draftsHydratedRef.current) return;
+    draftsHydratedRef.current = true;
+
+    const parsed = readPersistedSalesDrafts();
+    const uniqueDrafts = Array.from(
+      new Map(parsed.validDrafts.map(draft => [draft.draftId, draft])).values()
+    );
+
+    if (parsed.recoverableInvalidReservations.length > 0) {
+      const recoveredProducts = applyReservationTransition(
+        productsRef.current,
+        parsed.recoverableInvalidReservations,
+        []
+      );
+      onBeforeReservationPersist?.(false);
+      void persistSalesReservationMutation(recoveredProducts, uniqueDrafts)
+        .then(() => {
+          publishReservationState(recoveredProducts, uniqueDrafts);
+          if (uniqueDrafts.length > 0) loadDraft(uniqueDrafts[uniqueDrafts.length - 1]);
+          showRetroAlert(
+            'Un brouillon de vente endommagé a été annulé et son stock réservé a été restauré.',
+            'Récupération des brouillons'
+          );
+        })
+        .catch(error => {
+          showRetroAlert(
+            `Un brouillon endommagé a été détecté, mais sa restauration a échoué.\n\n${error instanceof Error ? error.message : String(error)}`,
+            'Récupération des brouillons'
+          );
+        });
+      return;
+    }
+
+    openVouchersRef.current = uniqueDrafts;
+    setOpenVouchers(uniqueDrafts);
+    if (uniqueDrafts.length > 0) loadDraft(uniqueDrafts[uniqueDrafts.length - 1]);
+    if (parsed.hadInvalidDrafts) {
+      onBeforeReservationPersist?.(false);
+      void persistSalesReservationMutation(productsRef.current, uniqueDrafts);
+    }
+  }, [storageReady]);
+
+  useEffect(() => {
+    if (isOpen || !draftsHydratedRef.current) return;
+    void releaseAllDrafts().then(released => {
+      if (!released) return;
+      setActiveDraftId(null);
+      setEditingVoucherId(null);
+      setDraftItems([]);
+      setMode('view');
+    });
+  }, [isOpen]);
+
+  useEffect(() => {
+    const handleSalesWindowClosing = () => {
+      if (!draftsHydratedRef.current) return;
+      void releaseAllDrafts().then(released => {
+        if (!released) return;
+        setActiveDraftId(null);
+        setEditingVoucherId(null);
+        setDraftItems([]);
+        setMode('view');
+      });
+    };
+    window.addEventListener('vbi:sales-window-closing', handleSalesWindowClosing);
+    return () => window.removeEventListener('vbi:sales-window-closing', handleSalesWindowClosing);
+  }, []);
 
   // Handle invoice index traversal using pager buttons
   const handleFirst = () => {
@@ -740,6 +902,10 @@ function SalesVoucherWindow({
   }, [currentItems, viewingItemCode, selectedItemIndex]);
 
   const startCreateMode = () => {
+    if (!storageReady || !draftsHydratedRef.current) {
+      showRetroAlert("Le stockage des brouillons est encore en cours de chargement. Veuillez réessayer.", "Saisie ventes");
+      return;
+    }
     if (!config?.isActivated && sales.length >= 1) {
       showRetroAlert("⚠️ Limite Démo : Vous ne pouvez pas créer plus de 1 bon de vente en mode évaluation (démo). Veuillez activer l'application avec un code d'activation dans les configurations.", "Saisie ventes");
       return;
@@ -761,6 +927,7 @@ function SalesVoucherWindow({
     const formattedTime = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
 
     const newDraft: OpenVoucher = {
+      draftId: createSalesDraftId(),
       id: nextNum,
       isEditingExisting: false,
       date: formattedDate,
@@ -773,10 +940,17 @@ function SalesVoucherWindow({
       remise: 0,
       tvaRate: 0,
       draftItems: [],
+      originalItems: [],
+      reservations: [],
+      reservationStatus: 'reserved',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
       paymentMode: paymentMode
     };
 
-    setOpenVouchers(prev => [...prev, newDraft]);
+    const nextDrafts = [...openVouchersRef.current, newDraft];
+    openVouchersRef.current = nextDrafts;
+    setOpenVouchers(nextDrafts);
     loadDraft(newDraft);
   };
 
@@ -832,6 +1006,7 @@ function SalesVoucherWindow({
         setLocalProducts(products);
 
         const newDraft: OpenVoucher = {
+          draftId: createSalesDraftId(),
           id: selectedSale.id,
           isEditingExisting: true,
           date: selectedSale.date,
@@ -843,11 +1018,18 @@ function SalesVoucherWindow({
           versement: selectedSale.versement || 0,
           remise: selectedSale.remise || 0,
           tvaRate: selectedSale.tva ? 19 : 0,
-          draftItems: [...selectedSale.items],
+          draftItems: selectedSale.items.map(item => ({ ...item })),
+          originalItems: selectedSale.items.map(item => ({ ...item })),
+          reservations: [],
+          reservationStatus: 'reserved',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
           paymentMode: selectedSale.paymentMode as 'ESPECE' | 'A_TERME'
         };
 
-        setOpenVouchers(prev => [...prev, newDraft]);
+        const nextDrafts = [...openVouchersRef.current, newDraft];
+        openVouchersRef.current = nextDrafts;
+        setOpenVouchers(nextDrafts);
         loadDraft(newDraft);
       },
       "Messages"
@@ -874,7 +1056,7 @@ function SalesVoucherWindow({
     setIsPaymentDialogOpen(true);
   };
 
-  const handleConfirmPaymentAndSaveVoucher = (customVersement?: number | unknown) => {
+  const handleConfirmPaymentAndSaveVoucher = async (customVersement?: number | unknown) => {
     const finalVersement = (typeof customVersement === 'number')
       ? customVersement
       : (paymentMode === 'A_TERME' ? 0 : Number(paymentVersement) || 0);
@@ -905,10 +1087,6 @@ function SalesVoucherWindow({
       paymentMode: paymentMode
     };
 
-    // The parent stock is already fully decremented in real-time as items are added/edited in the draft.
-    // Therefore, we do not subtract the draft items again when finalizing the sales voucher.
-    const finalizedProducts = localProducts;
-
     // Calculate and update client balance
     const updatedClients = clients.map(c => {
       if (c.name === savedVoucher.client) {
@@ -925,12 +1103,42 @@ function SalesVoucherWindow({
       return;
     }
 
+    if (!activeDraftId) return;
+    await waitForReservationOperation();
+    const activeDraft = openVouchersRef.current.find(draft => draft.draftId === activeDraftId);
+    if (!activeDraft) {
+      showRetroAlert("Le brouillon actif est introuvable. La vente n'a pas été enregistrée.", "Saisie ventes");
+      return;
+    }
+
+    const nextDrafts = openVouchersRef.current.filter(draft => draft.draftId !== activeDraftId);
+    const nextSales = editingVoucherId
+      ? sales.map(sale => String(sale.id) === String(editingVoucherId) ? savedVoucher : sale)
+      : [...sales.filter(sale => String(sale.id) !== String(savedVoucher.id)), savedVoucher];
+
+    reservationOperationPendingRef.current = true;
+    try {
+      // Stock already contains the active draft reservations. Commit removes ownership only.
+      await persistReservationState(productsRef.current, nextDrafts, {
+        sales: nextSales,
+        clients: updatedClients
+      });
+      openVouchersRef.current = nextDrafts;
+      setOpenVouchers(nextDrafts);
+    } catch (error) {
+      showRetroAlert(
+        `La vente n'a pas pu être enregistrée. Le brouillon reste ouvert et son stock reste réservé.\n\n${error instanceof Error ? error.message : String(error)}`,
+        'Saisie ventes'
+      );
+      return;
+    } finally {
+      reservationOperationPendingRef.current = false;
+    }
+
     if (editingVoucherId) {
       onUpdateSale(editingVoucherId, savedVoucher);
       showRetroAlert(`Bon de Livraison N° ${savedVoucher.id} a été modifié avec succès !`, "Saisie ventes");
       
-      // Remove from drafts
-      setOpenVouchers(prev => prev.filter(v => v.id !== editingVoucherId));
       setActiveDraftId(null);
       setSelectedSaleId(savedVoucher.id);
       setEditingVoucherId(null);
@@ -939,23 +1147,24 @@ function SalesVoucherWindow({
       onAddSale(savedVoucher);
       showRetroAlert(`Bon de Livraison N° ${savedVoucher.id} a été enregistré !`, "Saisie ventes");
       
-      // Remove from drafts
-      setOpenVouchers(prev => prev.filter(v => v.id !== newSaleId));
       setActiveDraftId(null);
       setSelectedSaleId(savedVoucher.id);
       setEditingVoucherId(null);
       setMode('view');
     }
 
-    onProductsUpdate(finalizedProducts);
+    onProductsUpdate(productsRef.current);
     onClientsUpdate(updatedClients);
     setIsPaymentDialogOpen(false);
   };
 
-  const handleFermerLeBon = () => {
+  const handleFermerLeBon = async () => {
     if (mode === 'create') {
       if (draftItems.length === 0) {
         const idToDelete = editingVoucherId || newSaleId;
+        const activeDraft = openVouchersRef.current.find(draft => draft.draftId === activeDraftId);
+
+        if (activeDraft && !await releaseDraft(activeDraft.draftId)) return;
         
         if (editingVoucherId) {
           onDeleteSale(editingVoucherId);
@@ -976,7 +1185,7 @@ function SalesVoucherWindow({
         });
 
         // Add open drafts, filtering out idToDelete
-        openVouchers.forEach(v => {
+        openVouchersRef.current.forEach(v => {
           if (v.id !== idToDelete) {
             map.set(v.id, {
               id: v.id,
@@ -994,7 +1203,7 @@ function SalesVoucherWindow({
         });
 
         // Update openVouchers state
-        setOpenVouchers(prev => prev.filter(v => v.id !== idToDelete));
+        setOpenVouchers(openVouchersRef.current);
         setActiveDraftId(null);
         setEditingVoucherId(null);
 
@@ -1157,12 +1366,11 @@ function SalesVoucherWindow({
       total: quantitySelected * finalPrice
     };
     const updated = [...draftItems, newItem];
-    setDraftItems(updated);
-    setSelectedItemIndex(updated.length - 1);
-    setViewingItemCode(product.code);
-
-    // Immediately subtract the stock in the parent state
-    adjustProductStockInParent(product.code, -quantitySelected);
+    void updateActiveDraftItems(updated).then(saved => {
+      if (!saved) return;
+      setSelectedItemIndex(updated.length - 1);
+      setViewingItemCode(product.code);
+    });
   };
 
   const insertProductDirectly = (product: Product, quantitySelected: number = 1, priceSelected?: number): boolean => {
@@ -1206,7 +1414,7 @@ function SalesVoucherWindow({
     return true;
   };
 
-  const handleDeleteItem = () => {
+  const handleDeleteItem = async () => {
     if (mode !== 'create') {
       showRetroAlert("Suppression des lignes impossible en mode consultation. Cliquez sur 'Nouveau Bon' pour saisir.", "Saisie ventes");
       return;
@@ -1215,11 +1423,8 @@ function SalesVoucherWindow({
     const currentItem = draftItems[selectedItemIndex];
     if (!currentItem) return;
 
-    const updated = draftItems.filter((_, idx) => idx !== selectedItemIndex);
-    setDraftItems(updated);
-
-    // Immediately restore the stock of the deleted product in the parent state
-    adjustProductStockInParent(currentItem.code, currentItem.qty);
+    const updated = draftItems.filter(item => item.id !== currentItem.id);
+    if (!await updateActiveDraftItems(updated)) return;
 
     const nextIdx = Math.max(0, selectedItemIndex - 1);
     setSelectedItemIndex(nextIdx);
@@ -3029,6 +3234,22 @@ function SalesVoucherWindow({
         const totalBenefit = unitBenefit * qty;
         const isLoss = unitBenefit < 0;
 
+        const saveEditedItem = async (newQty: number, newPrice: number) => {
+          const updated = [...draftItems];
+          const colisage = currentItem.colisage || 12;
+          updated[editModalIndex] = {
+            ...currentItem,
+            qty: newQty,
+            price: newPrice,
+            total: newQty * newPrice,
+            nbreColis: Math.floor(newQty / colisage),
+            pieces: newQty % colisage
+          };
+          if (await updateActiveDraftItems(updated)) {
+            setIsItemEditModalOpen(false);
+          }
+        };
+
         return (
           <div className="fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-xs flex items-center justify-center z-[10010] p-4 select-none animate-in fade-in duration-150">
             <form
@@ -3051,19 +3272,7 @@ function SalesVoucherWindow({
                   showRetroConfirm(
                     `⚠️ Stock Épuisé : La modification amènera le produit "${currentItem.designation}" à un stock de ${projectedStockAfterThisItem}.\n\nVoulez-vous modifier quand même ?`,
                     () => {
-                      const updated = [...draftItems];
-                      const colisage = currentItem.colisage || 12;
-                      updated[editModalIndex] = {
-                        ...currentItem,
-                        qty: newQty,
-                        price: newPrice,
-                        total: newQty * newPrice,
-                        nbreColis: Math.floor(newQty / colisage),
-                        pieces: newQty % colisage
-                      };
-                      setDraftItems(updated);
-                      adjustProductStockInParent(currentItem.code, currentItem.qty - newQty);
-                      setIsItemEditModalOpen(false);
+                      void saveEditedItem(newQty, newPrice);
                     },
                     "Stock Épuisé"
                   );
@@ -3071,19 +3280,7 @@ function SalesVoucherWindow({
                 }
 
                 // Normal update
-                const updated = [...draftItems];
-                const colisage = currentItem.colisage || 12;
-                updated[editModalIndex] = {
-                  ...currentItem,
-                  qty: newQty,
-                  price: newPrice,
-                  total: newQty * newPrice,
-                  nbreColis: Math.floor(newQty / colisage),
-                  pieces: newQty % colisage
-                };
-                setDraftItems(updated);
-                adjustProductStockInParent(currentItem.code, currentItem.qty - newQty);
-                setIsItemEditModalOpen(false);
+                void saveEditedItem(newQty, newPrice);
               }}
               className="w-[500px] max-w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden text-slate-800 dark:text-slate-200 animate-in fade-in zoom-in-95 duration-200"
             >
@@ -3765,9 +3962,9 @@ function SalesVoucherWindow({
                         const sumDraft = v.draftItems.reduce((sum, i) => sum + i.total, 0);
                         return (
                           <tr 
-                            key={v.id}
+                            key={v.draftId}
                             onClick={() => {
-                              setActiveDraftId(v.id);
+                              setActiveDraftId(v.draftId);
                               setMode('create');
                               setDraftItems([...v.draftItems]);
                               setNewClientName(v.clientName);
@@ -4179,6 +4376,7 @@ export default React.memo(SalesVoucherWindow, (prev, next) => {
          prev.clients === next.clients &&
          prev.sales === next.sales &&
          prev.config === next.config &&
-         prev.currentUser === next.currentUser;
+         prev.currentUser === next.currentUser &&
+         prev.storageReady === next.storageReady;
 });
 
