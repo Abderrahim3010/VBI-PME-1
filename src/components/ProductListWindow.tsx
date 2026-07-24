@@ -1379,6 +1379,7 @@ function ProductListWindow({
               return (
                 <tr
                   key={p.code}
+                  data-selected={reqSelected}
                   onClick={(e) => {
                     e.stopPropagation();
                     setSelectedIndex(p.originalIndex);

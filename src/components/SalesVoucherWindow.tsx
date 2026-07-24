@@ -2112,7 +2112,7 @@ function SalesVoucherWindow({
           >
             <table 
               onClick={(e) => e.stopPropagation()}
-              className="w-full min-h-full text-left font-sans text-xs border-collapse table-fixed"
+              className="w-full text-left font-sans text-xs border-collapse table-fixed"
             >
               <thead className="sticky top-0 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-extrabold select-none border-b border-slate-200/60 dark:border-slate-800/80 z-10">
                 <tr>
@@ -2183,6 +2183,7 @@ function SalesVoucherWindow({
                     return (
                       <tr
                         key={item.id}
+                        data-selected={isSelected}
                         onClick={(e) => {
                           e.stopPropagation();
                           setSelectedItemIndex(item.originalIndex);

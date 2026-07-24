@@ -376,6 +376,7 @@ export default function ConsultationBonsView({
                   return (
                     <tr
                       key={v.id || idx}
+                      data-selected={isSelected}
                       onClick={() => {
                         setSelectedVoucherIndex(idx);
                         setSelectedItemIndex(0);

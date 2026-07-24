@@ -244,7 +244,7 @@ function ClientsSuppliersWindow({
         </div>
         
         <div className="flex-1 overflow-auto flex flex-col">
-          <table className="w-full min-h-full text-left font-sans text-xs border-collapse">
+          <table className="w-full text-left font-sans text-xs border-collapse">
             <thead className="bg-[#f8fafc] dark:bg-slate-950/30 text-slate-500 dark:text-slate-400 font-bold sticky top-0 border-b border-slate-100 dark:border-slate-800 select-none z-10 text-[9.5px] uppercase tracking-wider font-display">
               <tr>
                 <th className="px-4 py-3 w-24">Code</th>

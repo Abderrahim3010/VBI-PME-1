@@ -408,23 +408,63 @@ html:not(.dark) [id^="window-"] textarea:not([disabled]) {
 }
 
 /* Highlighted selected items in listings */
-html:not(.dark) [id^="window-"] [data-selected="true"] {
+html:not(.dark) [id^="window-"] [data-selected="true"],
+html:not(.dark) tbody tr[data-selected="true"],
+html:not(.dark) tbody tr.bg-m3-primary,
+html:not(.dark) tbody tr[class*="bg-m3-primary"] {
   background-color: #0284c7 !important;
   color: #ffffff !important;
 }
 
 /* Grid Table Rows - Ensure rows are glare-free off-white with crisp zebra striping to pop beautifully */
-html:not(.dark) [id^="window-"] tr:not(.bg-m3-primary):not([data-selected="true"]):not([class*="bg-sky-"]):not([class*="bg-indigo-"]):not(:has(td[colspan])) {
+html:not(.dark) [id^="window-"] tr:not(.bg-m3-primary):not([data-selected="true"]):not([class*="bg-sky-"]):not([class*="bg-indigo-"]):not([class*="bg-blue-"]):not([class*="bg-[#0055b3]"]):not([class*="bg-[#059669]"]):not(:has(td[colspan])) {
   background-color: #fafbfc !important; /* Soft off-white */
   color: #0f172a !important;
 }
-html:not(.dark) [id^="window-"] tr:nth-child(even):not(.bg-m3-primary):not([data-selected="true"]):not([class*="bg-sky-"]):not([class*="bg-indigo-"]):not(:has(td[colspan])) {
+html:not(.dark) [id^="window-"] tr:nth-child(even):not(.bg-m3-primary):not([data-selected="true"]):not([class*="bg-sky-"]):not([class*="bg-indigo-"]):not([class*="bg-blue-"]):not([class*="bg-[#0055b3]"]):not([class*="bg-[#059669]"]):not(:has(td[colspan])) {
   background-color: #f1f5f9 !important; /* Soft Slate 100 instead of 50 to reduce glare */
 }
-html:not(.dark) [id^="window-"] td:not([class*="bg-"]):not([colspan]) {
+
+/* Standard unselected table cell text color & borders */
+html:not(.dark) [id^="window-"] tr:not([data-selected="true"]):not(.bg-m3-primary):not([class*="bg-m3-primary"]):not([class*="bg-sky-"]):not([class*="bg-indigo-"]):not([class*="bg-blue-"]):not([class*="bg-[#0055b3]"]):not([class*="bg-[#059669]"]):not(:has(td[colspan])) td:not([class*="bg-"]):not([colspan]) {
   color: #0f172a !important;
+}
+
+html:not(.dark) [id^="window-"] td:not([colspan]) {
   border-bottom: 1.5px solid #cbd5e1 !important; /* Solid desktop borders */
   border-right: 1.5px solid #e2e8f0 !important;
+}
+
+/* Ensure ALL selected row cells and their child elements ALWAYS render white text */
+html:not(.dark) tbody tr[data-selected="true"] td:not([class*="bg-"]),
+html:not(.dark) tbody tr.bg-m3-primary td:not([class*="bg-"]),
+html:not(.dark) tbody tr[class*="bg-m3-primary"] td:not([class*="bg-"]),
+html:not(.dark) tbody tr[class*="bg-[#0055b3]"] td:not([class*="bg-"]),
+html:not(.dark) tbody tr[class*="bg-[#059669]"] td:not([class*="bg-"]),
+html:not(.dark) [id^="window-"] tbody tr[data-selected="true"] td:not([class*="bg-"]),
+html:not(.dark) [id^="window-"] tbody tr.bg-m3-primary td:not([class*="bg-"]) {
+  background-color: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+html:not(.dark) tbody tr[data-selected="true"] td:not([class*="bg-"]) *:not([class*="bg-"]):not([class*="border-rose"]):not([class*="border-red"]):not(.no-override),
+html:not(.dark) tbody tr.bg-m3-primary td:not([class*="bg-"]) *:not([class*="bg-"]):not([class*="border-rose"]):not([class*="border-red"]):not(.no-override),
+html:not(.dark) tbody tr[class*="bg-m3-primary"] td:not([class*="bg-"]) *:not([class*="bg-"]):not([class*="border-rose"]):not([class*="border-red"]):not(.no-override),
+html:not(.dark) [id^="window-"] tbody tr[data-selected="true"] td:not([class*="bg-"]) *:not([class*="bg-"]):not([class*="border-rose"]):not([class*="border-red"]):not(.no-override) {
+  color: #ffffff !important;
+}
+
+/* Dark mode selected row text styling */
+html.dark tbody tr[data-selected="true"] td:not([class*="bg-"]),
+html.dark tbody tr.bg-m3-primary td:not([class*="bg-"]),
+html.dark [id^="window-"] tbody tr[data-selected="true"] td:not([class*="bg-"]) {
+  color: #ffffff !important;
+}
+
+html.dark tbody tr[data-selected="true"] td:not([class*="bg-"]) *:not([class*="bg-"]):not(.no-override),
+html.dark tbody tr.bg-m3-primary td:not([class*="bg-"]) *:not([class*="bg-"]):not(.no-override),
+html.dark [id^="window-"] tbody tr[data-selected="true"] td:not([class*="bg-"]) *:not([class*="bg-"]):not(.no-override) {
+  color: #ffffff !important;
 }
 
 /* Force every container frame, header panel, search toolbar, and metrics box 

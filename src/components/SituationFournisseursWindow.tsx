@@ -756,7 +756,7 @@ function SituationFournisseursWindow({
             {/* 4. MASTER: Transaction ledger table */}
             <div className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 rounded-lg shadow-inner flex flex-col overflow-hidden min-h-0">
               <div className="overflow-x-auto overflow-y-auto flex-1 flex flex-col min-h-0">
-                <table className="w-full min-h-full text-left border-collapse min-w-[750px]">
+                <table className="w-full text-left border-collapse min-w-[750px]">
                   <thead>
                     <tr className="bg-slate-100 dark:bg-slate-800 sticky top-0 border-b border-slate-300 dark:border-slate-800 select-none text-[10px] font-black uppercase text-slate-500 dark:text-slate-400">
                       <th className="py-2 px-3 border-r border-slate-200 dark:border-slate-800 w-24 text-center">Date</th>
@@ -777,6 +777,7 @@ function SituationFournisseursWindow({
                       return (
                         <tr
                           key={`${item.rowId}-${index}`}
+                          data-selected={isSelected}
                           onClick={() => setSelectedRowId(item.rowId)}
                           className={`cursor-pointer hover:bg-sky-50 dark:hover:bg-sky-950/20 transition-all ${
                             isSelected 
