@@ -238,7 +238,7 @@ function SalesVoucherWindow({
     remise,
     tvaRate,
     draftItems: nextItems,
-    reservations: calculateDraftReservations(nextItems, draft.originalItems),
+    reservations: calculateDraftReservations(nextItems, draft.originalItems, newType),
     paymentMode,
     updatedAt: new Date().toISOString()
   });
@@ -777,9 +777,12 @@ function SalesVoucherWindow({
     }
     
     const activeVersement = mode === 'create' ? versement : (selectedSale?.versement || 0);
+    const activeType = mode === 'create' ? newType : (selectedSale?.type || 'VENTE');
     const newBalance = mode === 'view'
       ? (selectedSale?.newBalance ?? 0)
-      : oldBalance + (ttc - activeVersement);
+      : (activeType === 'RETOUR'
+          ? oldBalance - (ttc - activeVersement)
+          : oldBalance + (ttc - activeVersement));
 
     return {
       rawAmount: rawSum,
@@ -1062,7 +1065,9 @@ function SalesVoucherWindow({
       : (paymentMode === 'A_TERME' ? 0 : Number(paymentVersement) || 0);
     
     // Recalculate newBalance with final versement
-    const finalNewBalance = computedMetrics.oldBalance + (computedMetrics.ttc - finalVersement);
+    const finalNewBalance = newType === 'RETOUR'
+      ? computedMetrics.oldBalance - (computedMetrics.ttc - finalVersement)
+      : computedMetrics.oldBalance + (computedMetrics.ttc - finalVersement);
 
     const savedVoucher: SalesVoucher = {
       id: newSaleId,
@@ -2096,18 +2101,18 @@ function SalesVoucherWindow({
         <div className={`col-span-8 flex flex-col border-2 border-solid shadow-inner rounded-2xl overflow-hidden transition-all duration-300 ${
           mode === 'view' 
             ? 'grayscale opacity-50 dark:opacity-30 bg-slate-200/30 dark:bg-black/20 pointer-events-none border-slate-300 dark:border-slate-800' 
-            : 'bg-gradient-to-r from-sky-100 via-sky-50 to-white dark:from-sky-950 dark:via-slate-900 dark:to-slate-950 border-sky-300 dark:border-sky-800'
+            : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-800'
         }`}>
           <div 
             onClick={() => {
               setSelectedItemIndex(-1);
               setViewingItemCode('');
             }}
-            className="flex-1 overflow-auto"
+            className="flex-1 overflow-auto flex flex-col"
           >
             <table 
               onClick={(e) => e.stopPropagation()}
-              className="w-full text-left font-sans text-xs border-collapse table-fixed"
+              className="w-full min-h-full text-left font-sans text-xs border-collapse table-fixed"
             >
               <thead className="sticky top-0 bg-slate-50 dark:bg-slate-900 text-slate-700 dark:text-slate-300 font-extrabold select-none border-b border-slate-200/60 dark:border-slate-800/80 z-10">
                 <tr>
@@ -2247,7 +2252,7 @@ function SalesVoucherWindow({
         </div>
 
         {/* Right pre-visual sidebar & ultimate bill fields */}
-        <div className="col-span-4 bg-gradient-to-br from-sky-200 via-sky-100 to-white dark:from-sky-950 dark:via-slate-900 dark:to-slate-950 border border-sky-200/80 dark:border-sky-900/40 rounded-2xl p-3 flex flex-col gap-2 justify-start shadow-sm">
+        <div className="col-span-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 flex flex-col gap-2 justify-start shadow-sm">
           
           {/* Money recaps list matching screenshot exactly */}
           <div className="flex flex-col gap-1.5 font-mono select-all text-xs">

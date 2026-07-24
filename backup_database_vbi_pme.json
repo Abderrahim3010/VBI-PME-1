@@ -1,0 +1,16 @@
+{
+  "version": "1.0.0",
+  "timestamp": "2026-07-23T23:29:00.000Z",
+  "appName": "VBI PME",
+  "status": "Production Backup",
+  "backupData": {
+    "compos_products": "INITIAL_PRODUCTS",
+    "compos_clients": "INITIAL_CLIENTS",
+    "compos_suppliers": "INITIAL_SUPPLIERS",
+    "compos_purchases": "INITIAL_PURCHASES",
+    "compos_sales": "INITIAL_SALES",
+    "compos_familles": ["ALIMENTATION", "BOISSONS", "DETERGENT", "ELECTRONIQUE"],
+    "purchase_open_drafts": [],
+    "sales_open_drafts": []
+  }
+}

@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { Cpu } from 'lucide-react';
 
 interface MemorySnapshot {
   percent: number;
@@ -54,18 +55,37 @@ function MemoryUsageIndicator() {
   }, []);
 
   return (
-    <div className="flex flex-col">
-      <span className="text-blue-700 dark:text-blue-300 font-extrabold">Niveau d'utilisation mémoire :</span>
-      <span className="text-emerald-600 dark:text-green-400 font-bold">
-        📊 {snapshot.percent}% ({snapshot.used} Go / {snapshot.total} Go)
-      </span>
-      {snapshot.tabMemory !== null && (
-        <span className="text-sky-600 dark:text-sky-400 font-mono text-[9px] font-bold mt-0.5">
-          ↳ Onglet navigateur (Réel) : {snapshot.tabMemory} Mo
+    <div className="flex flex-col gap-1 p-2 rounded-xl bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 font-sans">
+      <div className="flex items-center justify-between text-[11px] font-bold text-slate-700 dark:text-slate-200">
+        <span className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+          <Cpu size={14} className="text-sky-500" />
+          Mémoire Système
         </span>
-      )}
+        <span className="font-mono text-sky-600 dark:text-sky-400 font-extrabold text-[10.5px]">
+          {snapshot.percent}%
+        </span>
+      </div>
+
+      <div className="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden my-0.5">
+        <div
+          className={`h-full transition-all duration-500 rounded-full ${
+            snapshot.percent > 85 ? 'bg-rose-500' : snapshot.percent > 70 ? 'bg-amber-500' : 'bg-emerald-500'
+          }`}
+          style={{ width: `${snapshot.percent}%` }}
+        />
+      </div>
+
+      <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+        <span>{snapshot.used} Go / {snapshot.total} Go</span>
+        {snapshot.tabMemory !== null && (
+          <span className="text-slate-400 dark:text-slate-500 font-mono text-[9px]">
+            Tab: {snapshot.tabMemory} Mo
+          </span>
+        )}
+      </div>
     </div>
   );
 }
 
 export default React.memo(MemoryUsageIndicator);
+

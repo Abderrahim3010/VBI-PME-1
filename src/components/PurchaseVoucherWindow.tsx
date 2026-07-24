@@ -511,22 +511,22 @@ function PurchaseVoucherWindow({
   };
 
   const getStartingStockAndCost = (itemCode: string) => {
-    // 1. Find the current real-time catalog stock and cost of this product from products prop
-    const catalogProd = products.find(p => p.code === itemCode);
+    // 1. Find the current real-time catalog stock and cost of this product
+    const catalogProd = products.find(p => p.code === itemCode) || localProducts.find(p => p.code === itemCode);
     const currentStock = catalogProd ? catalogProd.stock : 0;
-    const currentCost = catalogProd && catalogProd.prixDeRevient !== undefined ? catalogProd.prixDeRevient : 0;
+    const currentCost = catalogProd && catalogProd.prixDeRevient !== undefined && catalogProd.prixDeRevient > 0 
+      ? catalogProd.prixDeRevient 
+      : (catalogProd && catalogProd.prixAchat !== undefined ? catalogProd.prixAchat : 0);
 
-    // 2. Find the original quantity and price of this product inside the voucher being edited (if any)
+    // 2. Find the original quantity and cost of this product inside the voucher being edited (if any)
     let originalQty = 0;
-    let originalPrice = 0;
+    let originalTotalCost = 0;
     if (editingVoucherId) {
       const origVoucher = purchases.find(v => String(v.id) === String(editingVoucherId));
       if (origVoucher) {
-        const origItem = origVoucher.items.find(i => i.code === itemCode);
-        if (origItem) {
-          originalQty = origItem.qty;
-          originalPrice = origItem.price;
-        }
+        const matchingOrigItems = origVoucher.items.filter(i => i.code === itemCode);
+        originalQty = matchingOrigItems.reduce((acc, curr) => acc + curr.qty, 0);
+        originalTotalCost = matchingOrigItems.reduce((acc, curr) => acc + (curr.qty * curr.price), 0);
       }
     }
 
@@ -534,11 +534,10 @@ function PurchaseVoucherWindow({
     const startingStock = currentStock - originalQty;
 
     // 4. The starting cost price before this purchase was made is:
-    // If startingStock > 0, we can estimate starting cost as currentCost (or revert the weighted average if possible)
     let startingCost = currentCost;
     if (startingStock > 0 && currentStock > 0 && currentCost > 0 && originalQty > 0) {
-      const totalCostVal = originalQty * originalPrice;
-      const revertedCost = Math.round(((currentCost * currentStock) - totalCostVal) / startingStock);
+      const revertedTotalVal = (currentCost * currentStock) - originalTotalCost;
+      const revertedCost = Math.round(revertedTotalVal / startingStock);
       if (revertedCost > 0) {
         startingCost = revertedCost;
       }
@@ -1368,7 +1367,7 @@ function PurchaseVoucherWindow({
         prixVente2: sp2,
         prixVente3: sp3,
         category: prodFamille,
-        prixDeRevient: draftCost, // Update to the newly calculated draft cost price!
+        prixDeRevient: existingProduct.prixDeRevient !== undefined ? existingProduct.prixDeRevient : (existingProduct.prixAchat ?? cost),
         prixAchat: cost
       };
     }
@@ -1712,13 +1711,24 @@ function PurchaseVoucherWindow({
                         `Voulez-vous vraiment supprimer le Brouillon de Bon d'Achat N° ${newVoucherId} ?`,
                         () => {
                           const idToDelete = newVoucherId;
-                          setOpenDrafts(prev => prev.filter(d => String(d.id) !== String(idToDelete)));
-                          setMode('view');
+                          const remainingDrafts = openDrafts.filter(d => String(d.id) !== String(idToDelete));
+                          setOpenDrafts(remainingDrafts);
+                          saveJson('purchase_open_drafts', remainingDrafts);
                           setEditingVoucherId(null);
-                          if (purchases.length > 0) {
-                            setSelectedVoucherId(purchases[purchases.length - 1].id);
+                          setDraftItems([]);
+                          setNewSupplierName('');
+                          setVersement(0);
+                          setNewVoucherId('');
+
+                          if (remainingDrafts.length > 0) {
+                            loadDraft(remainingDrafts[remainingDrafts.length - 1]);
                           } else {
-                            setSelectedVoucherId('');
+                            setMode('view');
+                            if (purchases.length > 0) {
+                              setSelectedVoucherId(purchases[purchases.length - 1].id);
+                            } else {
+                              setSelectedVoucherId('');
+                            }
                           }
                         }
                       );

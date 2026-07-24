@@ -91,7 +91,8 @@ export function createSalesDraftId(): string {
 
 export function calculateDraftReservations(
   draftItems: VoucherItem[],
-  originalItems: VoucherItem[] = []
+  originalItems: VoucherItem[] = [],
+  type: 'VENTE' | 'RETOUR' = 'VENTE'
 ): SalesDraftReservation[] {
   const currentById = new Map<string, VoucherItem>();
   const originalById = new Map<string, VoucherItem>();
@@ -107,13 +108,14 @@ export function calculateDraftReservations(
 
   const lineIds = new Set([...currentById.keys(), ...originalById.keys()]);
   const reservations: SalesDraftReservation[] = [];
+  const qtySign = type === 'RETOUR' ? -1 : 1;
   for (const lineId of lineIds) {
     const current = currentById.get(lineId);
     const original = originalById.get(lineId);
     if (current && original && current.code !== original.code) {
       throw new Error(`Sales draft line ${lineId} changed product code`);
     }
-    const reservedQuantity = (current?.qty ?? 0) - (original?.qty ?? 0);
+    const reservedQuantity = ((current?.qty ?? 0) - (original?.qty ?? 0)) * qtySign;
     if (reservedQuantity !== 0) {
       reservations.push({
         lineId,
@@ -202,7 +204,7 @@ export function parseSalesOpenDrafts(raw: string | null): ParsedSalesDrafts {
         continue;
       }
       try {
-        const expectedReservations = calculateDraftReservations(value.draftItems, value.originalItems);
+        const expectedReservations = calculateDraftReservations(value.draftItems, value.originalItems, value.type);
         if (reservationsMatch(value.reservations, expectedReservations)) {
           validDrafts.push(value);
           continue;

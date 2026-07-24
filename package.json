@@ -6,6 +6,7 @@
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
+    "test": "vitest run",
     "dev:vite": "vite --port=3000",
     "dev:electron": "wait-on http://localhost:3000 && electron .",
     "build": "vite build",
@@ -69,6 +70,7 @@
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.3",
+    "vitest": "^4.1.10",
     "wait-on": "^9.0.10"
   }
 }

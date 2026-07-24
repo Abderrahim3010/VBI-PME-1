@@ -234,8 +234,8 @@ function CaisseWindow({
             <Ticket size={14} className="text-m3-primary" /> Journal dynamique de Trésorerie
           </div>
           
-          <div className="flex-1 overflow-auto min-h-0">
-            <table className="w-full text-left font-sans text-xs border-collapse table-fixed">
+          <div className="flex-1 overflow-auto flex flex-col min-h-0">
+            <table className="w-full min-h-full text-left font-sans text-xs border-collapse table-fixed">
               <thead className="bg-[#f8fafc] dark:bg-slate-950/30 text-slate-500 dark:text-slate-400 font-bold sticky top-0 border-b border-slate-100 dark:border-slate-800 select-none z-10 text-[9.5px] uppercase tracking-wider font-display">
                 <tr>
                   <th style={{ width: '90px' }} className="px-4 py-3">Date</th>

@@ -21,7 +21,17 @@ import {
   Key,
   LogOut,
   Gem,
-  ChevronDown
+  ChevronDown,
+  PanelLeftClose,
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  CreditCard,
+  FileText,
+  UserCheck,
+  Monitor,
+  Sun,
+  Moon
 } from 'lucide-react';
 import {
   INITIAL_PRODUCTS,
@@ -931,7 +941,8 @@ export default function App() {
         const matchingItems = target.items.filter(i => i.code === p.code);
         if (matchingItems.length > 0) {
           const totalQtyToRestore = matchingItems.reduce((acc, curr) => acc + curr.qty, 0);
-          const finalStock = p.stock + totalQtyToRestore;
+          const isReturn = target.type === 'RETOUR';
+          const finalStock = isReturn ? Math.max(0, p.stock - totalQtyToRestore) : p.stock + totalQtyToRestore;
           return {
             ...p,
             stock: finalStock,
@@ -1512,78 +1523,161 @@ export default function App() {
           }}
         >
         
-        {/* SIDEBAR METRICS PANEL (Far Left - Exact image recreation but with beautiful Windows 7 Glass Aero style! Collapsible) */}
-        <div className={`h-full shrink-0 border-slate-300/40 dark:border-sky-300/30 bg-white/75 dark:bg-sky-950/40 backdrop-blur-xl flex flex-col justify-between select-none text-slate-800 dark:text-white overflow-y-auto font-mono z-20 shadow-[5px_0_15px_rgba(0,0,0,0.06)] dark:shadow-[5px_0_15px_rgba(0,0,0,0.15)] transition-all duration-300 ${isSidebarOpen ? 'w-[250px] p-3 border-r' : 'w-0 p-0 overflow-hidden border-r-0 shadow-none'}`}>
-          <div className="flex flex-col gap-3.5 min-w-[226px]">
-            <div className="flex items-center justify-between border-b border-slate-300 dark:border-yellow-450/30 pb-1.5 uppercase select-none">
-              <h2 className="text-[14px] font-bold text-yellow-700 dark:text-yellow-405 tracking-widest">
-                📟 VBI PME BETA
-              </h2>
+        {/* SIDEBAR METRICS PANEL - Modern Clean Redesign */}
+        <div className={`h-full shrink-0 border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl flex flex-col justify-between select-none text-slate-800 dark:text-white overflow-y-auto font-sans z-20 shadow-xl transition-all duration-300 ${isSidebarOpen ? 'w-[260px] p-3.5 border-r' : 'w-0 p-0 overflow-hidden border-r-0 shadow-none'}`}>
+          <div className="flex flex-col gap-3 min-w-[232px]">
+            {/* Header */}
+            <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/80 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 shadow-xs">
+                  <Gem size={14} className="animate-pulse" />
+                </div>
+                <div className="flex flex-col leading-none">
+                  <span className="font-black text-sm text-slate-900 dark:text-white tracking-tight flex items-center gap-1.5">
+                    VBI PME
+                    <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">BETA</span>
+                  </span>
+                </div>
+              </div>
+
               <button
                 onClick={() => setIsSidebarOpen(false)}
-                className="p-1 px-1.5 text-[9px] text-slate-500 hover:text-slate-900 dark:hover:text-white hover:bg-slate-200/50 dark:hover:bg-white/10 rounded transition-all cursor-pointer font-sans font-bold border border-slate-300/60 dark:border-white/10 shadow-xs"
-                title="Masquer le panneau d'informations (Fermer vers la gauche)"
+                className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                title="Masquer le panneau d'informations"
               >
-                ◀ Masquer
+                <PanelLeftClose size={16} />
               </button>
             </div>
 
-            {/* Simulated text values with support for Light and Dark modes */}
-            <div className="flex flex-col gap-2.5 text-[11px] leading-tight select-all">
-              <div className="flex flex-col">
-                <span className="text-blue-700 dark:text-blue-300 font-extrabold">Nombre de produits :</span>
-                <span className="text-emerald-600 dark:text-green-400 font-bold">● {products.length} Produits</span>
-              </div>
+            {/* Metrics List in Clean Elegant Cards */}
+            <div className="flex flex-col gap-2">
 
-              <div className="flex flex-col">
-                <span className="text-blue-700 dark:text-blue-300 font-extrabold">Stock minimum :</span>
-                <span className={lowestStockCount > 3 ? "text-red-650 dark:text-red-400 font-bold animate-pulse" : "text-emerald-600 dark:text-green-400 font-bold"}>
-                  {lowestStockCount > 3 ? "⚠️ COMMANDE RECOMMANDÉE" : "✔ STOCK EN ORDRE"}
+              {/* 1. Nombre de Produits */}
+              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+                <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
+                  <div className="p-1 rounded-lg bg-sky-100 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 shrink-0">
+                    <Package size={13} />
+                  </div>
+                  <span>Nombre de produits</span>
+                </div>
+                <span className="font-extrabold text-slate-900 dark:text-white bg-slate-200/60 dark:bg-slate-800 px-2 py-0.5 rounded-lg text-[10.5px]">
+                  {products.length}
                 </span>
               </div>
 
-              <div className="flex flex-col">
-                <span className="text-blue-700 dark:text-blue-300 font-extrabold">Produits périmés :</span>
-                <span className="text-emerald-600 dark:text-green-400 font-bold">✔ OK (SANS ALERTE)</span>
-              </div>
-
-              <div className="flex flex-col">
-                <span className="text-blue-700 dark:text-blue-300 font-extrabold">Soldes clients :</span>
-                <span className="text-orange-600 dark:text-orange-400 font-bold">● SOLDE ACTIF ({clients.filter(c=>c.balance>0).length} débiteurs)</span>
-              </div>
-
-              <div className="flex flex-col">
-                <span className="text-blue-700 dark:text-blue-300 font-extrabold">Nombre de bons ouverts :</span>
-                <span className="text-emerald-600 dark:text-green-400 font-bold">ACHATS ({purchases.length} BONS)</span>
-              </div>
-
-              <div className="flex flex-col bg-slate-200/50 dark:bg-white/5 p-1.5 rounded border border-slate-300/30 dark:border-transparent">
-                <span className="text-yellow-700 dark:text-yellow-400 font-extrabold">Utilisateur connecté :</span>
-                <span className="text-slate-800 dark:text-white font-bold select-all">👤 {currentUser ? currentUser.username.toUpperCase() : 'NON CONNECTÉ'}</span>
-              </div>
-
-              <div className="flex flex-col">
-                <span className="text-blue-700 dark:text-blue-300 font-extrabold">Licence du Logiciel :</span>
-                <span className={config.isActivated ? "text-emerald-605 dark:text-green-450 font-bold" : "text-yellow-605 dark:text-yellow-500 font-bold animate-pulse"}>
-                  {config.isActivated ? "🛡️ LICENCE ORIGINALE ACTIVE" : "⚠️ DÉMONSTRATION ACTIVÉE"}
+              {/* 2. Stock Minimum */}
+              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+                <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
+                  <div className={`p-1 rounded-lg shrink-0 ${lowestStockCount > 3 ? 'bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400' : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400'}`}>
+                    {lowestStockCount > 3 ? <AlertTriangle size={13} /> : <CheckCircle2 size={13} />}
+                  </div>
+                  <span>Stock minimum</span>
+                </div>
+                <span className={`font-black text-[10px] px-2 py-0.5 rounded-lg ${
+                  lowestStockCount > 3
+                    ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 animate-pulse'
+                    : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                }`}>
+                  {lowestStockCount > 3 ? "RECOMMANDÉ" : "EN ORDRE"}
                 </span>
               </div>
 
+              {/* 3. Produits Périmés */}
+              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+                <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
+                  <div className="p-1 rounded-lg bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 shrink-0">
+                    <Clock size={13} />
+                  </div>
+                  <span>Produits périmés</span>
+                </div>
+                <span className="font-bold text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-lg border border-emerald-500/20">
+                  OK (SANS ALERTE)
+                </span>
+              </div>
+
+              {/* 4. Soldes Clients */}
+              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+                <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
+                  <div className="p-1 rounded-lg bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 shrink-0">
+                    <CreditCard size={13} />
+                  </div>
+                  <span>Soldes clients</span>
+                </div>
+                <span className="font-extrabold text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-lg border border-amber-500/20">
+                  {clients.filter(c => c.balance > 0).length} débiteurs
+                </span>
+              </div>
+
+              {/* 5. Nombre de Bons Ouverts */}
+              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+                <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
+                  <div className="p-1 rounded-lg bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 shrink-0">
+                    <FileText size={13} />
+                  </div>
+                  <span>Bons ouverts</span>
+                </div>
+                <span className="font-extrabold text-[10px] bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-lg border border-indigo-500/20">
+                  {purchases.length} ACHATS
+                </span>
+              </div>
+
+              {/* 6. Utilisateur Connecté */}
+              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+                <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
+                  <div className="p-1 rounded-lg bg-purple-100 dark:bg-purple-950/80 text-purple-600 dark:text-purple-400 shrink-0">
+                    <UserCheck size={13} />
+                  </div>
+                  <span>Utilisateur</span>
+                </div>
+                <span className="font-black text-[10.5px] text-purple-700 dark:text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded-lg border border-purple-500/20">
+                  {currentUser ? currentUser.username.toUpperCase() : 'NON CONNECTÉ'}
+                </span>
+              </div>
+
+              {/* 7. Licence Software */}
+              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+                <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
+                  <div className="p-1 rounded-lg bg-teal-100 dark:bg-teal-950/80 text-teal-600 dark:text-teal-400 shrink-0">
+                    <ShieldCheck size={13} />
+                  </div>
+                  <span>Licence</span>
+                </div>
+                <span className={`font-bold text-[9.5px] px-2 py-0.5 rounded-lg border ${
+                  config.isActivated
+                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                    : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                }`}>
+                  {config.isActivated ? 'ORIGINALE' : 'DÉMO ACTIVE'}
+                </span>
+              </div>
+
+              {/* 8. Memory Usage Indicator Component */}
               <MemoryUsageIndicator />
 
-              <div className="flex flex-col">
-                <span className="text-blue-700 dark:text-blue-300 font-extrabold">Sauvegarde de base :</span>
-                <span className="text-emerald-600 dark:text-green-400 font-bold">✔ ACTIVE EN LOCAL (CLOUD RUN)</span>
+              {/* 9. Sauvegarde Base */}
+              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+                <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
+                  <div className="p-1 rounded-lg bg-sky-100 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 shrink-0">
+                    <Database size={13} />
+                  </div>
+                  <span>Sauvegarde</span>
+                </div>
+                <span className="font-bold text-[9.5px] bg-sky-500/10 text-sky-600 dark:text-sky-400 px-2 py-0.5 rounded-lg border border-sky-500/20">
+                  CLOUD RUN
+                </span>
               </div>
 
-              {/* Connected Affichage & Theme settings underneath Save base status */}
-              <div className="flex flex-col border-t border-slate-300/60 dark:border-slate-800/80 pt-2 mt-1 font-sans">
-                <span className="text-blue-700 dark:text-blue-300 font-extrabold font-mono text-[10px] mb-1">🖥️ Affichage & Mode :</span>
-                <div className="flex items-center gap-1.5 w-full">
+              {/* 10. Affichage & Mode Control */}
+              <div className="flex flex-col gap-1.5 p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] mt-0.5">
+                <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-200">
+                  <Monitor size={13} className="text-slate-500 dark:text-slate-400" />
+                  <span>Affichage & Mode</span>
+                </div>
+                <div className="flex items-center gap-1.5">
                   <select
                     value={zoomMode}
                     onChange={(e) => setZoomMode(e.target.value as any)}
-                    className="flex-1 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 text-[10.5px] font-bold text-slate-850 dark:text-sky-400 rounded px-1 h-6.5 focus:outline-none focus:ring-1 focus:ring-sky-500 font-mono"
+                    className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[10.5px] font-bold text-slate-800 dark:text-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer"
                   >
                     <option value="auto">Auto-Fit (Adaptatif)</option>
                     <option value="100">100% (Normal)</option>
@@ -1593,10 +1687,10 @@ export default function App() {
                   </select>
                   <button
                     onClick={toggleTheme}
-                    className="h-6.5 w-6.5 shrink-0 flex items-center justify-center rounded bg-white dark:bg-slate-950 border border-slate-300 dark:border-slate-800 text-xs hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white active:scale-95 transition-all cursor-pointer shadow-xs"
+                    className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                     title={theme === 'dark' ? "Passer en Mode Clair" : "Passer en Mode Sombre"}
                   >
-                    {theme === 'dark' ? '☀️' : '🌙'}
+                    {theme === 'dark' ? <Sun size={14} className="text-amber-400" /> : <Moon size={14} className="text-slate-600" />}
                   </button>
                 </div>
               </div>

@@ -143,6 +143,75 @@ export interface ClientPayment {
   user: string;
 }
 
+export interface SupplierPayment {
+  id: string;
+  supplierId: string; // matches supplier.id
+  supplierName: string;
+  date: string; // DD/MM/YYYY
+  time: string; // HH:MM:SS
+  amount: number;
+  remark: string;
+  user: string;
+}
+
+export type DraftReservationStatus = 'reserved' | 'released' | 'committed';
+
+export interface SalesDraftReservation {
+  lineId: string;
+  productCode: string;
+  reservedQuantity: number;
+}
+
+export interface SalesOpenDraft {
+  draftId: string;
+  id: string;
+  isEditingExisting: boolean;
+  date: string;
+  time: string;
+  clientName: string;
+  type: 'VENTE' | 'RETOUR';
+  vendeurName: string;
+  observations: string;
+  versement: number;
+  remise: number;
+  tvaRate: number;
+  draftItems: VoucherItem[];
+  originalItems: VoucherItem[];
+  reservations: SalesDraftReservation[];
+  reservationStatus: DraftReservationStatus;
+  createdAt: string;
+  updatedAt: string;
+  paymentMode?: 'ESPECE' | 'A_TERME';
+}
+
+export interface PurchaseOpenDraft {
+  id: string;
+  date: string;
+  time: string;
+  supplier: string;
+  draftItems: VoucherItem[];
+  versement: number;
+  paymentMode?: string;
+  isEditingExisting?: boolean;
+}
+
+export interface AppConfig {
+  companyName?: string;
+  activity?: string;
+  address?: string;
+  phone?: string;
+  nif?: string;
+  nis?: string;
+  rc?: string;
+  ai?: string;
+  rib?: string;
+  isActivated?: boolean;
+  activationKey?: string;
+  deliveryInfo?: {
+    defaultPayModeDelivery?: 'ESPECE' | 'A_TERME';
+  };
+}
+
 export interface WindowInstance {
   id: ActiveWindowId;
   title: string;

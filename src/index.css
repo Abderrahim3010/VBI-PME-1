@@ -452,14 +452,30 @@ html:not(.dark) [id^="window-"] div[class*="border"]:not([class*="border-t"]):no
   border-color: #cbd5e1 !important;
 }
 
-/* Fix empty table state cut-off line and background breaking across all windows */
+/* Ensure empty table state rows and table wrappers have a single, unified background across all windows */
+html:not(.dark) [id^="window-"] table,
+html:not(.dark) table {
+  background-color: #fafbfc !important;
+}
+
 html:not(.dark) [id^="window-"] tbody tr:has(td[colspan]),
 html:not(.dark) [id^="window-"] tbody td[colspan],
 html:not(.dark) tbody tr:has(td[colspan]),
 html:not(.dark) tbody td[colspan] {
   border-bottom: none !important;
   border-right: none !important;
-  background-color: transparent !important;
+  background-color: #fafbfc !important;
+  color: #64748b !important;
+}
+
+html.dark [id^="window-"] tbody tr:has(td[colspan]),
+html.dark [id^="window-"] tbody td[colspan],
+html.dark tbody tr:has(td[colspan]),
+html.dark tbody td[colspan] {
+  border-bottom: none !important;
+  border-right: none !important;
+  background-color: #0f172a !important;
+  color: #94a3b8 !important;
 }
 
 /* ==========================================================================
