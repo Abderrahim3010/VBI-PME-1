@@ -1358,14 +1358,15 @@ function SalesVoucherWindow({
   const performInsertProduct = (product: Product, quantitySelected: number = 1, priceSelected?: number) => {
     const finalPrice = priceSelected !== undefined ? priceSelected : product.prixVente1;
     
-    const colisageVal = (product as any).colisage || 12;
+    const colisageVal = Number((product as any).colisage) || 0;
+    const hasColisage = colisageVal > 0;
     const newItem: VoucherItem = {
       id: `draft-${Date.now()}-${Math.random()}`,
       code: product.code,
       designation: product.designation,
-      colisage: colisageVal,
-      nbreColis: Math.floor(quantitySelected / colisageVal),
-      pieces: quantitySelected % colisageVal,
+      colisage: hasColisage ? colisageVal : 0,
+      nbreColis: hasColisage ? Math.floor(quantitySelected / colisageVal) : 0,
+      pieces: hasColisage ? quantitySelected % colisageVal : 0,
       qty: quantitySelected,
       price: finalPrice,
       total: quantitySelected * finalPrice
@@ -2214,15 +2215,15 @@ function SalesVoucherWindow({
                         <td 
                           className="px-1 py-1 sm:py-2 text-center font-mono select-all text-slate-700 dark:text-slate-300 truncate whitespace-nowrap overflow-hidden"
                         >
-                          {item.nbreColis ?? ''}
+                          {item.nbreColis && item.nbreColis > 0 ? item.nbreColis : ''}
                         </td>
                         <td 
                           className="px-1 py-1 sm:py-2 text-center font-mono text-slate-700 dark:text-slate-300 select-all truncate whitespace-nowrap overflow-hidden"
                         >
-                          {item.colisage ?? ''}
+                          {item.colisage && item.colisage > 0 ? item.colisage : ''}
                         </td>
                         <td className="px-1 py-2 text-center font-mono select-all text-slate-700 dark:text-slate-300 truncate whitespace-nowrap overflow-hidden">
-                          {item.pieces ?? ''}
+                          {item.pieces && item.pieces > 0 ? item.pieces : ''}
                         </td>
                         <td className={`px-1 py-2 text-center font-mono font-bold select-all truncate whitespace-nowrap overflow-hidden ${isSelected ? 'text-m3-primary dark:text-sky-400' : 'text-slate-900 dark:text-slate-200'}`}>
                           {item.qty}
@@ -3242,14 +3243,16 @@ function SalesVoucherWindow({
 
         const saveEditedItem = async (newQty: number, newPrice: number) => {
           const updated = [...draftItems];
-          const colisage = currentItem.colisage || 12;
+          const colisageVal = Number(currentItem.colisage) || 0;
+          const hasColisage = colisageVal > 0;
           updated[editModalIndex] = {
             ...currentItem,
             qty: newQty,
             price: newPrice,
             total: newQty * newPrice,
-            nbreColis: Math.floor(newQty / colisage),
-            pieces: newQty % colisage
+            colisage: hasColisage ? colisageVal : 0,
+            nbreColis: hasColisage ? Math.floor(newQty / colisageVal) : 0,
+            pieces: hasColisage ? newQty % colisageVal : 0
           };
           if (await updateActiveDraftItems(updated)) {
             setIsItemEditModalOpen(false);
