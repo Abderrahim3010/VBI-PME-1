@@ -189,7 +189,7 @@ function CaisseWindow({
   }, [sales, purchases, clientPayments, supplierPayments, manualLogs]);
 
   return (
-    <div className="flex-1 flex flex-col gap-4 font-sans text-xs select-all text-slate-800 dark:text-slate-100 p-4 h-full overflow-hidden">
+    <div className="flex-1 flex flex-col gap-4 font-sans text-xs select-none text-slate-800 dark:text-slate-100 p-4 h-full overflow-hidden">
       
       {/* Dynamic Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-3 select-none shrink-0">

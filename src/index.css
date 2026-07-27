@@ -14,6 +14,18 @@
   --outline-variant-color: #cbd5e1; /* Slate 300 - borders */
 }
 
+/* Prevent unwanted browser text selection when clicking on tables, rows, cells or buttons */
+th, td, tr, table, .window-frame, .window-content, .window-titlebar {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Allow text selection only inside editable inputs, textareas, and print area */
+input, textarea, [contenteditable="true"], .selectable-text, .printable-document {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
 .dark {
   --primary-color: #0ea5e9; /* Sky 500 */
   --primary-container-color: #0369a1; /* Sky 700 */

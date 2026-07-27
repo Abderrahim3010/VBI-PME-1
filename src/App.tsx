@@ -842,17 +842,15 @@ export default function App() {
 
     const otherPurchases = purchases.filter(p => String(p.id) !== String(id));
 
-    // Revert stock (subtract purchased quantities from products)
+    // Revert stock (reset products in this purchase voucher to stock 0)
     setProducts(prevProducts => {
       return prevProducts.map(p => {
         const matchingItems = target.items.filter(i => i.code === p.code);
         if (matchingItems.length > 0) {
-          const totalQtyToSubtract = matchingItems.reduce((acc, curr) => acc + curr.qty, 0);
-          const finalStock = Math.max(0, p.stock - totalQtyToSubtract);
           return {
             ...p,
-            stock: finalStock,
-            stockColis: Math.ceil(finalStock / 12)
+            stock: 0,
+            stockColis: 0
           };
         }
         return p;
@@ -1905,6 +1903,7 @@ export default function App() {
                 products={products}
                 clients={clients}
                 sales={sales}
+                purchases={purchases}
                 onAddSale={handleAddSalesVoucher}
                 onUpdateSale={handleUpdateSalesVoucher}
                 onDeleteSale={handleDeleteSalesVoucher}

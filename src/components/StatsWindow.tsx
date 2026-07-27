@@ -345,7 +345,7 @@ function StatsWindow({
   const activeLogObj = auditLogs.find(l => l.id === selectedLogId) || auditLogs[0];
 
   return (
-    <div className="flex-1 flex flex-col gap-3 font-sans text-xs select-all bg-white dark:bg-slate-900 h-full overflow-hidden p-3">
+    <div className="flex-1 flex flex-col gap-3 font-sans text-xs select-none bg-white dark:bg-slate-900 h-full overflow-hidden p-3">
       
       {/* Primary 3-Option Top Mode Header Navigation Bar */}
       <div className="flex flex-wrap items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2.5 select-none shrink-0 bg-slate-50 dark:bg-slate-950 p-2 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs">

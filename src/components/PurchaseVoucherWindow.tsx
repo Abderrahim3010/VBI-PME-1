@@ -1942,7 +1942,7 @@ function PurchaseVoucherWindow({
                       </td>
                       <td className="px-3 py-2 text-slate-500 dark:text-slate-400">{v.date}</td>
                       <td className="px-3 py-2 text-slate-500 dark:text-slate-400">{v.time}</td>
-                      <td className="px-3 py-2 truncate max-w-[140px] select-all font-medium">{displaySupplier}</td>
+                      <td className="px-3 py-2 truncate max-w-[140px] select-none font-medium">{displaySupplier}</td>
                       <td className="px-3 py-2 text-center text-slate-500 dark:text-slate-400">{displayItemsCount}</td>
                       <td className="px-3 py-2 text-right font-black text-indigo-950 dark:text-indigo-300">
                         {displayTtc.toLocaleString('fr-FR', { minimumFractionDigits: 2 })} DA
@@ -2272,7 +2272,7 @@ function PurchaseVoucherWindow({
                       >
                         <td className="px-3 py-2 text-center font-bold text-slate-400">{actualIndex + 1}</td>
                         <td className="px-3 py-2 font-mono font-bold text-slate-900 dark:text-white">{item.code}</td>
-                        <td className="px-3 py-2 font-sans truncate select-all">{item.designation}</td>
+                        <td className="px-3 py-2 font-sans truncate select-none">{item.designation}</td>
                         <td className="px-1 py-2 text-center font-mono">{item.nbreColis ?? 0}</td>
                         <td className="px-1 py-2 text-center text-slate-400 dark:text-slate-500 font-mono">{item.colisage ?? 0}</td>
                         <td className={`px-1 py-2 text-center font-mono font-bold ${isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-indigo-950 dark:text-indigo-300'}`}>{item.qty}</td>
@@ -2331,7 +2331,7 @@ function PurchaseVoucherWindow({
         {/* Sidebar Totals column (Right) */}
         <div 
           style={{ width: `${100 - bottomSplitWidth}%` }} 
-          className="bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800/80 p-2.5 rounded-2xl flex flex-col gap-1.5 select-all overflow-y-auto h-full min-w-[200px] shadow-xs"
+          className="bg-white dark:bg-slate-950 border border-slate-200/50 dark:border-slate-800/80 p-2.5 rounded-2xl flex flex-col gap-1.5 select-none overflow-y-auto h-full min-w-[200px] shadow-xs"
         >
           <div className="bg-indigo-500/10 dark:bg-indigo-950/30 text-indigo-600 dark:text-indigo-400 font-extrabold px-3 py-1 rounded-xl text-[9.5px] tracking-wider text-center uppercase font-sans shrink-0">
             Recap Financier Achat
@@ -2369,7 +2369,7 @@ function PurchaseVoucherWindow({
           </div>
 
           {/* NET EN DINARS (TTC À PAYER) replaces previous styling to match sales */}
-          <div className="bg-slate-950 dark:bg-black p-4 rounded-xl text-center flex flex-col gap-1.5 shadow-xl border border-slate-800 mt-2 shrink-0 select-all">
+          <div className="bg-slate-950 dark:bg-black p-4 rounded-xl text-center flex flex-col gap-1.5 shadow-xl border border-slate-800 mt-2 shrink-0 select-none">
             <span className="text-[11px] font-bold text-amber-400 tracking-widest font-display uppercase leading-none">
               NET EN DINARS (ACHAT)
             </span>

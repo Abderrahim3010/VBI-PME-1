@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { Product, Client, SalesVoucher, VoucherItem, User } from '../types';
+import { Product, Client, SalesVoucher, PurchaseVoucher, VoucherItem, User } from '../types';
 import { useResizableColumns } from '../hooks/useResizableColumns';
 import {
   applyReservationTransition,
@@ -14,7 +14,7 @@ import {
 import { 
   Edit, Edit3, RefreshCw, BarChart3, Printer, Plug, Search, Plus, Minus, Trash2, 
   Package, Coins, DollarSign, User as UserIcon, Users, AlertTriangle, Lightbulb, 
-  Folder, FileText, MessageSquare, HelpCircle, X, Check, Eye
+  Folder, FileText, MessageSquare, HelpCircle, X, Check, Eye, History
 } from 'lucide-react';
 
 type OpenVoucher = SalesOpenDraft;
@@ -23,6 +23,7 @@ interface SalesVoucherWindowProps {
   products: Product[];
   clients: Client[];
   sales: SalesVoucher[];
+  purchases?: PurchaseVoucher[];
   onAddSale: (voucher: SalesVoucher) => void;
   onUpdateSale: (oldId: string, updatedVoucher: SalesVoucher) => void;
   onDeleteSale: (id: string) => void;
@@ -40,6 +41,7 @@ function SalesVoucherWindow({
   products,
   clients,
   sales,
+  purchases = [],
   onAddSale,
   onUpdateSale,
   onDeleteSale,
@@ -101,9 +103,14 @@ function SalesVoucherWindow({
   const [observations, setObservations] = useState('');
   const [versement, setVersement] = useState<number>(0);
   const [remise, setRemise] = useState<number>(0);
+  const [remiseType, setRemiseType] = useState<'DA' | 'PERCENT'>('DA');
   const [tvaRate, setTvaRate] = useState<number>(0); // 0% default
   const [timbreValue, setTimbreValue] = useState<number>(0);
   const [draftItems, setDraftItems] = useState<VoucherItem[]>([]);
+
+  // Product History Overlay state
+  const [isHistoryOverlayOpen, setIsHistoryOverlayOpen] = useState(false);
+  const [historySearchQuery, setHistorySearchQuery] = useState('');
 
   // Search input state
   const [showBenefit, setShowBenefit] = useState(false);
@@ -749,8 +756,10 @@ function SalesVoucherWindow({
     const items = mode === 'create' ? draftItems : (selectedSale?.items || []);
     const rawSum = items.reduce((acc, item) => acc + item.total, 0);
     
-    // Remise can be specified
-    const activeRemise = mode === 'create' ? remise : (selectedSale?.remise || 0);
+    // Remise can be specified as fixed amount or percentage
+    const activeRemise = mode === 'create' 
+      ? (remiseType === 'PERCENT' ? (rawSum * (remise || 0)) / 100 : (remise || 0)) 
+      : (selectedSale?.remise || 0);
     const totalHT = Math.max(0, rawSum - activeRemise);
     
     const activeTvaRate = mode === 'create' ? tvaRate : 0;
@@ -796,7 +805,7 @@ function SalesVoucherWindow({
       totalQty: items.reduce((acc, item) => acc + item.qty, 0),
       colisCount: items.reduce((acc, item) => acc + (item.nbreColis || 0), 0)
     };
-  }, [draftItems, selectedSale, mode, selectedClientObj, versement, remise, tvaRate, editingVoucherId, sales]);
+  }, [draftItems, selectedSale, mode, selectedClientObj, versement, remise, remiseType, tvaRate, editingVoucherId, sales]);
 
   // Active items helper reference
   const currentItems = mode === 'create' ? draftItems : (selectedSale?.items || []);
@@ -808,12 +817,14 @@ function SalesVoucherWindow({
     const time = isCreate ? newTime : (selectedSale?.time || '');
     const clientName = isCreate ? (newClientName || 'Anonyme') : (selectedSale?.client || 'Anonyme');
     const items = isCreate ? draftItems : (selectedSale?.items || []);
-    const activeRemise = isCreate ? remise : (selectedSale?.remise || 0);
+    const rawSum = items.reduce((acc, item) => acc + item.total, 0);
+    const activeRemise = isCreate 
+      ? (remiseType === 'PERCENT' ? (rawSum * (remise || 0)) / 100 : (remise || 0))
+      : (selectedSale?.remise || 0);
     const activeTvaRate = isCreate ? tvaRate : (selectedSale?.tva ? 19 : 0);
     const activeVendeur = isCreate ? vendeurName : (selectedSale?.vendeur || '<Aucun>');
     const observationsText = isCreate ? observations : (selectedSale?.observations || '');
     
-    const rawSum = items.reduce((acc, item) => acc + item.total, 0);
     const totalHT = Math.max(0, rawSum - activeRemise);
     const tvaVal = totalHT * (activeTvaRate / 100);
     const timbreVal = isCreate 
@@ -848,7 +859,21 @@ function SalesVoucherWindow({
       observations: observationsText,
       payMode
     };
-  }, [mode, newSaleId, selectedSale, newDate, newTime, newClientName, draftItems, remise, tvaRate, vendeurName, observations, clients, paymentMode]);
+  }, [mode, newSaleId, selectedSale, newDate, newTime, newClientName, draftItems, remise, remiseType, tvaRate, vendeurName, observations, clients, paymentMode]);
+
+  const canViewBenefit = useMemo(() => {
+    if (!currentUser) return true;
+    if (currentUser.type === '1') return true;
+    return Array.isArray(currentUser.permissions) && currentUser.permissions.includes('32');
+  }, [currentUser]);
+
+  const handleToggleBenefit = () => {
+    if (!canViewBenefit) {
+      showRetroAlert("Autorisation insuffisante !", "Autorisation insuffisante !");
+      return;
+    }
+    setShowBenefit(prev => !prev);
+  };
 
   // Keyboard shortcut Ctrl+B for profit/benefit toggle
   useEffect(() => {
@@ -856,14 +881,14 @@ function SalesVoucherWindow({
       if (!isOpen) return;
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
         e.preventDefault();
-        setShowBenefit(prev => !prev);
+        handleToggleBenefit();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen]);
+  }, [isOpen, canViewBenefit]);
 
   // Total Benefit / Margin Calculation
   const totalBenefit = useMemo(() => {
@@ -875,9 +900,100 @@ function SalesVoucherWindow({
       const itemProfit = profitPerUnit * item.qty;
       return acc + itemProfit;
     }, 0);
-    const activeRemise = mode === 'create' ? remise : (selectedSale?.remise || 0);
+    const rawSum = items.reduce((acc, item) => acc + item.total, 0);
+    const activeRemise = mode === 'create' 
+      ? (remiseType === 'PERCENT' ? (rawSum * (remise || 0)) / 100 : (remise || 0)) 
+      : (selectedSale?.remise || 0);
     return itemsBenefit - activeRemise;
-  }, [draftItems, selectedSale, mode, remise, products]);
+  }, [draftItems, selectedSale, mode, remise, remiseType, products]);
+
+  // Determine active product for recent history lookup
+  const activeHistoryProduct = useMemo(() => {
+    if (historySearchQuery.trim()) {
+      const q = historySearchQuery.trim().toLowerCase();
+      const found = products.find(p => p.code.toLowerCase().includes(q) || p.designation.toLowerCase().includes(q));
+      if (found) return found;
+    }
+    if (selectedProductInChooser) return selectedProductInChooser;
+    if (viewingItemCode) {
+      const found = products.find(p => p.code === viewingItemCode);
+      if (found) return found;
+    }
+    if (selectedItemIndex >= 0 && draftItems[selectedItemIndex]) {
+      const found = products.find(p => p.code === draftItems[selectedItemIndex].code);
+      if (found) return found;
+    }
+    if (soldItemsSearchQuery.trim()) {
+      const q = soldItemsSearchQuery.trim().toLowerCase();
+      const found = products.find(p => p.code.toLowerCase().includes(q) || p.designation.toLowerCase().includes(q));
+      if (found) return found;
+    }
+    return products[0] || null;
+  }, [historySearchQuery, selectedProductInChooser, viewingItemCode, selectedItemIndex, draftItems, soldItemsSearchQuery, products]);
+
+  // Extract last 5 stock transactions (sales + purchases) for activeHistoryProduct
+  const productHistoryList = useMemo(() => {
+    if (!activeHistoryProduct) return [];
+    const pCode = activeHistoryProduct.code;
+    const records: Array<{
+      id: string;
+      voucherNo: string;
+      date: string;
+      time: string;
+      type: 'VENTE' | 'RETOUR' | 'ACHAT';
+      partner: string;
+      qty: number;
+      price: number;
+      timestamp: number;
+    }> = [];
+
+    (sales || []).forEach(s => {
+      (s.items || []).forEach(item => {
+        if (item.code === pCode) {
+          const dateTimeStr = `${s.date || ''} ${s.time || '00:00'}`;
+          const parsedTime = Date.parse(dateTimeStr) || 0;
+          records.push({
+            id: `sale-${s.id}-${Math.random()}`,
+            voucherNo: `BL N° ${s.id}`,
+            date: s.date || '',
+            time: s.time || '',
+            type: s.type === 'RETOUR' ? 'RETOUR' : 'VENTE',
+            partner: s.client || 'Anonyme',
+            qty: s.type === 'RETOUR' ? item.qty : -item.qty,
+            price: item.price || 0,
+            timestamp: parsedTime
+          });
+        }
+      });
+    });
+
+    (purchases || []).forEach(p => {
+      (p.items || []).forEach(item => {
+        if (item.code === pCode) {
+          const dateTimeStr = `${p.date || ''} ${p.time || '00:00'}`;
+          const parsedTime = Date.parse(dateTimeStr) || 0;
+          records.push({
+            id: `purchase-${p.id}-${Math.random()}`,
+            voucherNo: `BA N° ${p.id}`,
+            date: p.date || '',
+            time: p.time || '',
+            type: 'ACHAT',
+            partner: p.supplier || 'Fournisseur',
+            qty: item.qty,
+            price: item.price || 0,
+            timestamp: parsedTime
+          });
+        }
+      });
+    });
+
+    records.sort((a, b) => {
+      if (b.timestamp !== a.timestamp) return b.timestamp - a.timestamp;
+      return b.date.localeCompare(a.date);
+    });
+
+    return records.slice(0, 5);
+  }, [activeHistoryProduct, sales, purchases]);
 
   // Auto-filtering/indexing logic for the sold products table
   const displayedItems = useMemo(() => {
@@ -1429,16 +1545,22 @@ function SalesVoucherWindow({
     const currentItem = draftItems[selectedItemIndex];
     if (!currentItem) return;
 
-    const updated = draftItems.filter(item => item.id !== currentItem.id);
-    if (!await updateActiveDraftItems(updated)) return;
+    showRetroConfirm(
+      `Voulez-vous vraiment supprimer le produit "${currentItem.designation}" de ce bon ?`,
+      async () => {
+        const updated = draftItems.filter(item => item.id !== currentItem.id);
+        if (!await updateActiveDraftItems(updated)) return;
 
-    const nextIdx = Math.max(0, selectedItemIndex - 1);
-    setSelectedItemIndex(nextIdx);
-    if (updated[nextIdx]) {
-      setViewingItemCode(updated[nextIdx].code);
-    } else {
-      setViewingItemCode('');
-    }
+        const nextIdx = Math.max(0, selectedItemIndex - 1);
+        setSelectedItemIndex(nextIdx);
+        if (updated[nextIdx]) {
+          setViewingItemCode(updated[nextIdx].code);
+        } else {
+          setViewingItemCode('');
+        }
+      },
+      "Confirmation de suppression"
+    );
   };
 
   const handleEditPriceOrQty = () => {
@@ -1865,7 +1987,7 @@ function SalesVoucherWindow({
         </div>
 
         {/* Central Balance / Cash Account summary card */}
-        <div className="w-[190px] bg-slate-50 dark:bg-slate-900 p-1.5 border border-slate-300/10 rounded-2xl flex flex-col gap-1 text-xs font-mono font-bold leading-tight shadow-xs select-all shrink-0">
+        <div className="w-[190px] bg-slate-50 dark:bg-slate-900 p-1.5 border border-slate-300/10 rounded-2xl flex flex-col gap-1 text-xs font-mono font-bold leading-tight shadow-xs select-none shrink-0">
           {selectedClientObj.name.toLowerCase() !== 'anonyme' && (
             <div className="flex justify-between items-center bg-white dark:bg-slate-950 px-2 py-0.5 border border-slate-200/50 dark:border-slate-800/55 rounded-lg">
               <span style={{ fontFamily: 'Arial', fontSize: '11.5px' }} className="text-[9.5px] text-slate-500 dark:text-slate-400 font-semibold font-sans">Ancien solde:</span>
@@ -1977,15 +2099,25 @@ function SalesVoucherWindow({
         className="mx-0.5 py-1 px-2 bg-slate-100/60 dark:bg-slate-900/60 border border-slate-200/50 dark:border-slate-800 rounded-xl flex items-center justify-start gap-2 select-none shrink-0 overflow-hidden transition-all duration-300 h-10"
       >
         {/* Search input wrapped in a tight flex layout */}
-        <div className="relative flex items-center shrink-0">
-          <Search size={13} className="absolute left-2 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Saisir code barre ou désignation..."
-            value={soldItemsSearchQuery}
-            onChange={(e) => setSoldItemsSearchQuery(e.target.value)}
-            className="w-56 h-7.5 pl-7 pr-2.5 bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800 rounded-lg font-sans text-xs focus:outline-none font-semibold focus:border-m3-primary dark:focus:border-sky-500"
-          />
+        <div className="relative flex items-center shrink-0 gap-1">
+          <div className="relative flex items-center shrink-0">
+            <Search size={13} className="absolute left-2 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Saisir code barre ou désignation..."
+              value={soldItemsSearchQuery}
+              onChange={(e) => setSoldItemsSearchQuery(e.target.value)}
+              className="w-52 h-7.5 pl-7 pr-2.5 bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800 rounded-lg font-sans text-xs focus:outline-none font-semibold focus:border-m3-primary dark:focus:border-sky-500"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsHistoryOverlayOpen(true)}
+            title="Historique des mouvements de stock (5 derniers)"
+            className="h-7.5 w-7.5 flex items-center justify-center rounded-lg bg-white dark:bg-slate-950 border border-slate-200/60 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 text-sky-600 dark:text-sky-400 transition-all cursor-pointer shadow-2xs shrink-0"
+          >
+            <History size={14} />
+          </button>
         </div>
 
         {/* Group containing navigator AND action buttons together, so they stay positioned beside each other without moving on resize */}
@@ -2170,7 +2302,7 @@ function SalesVoucherWindow({
               <tbody className="bg-white/90 dark:bg-slate-950/90">
                 {displayedItems.length === 0 ? (
                   <tr>
-                    <td colSpan={showCostPrices ? 11 : 9} className="text-center py-16 text-slate-400 dark:text-slate-600 italic font-sans select-all">
+                    <td colSpan={showCostPrices ? 11 : 9} className="text-center py-16 text-slate-400 dark:text-slate-600 italic font-sans select-none">
                       {soldItemsSearchQuery ? "Aucun article correspondant à votre recherche." : "Aucun article enregistré pour ce bon. Cliquez sur \"Nouveau Bon\" puis \"Insérer Produit\"."}
                     </td>
                   </tr>
@@ -2203,45 +2335,45 @@ function SalesVoucherWindow({
                         </td>
                         <td 
                           style={isBlocked ? { color: '#e11d48', fontWeight: 'bold' } : undefined}
-                          className={`px-2 py-2 font-mono text-[11px] truncate whitespace-nowrap overflow-hidden select-all ${isBlocked ? 'text-rose-600 dark:text-rose-400 bg-rose-50/30 dark:bg-rose-950/20 border-l-2 border-rose-500' : ''}`}
+                          className={`px-2 py-2 font-mono text-[11px] truncate whitespace-nowrap overflow-hidden select-none ${isBlocked ? 'text-rose-600 dark:text-rose-400 bg-rose-50/30 dark:bg-rose-950/20 border-l-2 border-rose-500' : ''}`}
                         >
                           {item.code}
                         </td>
                         <td 
-                          className="px-2 py-2 font-sans truncate whitespace-nowrap overflow-hidden select-all"
+                          className="px-2 py-2 font-sans truncate whitespace-nowrap overflow-hidden select-none"
                         >
                           {item.designation}
                         </td>
                         <td 
-                          className="px-1 py-1 sm:py-2 text-center font-mono select-all text-slate-700 dark:text-slate-300 truncate whitespace-nowrap overflow-hidden"
+                          className="px-1 py-1 sm:py-2 text-center font-mono select-none text-slate-700 dark:text-slate-300 truncate whitespace-nowrap overflow-hidden"
                         >
                           {item.nbreColis && item.nbreColis > 0 ? item.nbreColis : ''}
                         </td>
                         <td 
-                          className="px-1 py-1 sm:py-2 text-center font-mono text-slate-700 dark:text-slate-300 select-all truncate whitespace-nowrap overflow-hidden"
+                          className="px-1 py-1 sm:py-2 text-center font-mono text-slate-700 dark:text-slate-300 select-none truncate whitespace-nowrap overflow-hidden"
                         >
                           {item.colisage && item.colisage > 0 ? item.colisage : ''}
                         </td>
-                        <td className="px-1 py-2 text-center font-mono select-all text-slate-700 dark:text-slate-300 truncate whitespace-nowrap overflow-hidden">
+                        <td className="px-1 py-2 text-center font-mono select-none text-slate-700 dark:text-slate-300 truncate whitespace-nowrap overflow-hidden">
                           {item.pieces && item.pieces > 0 ? item.pieces : ''}
                         </td>
-                        <td className={`px-1 py-2 text-center font-mono font-bold select-all truncate whitespace-nowrap overflow-hidden ${isSelected ? 'text-m3-primary dark:text-sky-400' : 'text-slate-900 dark:text-slate-200'}`}>
+                        <td className={`px-1 py-2 text-center font-mono font-bold select-none truncate whitespace-nowrap overflow-hidden ${isSelected ? 'text-m3-primary dark:text-sky-400' : 'text-slate-900 dark:text-slate-200'}`}>
                           {item.qty}
                         </td>
-                        <td className="px-2 py-2 text-right font-mono select-all truncate whitespace-nowrap overflow-hidden">
+                        <td className="px-2 py-2 text-right font-mono select-none truncate whitespace-nowrap overflow-hidden">
                           {(item.price ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 1 })}
                         </td>
                         {showCostPrices && (
                           <>
-                            <td className="px-2 py-2 text-right font-mono font-bold text-emerald-950 dark:text-emerald-300 bg-[#84e183] dark:bg-emerald-950/60 border-x border-emerald-300/80 dark:border-emerald-900/50 truncate whitespace-nowrap overflow-hidden select-all">
+                            <td className="px-2 py-2 text-right font-mono font-bold text-emerald-950 dark:text-emerald-300 bg-[#84e183] dark:bg-emerald-950/60 border-x border-emerald-300/80 dark:border-emerald-900/50 truncate whitespace-nowrap overflow-hidden select-none">
                               {itemAchat.toLocaleString('fr-FR', { minimumFractionDigits: 1 })}
                             </td>
-                            <td className="px-2 py-2 text-right font-mono font-bold text-amber-950 dark:text-amber-300 bg-[#e6bb29] dark:bg-amber-950/60 border-x border-amber-300/80 dark:border-amber-900/50 truncate whitespace-nowrap overflow-hidden select-all">
+                            <td className="px-2 py-2 text-right font-mono font-bold text-amber-950 dark:text-amber-300 bg-[#e6bb29] dark:bg-amber-950/60 border-x border-amber-300/80 dark:border-amber-900/50 truncate whitespace-nowrap overflow-hidden select-none">
                               {itemRevient.toLocaleString('fr-FR', { minimumFractionDigits: 1 })}
                             </td>
                           </>
                         )}
-                        <td className="px-2 py-2 text-right font-mono font-extrabold select-all truncate whitespace-nowrap overflow-hidden">
+                        <td className="px-2 py-2 text-right font-mono font-extrabold select-none truncate whitespace-nowrap overflow-hidden">
                           {(item.total ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 1 })}
                         </td>
                       </tr>
@@ -2257,7 +2389,7 @@ function SalesVoucherWindow({
         <div className="col-span-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 flex flex-col gap-2 justify-start shadow-sm">
           
           {/* Money recaps list matching screenshot exactly */}
-          <div className="flex flex-col gap-1.5 font-mono select-all text-xs">
+          <div className="flex flex-col gap-1.5 font-mono select-none text-xs">
             <div className="flex justify-between items-center py-0.5 border-b border-slate-100 dark:border-slate-900">
               <span style={{ fontSize: '10.5px', fontFamily: 'Arial' }} className="font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide text-[9px]">Montant Brut</span>
               <span style={{ fontSize: '11.5px', fontFamily: 'Arial' }} className="font-black text-slate-800 dark:text-slate-200">
@@ -2266,15 +2398,53 @@ function SalesVoucherWindow({
             </div>
 
             <div className="flex justify-between items-center py-0.5 border-b border-slate-100 dark:border-slate-900">
-              <span style={{ fontSize: '10.5px', fontFamily: 'Arial' }} className="font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide text-[9px]">Remise (Dinars)</span>
-              <input
-                type="number"
-                disabled={mode === 'view'}
-                value={remise || ''}
-                onChange={(e) => setRemise(Math.max(0, Number(e.target.value)))}
-                style={{ fontSize: '11px', fontFamily: 'Arial' }}
-                className="w-24 text-right bg-slate-50 dark:bg-slate-900 h-6 border border-slate-200 dark:border-slate-800 rounded px-1.5 text-red-600 font-extrabold outline-none focus:border-red-500"
-              />
+              <div className="flex items-center gap-1.5">
+                <span style={{ fontSize: '10.5px', fontFamily: 'Arial' }} className="font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wide text-[9px]">Remise</span>
+                {remiseType === 'PERCENT' && computedMetrics.remise > 0 && (
+                  <span className="text-[9.5px] font-mono font-bold text-rose-500">
+                    (-{(computedMetrics.remise).toLocaleString('fr-FR', { minimumFractionDigits: 0 })} DA)
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded p-0.5 border border-slate-200 dark:border-slate-700">
+                  <button
+                    type="button"
+                    disabled={mode === 'view'}
+                    onClick={() => setRemiseType('DA')}
+                    className={`px-1.5 py-0.2 text-[9px] font-extrabold rounded transition-all cursor-pointer ${
+                      remiseType === 'DA'
+                        ? 'bg-rose-600 text-white shadow-2xs'
+                        : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                    }`}
+                    title="Remise en Dinars (DA / $)"
+                  >
+                    DA
+                  </button>
+                  <button
+                    type="button"
+                    disabled={mode === 'view'}
+                    onClick={() => setRemiseType('PERCENT')}
+                    className={`px-1.5 py-0.2 text-[9px] font-extrabold rounded transition-all cursor-pointer ${
+                      remiseType === 'PERCENT'
+                        ? 'bg-rose-600 text-white shadow-2xs'
+                        : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'
+                    }`}
+                    title="Remise en Pourcentage (%)"
+                  >
+                    %
+                  </button>
+                </div>
+                <input
+                  type="number"
+                  disabled={mode === 'view'}
+                  value={remise || ''}
+                  onChange={(e) => setRemise(Math.max(0, Number(e.target.value)))}
+                  style={{ fontSize: '11px', fontFamily: 'Arial' }}
+                  placeholder="0"
+                  className="w-20 text-right bg-slate-50 dark:bg-slate-900 h-6 border border-slate-200 dark:border-slate-800 rounded px-1.5 text-red-600 font-extrabold outline-none focus:border-red-500"
+                />
+              </div>
             </div>
 
             <div className="flex justify-between items-center py-0.5 border-b border-slate-100 dark:border-slate-900">
@@ -2298,37 +2468,30 @@ function SalesVoucherWindow({
               </span>
             </div>
 
-            <div className="flex flex-col gap-0.5 py-1.5 bg-slate-50 dark:bg-slate-900/50 p-2 rounded-xl border border-slate-100 dark:border-slate-800 mt-0.5">
-              <div className="flex justify-between items-center w-full">
-                <span style={{ fontSize: '11px', fontFamily: 'Arial' }} className="font-black text-blue-900 dark:text-sky-300 uppercase tracking-wide text-[9.5px]">Net à Payer (TTC)</span>
-                <span style={{ fontSize: '12.5px', fontFamily: 'Arial' }} className="font-mono font-black text-blue-900 dark:text-sky-400 text-xs">
-                  {(computedMetrics.ttc ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 1 })} DA
-                </span>
-              </div>
-              {showBenefit && (
-                <div className="flex justify-between items-center w-full pt-1 border-t border-dashed border-emerald-500/40 text-[9px] select-all">
-                  <span className="font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wide">Marge Bénéficiaire :</span>
-                  <span className="font-mono font-black text-emerald-600 dark:text-emerald-400 text-[10.5px]">
-                    +{(totalBenefit ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 1 })} DA
-                  </span>
-                </div>
-              )}
-              {!showBenefit && (
-                <div className="text-center text-[8px] text-slate-400 dark:text-slate-500 italic pt-0.5 border-t border-slate-200/40 dark:border-slate-800/40 select-none">
-                  Appuyez sur <kbd className="bg-slate-200 dark:bg-slate-800 px-1 py-0.5 rounded font-mono font-bold text-slate-600 dark:text-slate-300">Ctrl + B</kbd> pour afficher la marge.
-                </div>
-              )}
-            </div>
           </div>
 
-          {/* Totals Sub-Window- Sticky to place without mt-auto pushing it with resize */}
-          <div className="bg-slate-950 dark:bg-black p-4 rounded-xl text-center flex flex-col gap-1.5 shadow-xl border border-slate-800 mt-2 shrink-0 select-all">
+          {/* Totals Sub-Window */}
+          <div 
+            onClick={handleToggleBenefit}
+            title="Saisie Ctrl+B pour afficher/masquer la marge"
+            className="bg-slate-950 dark:bg-black p-3.5 rounded-xl text-center flex flex-col gap-1 shadow-xl border border-slate-800 mt-2 shrink-0 cursor-pointer select-none transition-all hover:border-slate-700"
+          >
             <span className="text-[11px] font-bold text-amber-400 tracking-widest font-display uppercase leading-none">
               NET EN DINARS (TTC À PAYER)
             </span>
-            <span className="text-2xl sm:text-3xl font-mono font-black text-[#10b981] dark:text-[#34d399] tracking-tight drop-shadow-[0_0_10px_rgba(52,211,153,0.6)] mt-1">
+            <span className="text-2xl sm:text-3xl font-mono font-black text-[#10b981] dark:text-[#34d399] tracking-tight drop-shadow-[0_0_10px_rgba(52,211,153,0.6)] mt-0.5">
               {(computedMetrics.ttc ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} DA
             </span>
+            {showBenefit && (
+              <div className="mt-1.5 pt-2 border-t border-slate-800/80 flex justify-between items-center px-1 font-mono text-xs">
+                <span className="font-bold text-emerald-400 text-[10px] uppercase tracking-wide">
+                  Marge Bénéficiaire :
+                </span>
+                <span className="font-black text-emerald-400 text-xs">
+                  +{(totalBenefit ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 1 })} DA
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -2421,16 +2584,27 @@ function SalesVoucherWindow({
               {/* Search Bar inside Chooser */}
               <div className="flex flex-col gap-1.5">
                 <span className="font-extrabold text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wide">Filtrer les articles de la base:</span>
-                <div className="relative flex items-center">
-                  <Search size={14} className="absolute left-3 text-slate-400" />
-                  <input
-                    type="text"
-                    autoFocus
-                    placeholder="Saisissez le nom d'un produit, la référence ou scannez son code-barres..."
-                    value={chooserSearchQuery}
-                    onChange={(e) => setChooserSearchQuery(e.target.value)}
-                    className="w-full h-9 pl-9 pr-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl font-sans text-xs focus:outline-none focus:border-m3-primary dark:focus:border-sky-500 animate-pulse-once"
-                  />
+                <div className="relative flex items-center gap-1.5">
+                  <div className="relative flex-1 flex items-center">
+                    <Search size={14} className="absolute left-3 text-slate-400" />
+                    <input
+                      type="text"
+                      autoFocus
+                      placeholder="Saisissez le nom d'un produit, la référence ou scannez son code-barres..."
+                      value={chooserSearchQuery}
+                      onChange={(e) => setChooserSearchQuery(e.target.value)}
+                      className="w-full h-9 pl-9 pr-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl font-sans text-xs focus:outline-none focus:border-m3-primary dark:focus:border-sky-500 animate-pulse-once"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsHistoryOverlayOpen(true)}
+                    title="Historique des mouvements récents"
+                    className="h-9 px-3 flex items-center gap-1 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700 text-sky-700 dark:text-sky-400 text-xs font-bold transition-all cursor-pointer shrink-0"
+                  >
+                    <History size={14} />
+                    <span className="hidden sm:inline">Historique</span>
+                  </button>
                 </div>
               </div>
 
@@ -3225,14 +3399,13 @@ function SalesVoucherWindow({
         if (!currentItem) return null;
 
         const matchingProduct = products.find(p => p.code === currentItem.code);
-        if (!matchingProduct) return null;
 
-        const purchasePrice = matchingProduct.prixDeRevient || matchingProduct.prixAchat || 0;
-        const hasRevient = typeof matchingProduct.prixDeRevient === 'number' && 
+        const purchasePrice = matchingProduct ? (matchingProduct.prixDeRevient || matchingProduct.prixAchat || 0) : 0;
+        const hasRevient = matchingProduct ? (typeof matchingProduct.prixDeRevient === 'number' && 
                             matchingProduct.prixDeRevient > 0 && 
-                            matchingProduct.prixDeRevient !== matchingProduct.prixAchat;
+                            matchingProduct.prixDeRevient !== matchingProduct.prixAchat) : false;
 
-        const availableStockBeforeThisItem = matchingProduct.stock + currentItem.qty;
+        const availableStockBeforeThisItem = (matchingProduct?.stock ?? 0) + currentItem.qty;
         const projectedStockAfterThisItem = availableStockBeforeThisItem - (editModalQty === '' ? 0 : Number(editModalQty));
 
         const price = editModalPrice === '' ? 0 : Number(editModalPrice);
@@ -4296,6 +4469,139 @@ function SalesVoucherWindow({
           </div>
         );
       })()}
+
+      {/* -------------------- PRODUCT MOVEMENT HISTORY OVERLAY MODAL -------------------- */}
+      {isHistoryOverlayOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-xs flex items-center justify-center z-[10020] p-4 text-xs select-none animate-in fade-in duration-150">
+          <div className="w-[680px] max-w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden text-slate-800 dark:text-slate-200 animate-in zoom-in-95 duration-150">
+            
+            {/* Header */}
+            <div className="bg-gradient-to-r from-sky-700 to-indigo-800 dark:from-slate-950 dark:to-slate-900 px-5 py-3.5 flex items-center justify-between">
+              <div className="flex items-center gap-2.5 text-white font-bold font-display text-sm">
+                <History size={18} className="text-sky-300" />
+                <span>Historique des 5 derniers mouvements de stock</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsHistoryOverlayOpen(false)}
+                className="w-7 h-7 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-all cursor-pointer"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-4 flex flex-col gap-3">
+              {/* Product selector / Search Bar */}
+              <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-950 p-2.5 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+                <Search size={14} className="text-slate-400 shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Rechercher un autre article par code ou désignation..."
+                  value={historySearchQuery}
+                  onChange={(e) => setHistorySearchQuery(e.target.value)}
+                  className="flex-1 bg-transparent font-sans text-xs focus:outline-none font-bold text-slate-800 dark:text-slate-100"
+                />
+                {activeHistoryProduct && (
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 bg-sky-100 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-800/50 rounded-xl font-mono text-[10.5px] font-bold shrink-0">
+                    <Package size={12} />
+                    <span>{activeHistoryProduct.code}</span>
+                  </div>
+                )}
+              </div>
+
+              {activeHistoryProduct ? (
+                <div className="flex flex-col gap-2">
+                  <div className="flex justify-between items-baseline px-1">
+                    <span className="font-extrabold text-sm text-slate-900 dark:text-slate-100 font-display truncate max-w-[420px]">
+                      {activeHistoryProduct.designation}
+                    </span>
+                    <span className="text-xs font-bold text-slate-500 font-mono shrink-0">
+                      Stock actuel: <strong className="text-sky-600 dark:text-sky-400 font-black">{activeHistoryProduct.stock}</strong> pces
+                    </span>
+                  </div>
+
+                  {/* Transactions Table */}
+                  <div className="border border-slate-200/80 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-950">
+                    <table className="w-full text-left font-sans text-xs border-collapse">
+                      <thead className="bg-slate-100 dark:bg-slate-900/90 text-slate-600 dark:text-slate-400 font-black text-[9.5px] uppercase tracking-wider border-b border-slate-200/80 dark:border-slate-800">
+                        <tr>
+                          <th className="px-3 py-2">Date / Heure</th>
+                          <th className="px-3 py-2">Type</th>
+                          <th className="px-3 py-2">Pièce / Tiers</th>
+                          <th className="px-3 py-2 text-right">Quantité</th>
+                          <th className="px-3 py-2 text-right">Prix (DA)</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
+                        {productHistoryList.length > 0 ? (
+                          productHistoryList.map((rec) => (
+                            <tr key={rec.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-900/50 transition-colors">
+                              <td className="px-3 py-2 font-mono text-[11px] text-slate-600 dark:text-slate-400 whitespace-nowrap">
+                                {rec.date} <span className="text-[9.5px] text-slate-400">{rec.time}</span>
+                              </td>
+                              <td className="px-3 py-2 whitespace-nowrap">
+                                {rec.type === 'VENTE' && (
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-900/40">
+                                    Vente
+                                  </span>
+                                )}
+                                {rec.type === 'RETOUR' && (
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-900/40">
+                                    Retour
+                                  </span>
+                                )}
+                                {rec.type === 'ACHAT' && (
+                                  <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/40">
+                                    Achat
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-3 py-2 truncate max-w-[180px]">
+                                <div className="font-bold text-slate-800 dark:text-slate-200 truncate">{rec.voucherNo}</div>
+                                <div className="text-[10px] text-slate-400 truncate">{rec.partner}</div>
+                              </td>
+                              <td className="px-3 py-2 text-right font-mono font-extrabold text-xs whitespace-nowrap">
+                                <span className={rec.qty > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>
+                                  {rec.qty > 0 ? `+${rec.qty}` : rec.qty}
+                                </span>
+                              </td>
+                              <td className="px-3 py-2 text-right font-mono font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">
+                                {rec.price.toLocaleString('fr-FR', { minimumFractionDigits: 1 })}
+                              </td>
+                            </tr>
+                          ))
+                        ) : (
+                          <tr>
+                            <td colSpan={5} className="px-3 py-6 text-center text-slate-400 font-bold text-xs">
+                              Aucun mouvement récent trouvé pour cet article.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              ) : (
+                <div className="py-8 text-center text-slate-400 font-bold text-xs">
+                  Aucun article sélectionné.
+                </div>
+              )}
+
+              {/* Footer */}
+              <div className="flex justify-end pt-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setIsHistoryOverlayOpen(false)}
+                  className="px-4 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl transition-all cursor-pointer text-xs"
+                >
+                  Fermer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

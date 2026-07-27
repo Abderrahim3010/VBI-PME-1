@@ -497,7 +497,7 @@ function SituationFournisseursWindow({
   const modalNouveauSolde = modalAncienSolde - formAmount;
 
   return (
-    <div id="supplier-situation-window" className="flex-1 flex flex-col font-sans text-xs bg-[#f4f7fc] dark:bg-slate-950 text-slate-800 dark:text-slate-100 h-full overflow-hidden select-text">
+    <div id="supplier-situation-window" className="flex-1 flex flex-col font-sans text-xs bg-[#f4f7fc] dark:bg-slate-950 text-slate-800 dark:text-slate-100 h-full overflow-hidden select-none">
       
       <div className="flex-1 p-2.5 flex flex-col gap-2 overflow-hidden min-h-0">
         

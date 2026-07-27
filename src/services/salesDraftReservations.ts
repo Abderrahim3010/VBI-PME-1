@@ -154,10 +154,6 @@ export function applyReservationTransition(
   const previousTotals = reservationTotals(previousReservations);
   const nextTotals = reservationTotals(nextReservations);
   const affectedCodes = new Set([...previousTotals.keys(), ...nextTotals.keys()]);
-  const productCodes = new Set(products.map(product => product.code));
-  for (const code of affectedCodes) {
-    if (!productCodes.has(code)) throw new Error(`Reserved product ${code} no longer exists`);
-  }
 
   return products.map(product => {
     if (!affectedCodes.has(product.code)) return product;

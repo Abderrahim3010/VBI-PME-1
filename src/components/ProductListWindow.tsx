@@ -1394,7 +1394,7 @@ function ProductListWindow({
                   <td className={`px-4 py-2.5 font-bold truncate ${p.blocked ? (reqSelected ? 'text-red-200 font-black bg-red-900/40 rounded-lg' : 'text-red-600 dark:text-red-400 font-black bg-red-50 dark:bg-red-950/20') : ''}`}>
                     {p.code}
                   </td>
-                  <td className="px-4 py-2.5 truncate font-sans font-bold select-text">{p.designation}</td>
+                  <td className="px-4 py-2.5 truncate font-sans font-bold select-none">{p.designation}</td>
                   <td className="px-3 py-2.5 text-right font-sans font-bold text-slate-500 dark:text-slate-400 text-[10px] truncate">{p.category || 'DIVERS'}</td>
                   <td className="px-3 py-2.5 text-right truncate font-sans">
                     {displayPrixAchat.toLocaleString('fr-FR', { minimumFractionDigits: 1 })} DA
