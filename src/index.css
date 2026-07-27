@@ -74,6 +74,18 @@ input, textarea, [contenteditable="true"], .selectable-text, .printable-document
 }
 
 /* Base resets & scrollbars helper */
+/* Remove up/down spin button arrows on number inputs globally */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none !important;
+  margin: 0 !important;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield !important;
+  appearance: textfield !important;
+}
+
 body {
   font-family: var(--font-sans);
   background-color: #f1f5f9; /* Matte Slate 100 instead of reflective Slate 50 */
@@ -158,7 +170,7 @@ html:not(.dark) .editable-input,
 html:not(.dark) [contenteditable="true"] {
   background-color: #fafbfc !important; /* Soft glare-free off-white */
   color: #0f172a !important; /* Slate 900 - high contrast text */
-  border: 1.5px solid #94a3b8 !important; /* Solid Slate 400 border for perfect clarity */
+  border: 1px solid #94a3b8 !important; /* Solid Slate 400 1px border for pixel-perfect alignment with dark mode */
   border-radius: 8px !important;
   font-weight: 600 !important;
   box-shadow: inset 0 1px 2px rgba(0,0,0,0.05) !important;
@@ -341,7 +353,7 @@ html:not(.dark) thead tr:not([class*="bg-"]) th:not([class*="bg-"]) {
   background-color: #e2e8f0 !important; /* Solid desktop gray for headers */
   color: #1e293b !important; /* Slate 800 */
   font-weight: 700 !important;
-  border-bottom: 1.5px solid #94a3b8 !important;
+  border-bottom: 1px solid #cbd5e1 !important;
   border-top: 1px solid #cbd5e1 !important;
 }
 
@@ -378,11 +390,11 @@ html:not(.dark) tr[class*="bg-m3-primary"] td:not([class*="bg-"]) {
 html:not(.dark) .ripple-btn:not(.bg-m3-primary):not(.bg-red-600):not(.bg-emerald-600) {
   background-color: #fafbfc !important; /* Soft off-white */
   color: #1e293b !important;
-  border: 1.5px solid #94a3b8 !important;
+  border: 1px solid #cbd5e1 !important;
 }
 html:not(.dark) .ripple-btn:not(.bg-m3-primary):not(.bg-red-600):not(.bg-emerald-600):hover {
   background-color: #f1f5f9 !important;
-  border-color: #475569 !important;
+  border-color: #94a3b8 !important;
 }
 
 /* ==========================================================================
@@ -416,7 +428,7 @@ html:not(.dark) [id^="window-"] select:not([disabled]),
 html:not(.dark) [id^="window-"] textarea:not([disabled]) {
   background-color: #fafbfc !important; /* Soft glare-free off-white */
   color: #0f172a !important; /* High contrast text */
-  border: 1.5px solid #94a3b8 !important; /* Strong border for clear visual boundary */
+  border: 1px solid #cbd5e1 !important; /* Strong border for clear visual boundary matching dark mode geometry */
 }
 
 /* Highlighted selected items in listings */
@@ -443,8 +455,8 @@ html:not(.dark) [id^="window-"] tr:not([data-selected="true"]):not(.bg-m3-primar
 }
 
 html:not(.dark) [id^="window-"] td:not([colspan]) {
-  border-bottom: 1.5px solid #cbd5e1 !important; /* Solid desktop borders */
-  border-right: 1.5px solid #e2e8f0 !important;
+  border-bottom: 1px solid #cbd5e1 !important; /* Solid desktop borders matching dark mode 1px thickness */
+  border-right: 1px solid #e2e8f0 !important;
 }
 
 /* Ensure ALL selected row cells and their child elements ALWAYS render white text */
@@ -480,14 +492,12 @@ html.dark [id^="window-"] tbody tr[data-selected="true"] td:not([class*="bg-"]) 
 }
 
 /* Force every container frame, header panel, search toolbar, and metrics box 
-   inside windows in light mode to have the exact same clear, solid outer boundary.
-   We precisely exclude single-edge borders, colored borders, and fully rounded pills to prevent visual alignment issues. */
+   inside windows in light mode to have the exact same clear 1px boundary as dark mode. */
 html:not(.dark) [id^="window-"] div[class*="border"]:not(button):not(input):not(select):not(textarea):not(span):not(table):not(tr):not(td):not(li):not(ul):not(.no-gray-override):not([class*="border-t"]):not([class*="border-b"]):not([class*="border-l"]):not([class*="border-r"]):not([class*="border-x"]):not([class*="border-y"]):not([class*="border-dashed"]):not([class*="border-dotted"]):not([class*="border-none"]):not([class*="border-transparent"]):not([class*="rounded-full"]):not([class*="rounded-t-"]):not([class*="rounded-b-"]):not([class*="rounded-l-"]):not([class*="rounded-r-"]):not([class*="border-emerald"]):not([class*="border-rose"]):not([class*="border-red"]):not([class*="border-green"]):not([class*="border-blue"]):not([class*="border-amber"]):not([class*="border-yellow"]):not([class*="border-indigo"]):not([class*="border-teal"]):not([class*="border-sky"]):not([class*="border-purple"]):not([class*="border-violet"]):not([class*="border-orange"]),
 html:not(.dark) [id^="window-"] .overflow-hidden:has(table) {
-  border-width: 2px !important;
+  border-width: 1px !important;
   border-style: solid !important;
-  border-color: #94a3b8 !important;
-  border-radius: 16px !important;
+  border-color: #cbd5e1 !important;
   box-shadow: 0 1px 3px rgba(0,0,0,0.05) !important;
 }
 
@@ -500,7 +510,7 @@ html:not(.dark) [id^="window-"] div[class*="border"] .overflow-auto:has(table) {
 
 /* Ensure nested elements do not get too busy but retain their standard visual grouping */
 html:not(.dark) [id^="window-"] div[class*="border"]:not([class*="border-t"]):not([class*="border-b"]):not([class*="border-l"]):not([class*="border-r"]):not([class*="border-x"]):not([class*="border-y"]):not([class*="border-dashed"]):not([class*="border-dotted"]):not([class*="border-none"]):not([class*="border-transparent"]):not([class*="rounded-full"]):not([class*="rounded-t-"]):not([class*="rounded-b-"]):not([class*="rounded-l-"]):not([class*="rounded-r-"]):not([class*="border-emerald"]):not([class*="border-rose"]):not([class*="border-red"]):not([class*="border-green"]):not([class*="border-blue"]):not([class*="border-amber"]):not([class*="border-yellow"]):not([class*="border-indigo"]):not([class*="border-teal"]):not([class*="border-sky"]):not([class*="border-purple"]):not([class*="border-violet"]):not([class*="border-orange"]) div[class*="border"]:not(button):not(input):not(select):not(textarea):not([class*="border-t"]):not([class*="border-b"]):not([class*="border-l"]):not([class*="border-r"]):not([class*="border-x"]):not([class*="border-y"]):not([class*="border-dashed"]):not([class*="border-dotted"]):not([class*="border-none"]):not([class*="border-transparent"]):not([class*="rounded-full"]):not([class*="rounded-t-"]):not([class*="rounded-b-"]):not([class*="rounded-l-"]):not([class*="rounded-r-"]):not([class*="border-emerald"]):not([class*="border-rose"]):not([class*="border-red"]):not([class*="border-green"]):not([class*="border-blue"]):not([class*="border-amber"]):not([class*="border-yellow"]):not([class*="border-indigo"]):not([class*="border-teal"]):not([class*="border-sky"]):not([class*="border-purple"]):not([class*="border-violet"]):not([class*="border-orange"]) {
-  border-width: 1.5px !important;
+  border-width: 1px !important;
   border-color: #cbd5e1 !important;
 }
 
@@ -589,6 +599,27 @@ li:not(.allow-wrap) {
 .overflow-x-auto::-webkit-scrollbar {
   display: none; /* Hide scrollbars for clean look on Webkit */
 }
+
+/* Smooth row insertion highlight animation for Sales Voucher F2 table */
+@keyframes rowHighlightPulse {
+  0% {
+    background-color: rgba(14, 165, 233, 0.45) !important;
+    box-shadow: inset 0 0 12px rgba(14, 165, 233, 0.4), 0 0 8px rgba(14, 165, 233, 0.25) !important;
+  }
+  50% {
+    background-color: rgba(16, 185, 129, 0.35) !important;
+    box-shadow: inset 0 0 8px rgba(16, 185, 129, 0.3), 0 0 6px rgba(16, 185, 129, 0.2) !important;
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: none !important;
+  }
+}
+
+.animate-row-highlight {
+  animation: rowHighlightPulse 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+}
+
 
 
 

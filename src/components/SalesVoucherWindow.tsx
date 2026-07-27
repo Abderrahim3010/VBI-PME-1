@@ -107,6 +107,15 @@ function SalesVoucherWindow({
   const [tvaRate, setTvaRate] = useState<number>(0); // 0% default
   const [timbreValue, setTimbreValue] = useState<number>(0);
   const [draftItems, setDraftItems] = useState<VoucherItem[]>([]);
+  const [highlightedItemId, setHighlightedItemId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!highlightedItemId) return;
+    const timer = setTimeout(() => {
+      setHighlightedItemId(null);
+    }, 2500);
+    return () => clearTimeout(timer);
+  }, [highlightedItemId]);
 
   // Product History Overlay state
   const [isHistoryOverlayOpen, setIsHistoryOverlayOpen] = useState(false);
@@ -1492,6 +1501,7 @@ function SalesVoucherWindow({
       if (!saved) return;
       setSelectedItemIndex(updated.length - 1);
       setViewingItemCode(product.code);
+      setHighlightedItemId(newItem.id);
     });
   };
 
@@ -2309,6 +2319,7 @@ function SalesVoucherWindow({
                 ) : (
                   displayedItems.map((item) => {
                     const isSelected = selectedItemIndex === item.originalIndex;
+                    const isHighlighted = item.id === highlightedItemId;
                     const matchingProduct = products.find(p => p.code === item.code);
                     const isBlocked = matchingProduct?.blocked === true;
                     const itemAchat = item.purchasePrice ?? matchingProduct?.prixAchat ?? matchingProduct?.prixDeRevient ?? 0;
@@ -2323,9 +2334,11 @@ function SalesVoucherWindow({
                           setViewingItemCode(item.code);
                         }}
                         className={`cursor-pointer border-b border-slate-100 dark:border-slate-800/40 transition-colors ${
-                          isSelected 
-                            ? 'bg-m3-primary/10 dark:bg-sky-500/10 text-m3-primary dark:text-sky-300 font-bold' 
-                            : 'hover:bg-slate-50 dark:hover:bg-slate-900/40 even:bg-slate-50/20 dark:even:bg-slate-950/20'
+                          isHighlighted
+                            ? 'animate-row-highlight font-extrabold z-10'
+                            : isSelected 
+                              ? 'bg-m3-primary/10 dark:bg-sky-500/10 text-m3-primary dark:text-sky-300 font-bold' 
+                              : 'hover:bg-slate-50 dark:hover:bg-slate-900/40 even:bg-slate-50/20 dark:even:bg-slate-950/20'
                         }`}
                       >
                         <td 
