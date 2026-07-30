@@ -31,7 +31,12 @@ import {
   UserCheck,
   Monitor,
   Sun,
-  Moon
+  Moon,
+  LayoutGrid,
+  X,
+  ArrowLeft,
+  ChevronLeft,
+  Tablet
 } from 'lucide-react';
 import {
   INITIAL_PRODUCTS,
@@ -74,6 +79,7 @@ import {
   saveJson,
   safeStringify
 } from './services/localDb';
+import { readPersistedSalesDrafts } from './services/salesDraftReservations';
 
 const ProductListWindow = React.lazy(() => import('./components/ProductListWindow'));
 const PurchaseVoucherWindow = React.lazy(() => import('./components/PurchaseVoucherWindow'));
@@ -168,6 +174,7 @@ export default function App() {
       messageFacture: 'Merci pour votre confiance'
     },
     affichage: {
+      displayMode: 'tactile',
       backgroundImage: '',
       visibleButtons: {
         purchases: true,
@@ -487,11 +494,23 @@ export default function App() {
   const [statsInitialMode, setStatsInitialMode] = useState<'general' | 'achats' | 'ventes'>('general');
   const [statsMenuOpen, setStatsMenuOpen] = useState(false);
   const statsDropdownRef = useRef<HTMLDivElement>(null);
+  const fichierDropdownRef = useRef<HTMLDivElement>(null);
+  const startMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (statsDropdownRef.current && !statsDropdownRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (statsDropdownRef.current && !statsDropdownRef.current.contains(target)) {
         setStatsMenuOpen(false);
+      }
+      if (fichierDropdownRef.current && !fichierDropdownRef.current.contains(target)) {
+        setFichierDropdownOpen(false);
+      }
+      if (startMenuRef.current && !startMenuRef.current.contains(target)) {
+        const startBtn = document.getElementById('start-menu-button');
+        if (!startBtn || !startBtn.contains(target)) {
+          setStartMenuOpen(false);
+        }
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -506,6 +525,20 @@ export default function App() {
     }
   });
   const [scale, setScale] = useState(1);
+
+  const [showCompactDashboard, setShowCompactDashboard] = useState<boolean>(false);
+  const isCompactMode = config?.affichage?.displayMode === 'compact';
+
+  const toggleDisplayMode = (targetMode?: 'compact' | 'tactile') => {
+    const nextMode = targetMode || (isCompactMode ? 'tactile' : 'compact');
+    setConfig((prev: any) => ({
+      ...prev,
+      affichage: {
+        ...prev?.affichage,
+        displayMode: nextMode
+      }
+    }));
+  };
 
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(() => {
     try {
@@ -661,26 +694,37 @@ export default function App() {
     return true;
   };
 
-  // Launch / Focus on a specific window
+  // Launch / Focus on a specific window (single window mode: closes other open windows)
   const launchWindow = (id: ActiveWindowId) => {
     if (!checkWindowAccess(id)) return;
     setStartMenuOpen(false);
+    setFichierDropdownOpen(false);
     const nextZ = maxZIndex + 1;
     setMaxZIndex(nextZ);
+
+    // If sales window is currently open and we are switching to another window, trigger sales closing cleanup
+    const isSalesOpen = windows.find(w => w.id === 'sales')?.isOpen;
+    if (isSalesOpen && id !== 'sales') {
+      window.dispatchEvent(new Event('vbi:sales-window-closing'));
+    }
 
     setWindows(prev => prev.map(w => {
       if (w.id === id) {
         return { ...w, isOpen: true, isMinimized: false, zIndex: nextZ };
       }
-      return w;
+      return { ...w, isOpen: false };
     }));
   };
 
   const focusWindow = (id: ActiveWindowId) => {
-    // High performance optimization: skip state update if the window is already focused and active on top!
     const targetWin = windows.find(w => w.id === id);
     if (targetWin && targetWin.zIndex === maxZIndex && !targetWin.isMinimized && targetWin.isOpen) {
       return;
+    }
+
+    const isSalesOpen = windows.find(w => w.id === 'sales')?.isOpen;
+    if (isSalesOpen && id !== 'sales') {
+      window.dispatchEvent(new Event('vbi:sales-window-closing'));
     }
 
     const nextZ = maxZIndex + 1;
@@ -688,9 +732,9 @@ export default function App() {
 
     setWindows(prev => prev.map(w => {
       if (w.id === id) {
-        return { ...w, isMinimized: false, zIndex: nextZ };
+        return { ...w, isOpen: true, isMinimized: false, zIndex: nextZ };
       }
-      return w;
+      return { ...w, isOpen: false };
     }));
   };
 
@@ -781,6 +825,28 @@ export default function App() {
   const lowestStockCount = useMemo(() => {
     return products.filter(p => p.stock === 0).length;
   }, [products]);
+
+  const openBonsMetrics = useMemo(() => {
+    const openPurchases = purchases.filter(p => (p as any).status === 'draft' || (p as any).isValidated === false || (p as any).isDraft === true).length;
+
+    let openSales = sales.filter(s => (s as any).status === 'draft' || (s as any).isValidated === false || (s as any).isDraft === true).length;
+    try {
+      const persistedDrafts = readPersistedSalesDrafts();
+      if (persistedDrafts && persistedDrafts.validDrafts) {
+        openSales += persistedDrafts.validDrafts.length;
+      }
+    } catch {
+      // ignore
+    }
+
+    const total = openPurchases + openSales;
+    return {
+      openPurchases,
+      openSales,
+      total,
+      tooltip: `Bons ouverts (${total}):\n• Achats: ${openPurchases}\n• Ventes: ${openSales}`
+    };
+  }, [purchases, sales]);
 
   // Handle inventory updates upon purchase / sale vouchers
   const handleAddPurchaseVoucher = (voucher: PurchaseVoucher) => {
@@ -1134,7 +1200,7 @@ export default function App() {
           {/* Nav Dropdowns list */}
           <div className="flex items-center gap-1 text-[11px]">
             {/* Elegant Fichier Dropdown */}
-            <div className="relative inline-block text-left">
+            <div className="relative inline-block text-left" ref={fichierDropdownRef}>
               <button 
                 onClick={() => {
                   setFichierDropdownOpen(!fichierDropdownOpen);
@@ -1284,8 +1350,9 @@ export default function App() {
         </div>
       </div>
 
-      {/* 2. OS Quick Toolbar with Icons (Image 2 and 3 style) */}
-      <div className="bg-gradient-to-r from-sky-100 via-sky-50 to-white dark:from-sky-950 dark:via-slate-900 dark:to-slate-950 border-b border-sky-200/80 dark:border-sky-900/50 py-1.5 px-2 flex items-center gap-2 flex-nowrap overflow-visible shrink-0 z-30 select-none shadow-md transition-colors duration-300">
+      {/* 2. OS Quick Toolbar with Icons (Tactile Mode) */}
+      {!isCompactMode && (
+        <div className="bg-gradient-to-r from-sky-100 via-sky-50 to-white dark:from-sky-950 dark:via-slate-900 dark:to-slate-950 border-b border-sky-200/80 dark:border-sky-900/50 py-1.5 px-2 flex items-center gap-2 flex-nowrap overflow-visible shrink-0 z-30 select-none shadow-md transition-colors duration-300">
         
         {config?.affichage?.visibleButtons?.purchases !== false && (
           <button
@@ -1485,6 +1552,7 @@ export default function App() {
         <div className="flex-1 flex justify-end gap-2 items-center px-3">
         </div>
       </div>
+      )}
  
       {/* 3. Main Desktop Workspace Container - Windows 7 Aero glassy background layout */}
       <div 
@@ -1521,220 +1589,690 @@ export default function App() {
           }}
         >
         
-        {/* SIDEBAR METRICS PANEL - Modern Clean Redesign */}
-        <div className={`h-full shrink-0 border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl flex flex-col justify-between select-none text-slate-800 dark:text-white overflow-y-auto font-sans z-20 shadow-xl transition-all duration-300 ${isSidebarOpen ? 'w-[260px] p-3.5 border-r' : 'w-0 p-0 overflow-hidden border-r-0 shadow-none'}`}>
-          <div className="flex flex-col gap-3 min-w-[232px]">
-            {/* Header */}
-            <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/80 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <div className="p-1.5 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 shadow-xs">
-                  <Gem size={14} className="animate-pulse" />
+        {/* SIDEBAR METRICS / NAVIGATION PANEL */}
+        {isCompactMode ? (
+          showCompactDashboard ? (
+            /* Compact Mode - Tableau de bord View (Switched in-place with smooth animation) */
+            <div key="dashboard-view" className="h-full shrink-0 w-[260px] border-r border-slate-200/90 dark:border-slate-800 bg-[#f8fafc] dark:bg-slate-900 p-3 flex flex-col justify-between select-none z-20 shadow-lg overflow-y-auto overflow-x-hidden font-sans animate-in fade-in slide-in-from-left-2 duration-300">
+              
+              {/* Header */}
+              <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/80 dark:border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500 flex items-center justify-center font-black text-slate-950 text-xs shadow-xs shrink-0">
+                    VBI
+                  </div>
+                  <div className="flex flex-col leading-tight">
+                    <div className="flex items-center gap-1.5 font-black text-sm text-slate-900 dark:text-white font-display">
+                      <span>VBI PME</span>
+                      <span className="text-[8px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">BETA</span>
+                    </div>
+                    <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1">
+                      <Gem size={11} className="animate-pulse" />
+                      <span>Tableau de bord</span>
+                    </span>
+                  </div>
                 </div>
-                <div className="flex flex-col leading-none">
-                  <span className="font-black text-sm text-slate-900 dark:text-white tracking-tight flex items-center gap-1.5">
-                    VBI PME
-                    <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">BETA</span>
+
+                <button
+                  type="button"
+                  onClick={() => launchWindow('configuration')}
+                  className="p-1.5 rounded-xl bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-sky-600 dark:hover:text-sky-400 transition-colors cursor-pointer shadow-2xs"
+                  title="Paramètres & Configuration"
+                >
+                  <Settings size={16} />
+                </button>
+              </div>
+
+              {/* Metrics List inside 260px Sidebar */}
+              <div className="flex flex-col gap-2 mt-2.5 flex-1 overflow-y-auto overflow-x-hidden pr-0.5">
+                
+                {/* Navigation Principale Return button at exact top position */}
+                <div
+                  onClick={() => setShowCompactDashboard(false)}
+                  className="p-2.5 rounded-xl border flex items-center justify-between transition-all cursor-pointer bg-amber-500/10 border-amber-500/30 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 group"
+                  title="Retourner à la Navigation Principale"
+                >
+                  <div className="flex items-center gap-2.5 font-bold text-[12.5px] text-slate-800 dark:text-slate-100">
+                    <ArrowLeft size={18} className="text-amber-500 dark:text-amber-400 shrink-0 group-hover:-translate-x-0.5 transition-transform" />
+                    <span className="text-amber-700 dark:text-amber-300">Navigation Principale</span>
+                  </div>
+                </div>
+
+                {/* 1. Nombre de Produits */}
+                <div className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px]">
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
+                    <div className="p-1 rounded-lg bg-sky-100 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 shrink-0">
+                      <Package size={13} />
+                    </div>
+                    <span>Nombre de produits</span>
+                  </div>
+                  <span className="font-extrabold text-slate-900 dark:text-white bg-slate-200/60 dark:bg-slate-800 px-2 py-0.5 rounded-lg text-[10.5px]">
+                    {products.length}
                   </span>
                 </div>
-              </div>
 
-              <button
-                onClick={() => setIsSidebarOpen(false)}
-                className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
-                title="Masquer le panneau d'informations"
-              >
-                <PanelLeftClose size={16} />
-              </button>
-            </div>
-
-            {/* Metrics List in Clean Elegant Cards */}
-            <div className="flex flex-col gap-2">
-
-              {/* 1. Nombre de Produits */}
-              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
-                <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
-                  <div className="p-1 rounded-lg bg-sky-100 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 shrink-0">
-                    <Package size={13} />
+                {/* 2. Stock Minimum */}
+                <div className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px]">
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
+                    <div className={`p-1 rounded-lg shrink-0 ${lowestStockCount > 3 ? 'bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400' : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400'}`}>
+                      {lowestStockCount > 3 ? <AlertTriangle size={13} /> : <CheckCircle2 size={13} />}
+                    </div>
+                    <span>Stock minimum</span>
                   </div>
-                  <span>Nombre de produits</span>
+                  <span className={`font-black text-[10px] px-2 py-0.5 rounded-lg ${
+                    lowestStockCount > 3
+                      ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 animate-pulse'
+                      : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                  }`}>
+                    {lowestStockCount > 3 ? "RECOMMANDÉ" : "EN ORDRE"}
+                  </span>
                 </div>
-                <span className="font-extrabold text-slate-900 dark:text-white bg-slate-200/60 dark:bg-slate-800 px-2 py-0.5 rounded-lg text-[10.5px]">
-                  {products.length}
-                </span>
-              </div>
 
-              {/* 2. Stock Minimum */}
-              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
-                <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
-                  <div className={`p-1 rounded-lg shrink-0 ${lowestStockCount > 3 ? 'bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400' : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400'}`}>
-                    {lowestStockCount > 3 ? <AlertTriangle size={13} /> : <CheckCircle2 size={13} />}
+                {/* 3. Produits Périmés */}
+                <div className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] gap-1 overflow-hidden">
+                  <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-200 font-bold shrink-0">
+                    <div className="p-1 rounded-lg bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 shrink-0">
+                      <Clock size={13} />
+                    </div>
+                    <span className="truncate">Produits périmés</span>
                   </div>
-                  <span>Stock minimum</span>
+                  <span className="font-bold text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-lg border border-emerald-500/20 shrink-0 whitespace-nowrap">
+                    OK (SANS ALERTE)
+                  </span>
                 </div>
-                <span className={`font-black text-[10px] px-2 py-0.5 rounded-lg ${
-                  lowestStockCount > 3
-                    ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 animate-pulse'
-                    : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
-                }`}>
-                  {lowestStockCount > 3 ? "RECOMMANDÉ" : "EN ORDRE"}
-                </span>
-              </div>
 
-              {/* 3. Produits Périmés */}
-              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
-                <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
-                  <div className="p-1 rounded-lg bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 shrink-0">
-                    <Clock size={13} />
+                {/* 4. Soldes Clients */}
+                <div className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px]">
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
+                    <div className="p-1 rounded-lg bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 shrink-0">
+                      <CreditCard size={13} />
+                    </div>
+                    <span>Soldes clients</span>
                   </div>
-                  <span>Produits périmés</span>
+                  <span className="font-extrabold text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-lg border border-amber-500/20">
+                    {clients.filter(c => c.balance > 0).length} débiteurs
+                  </span>
                 </div>
-                <span className="font-bold text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-lg border border-emerald-500/20">
-                  OK (SANS ALERTE)
-                </span>
-              </div>
 
-              {/* 4. Soldes Clients */}
-              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
-                <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
-                  <div className="p-1 rounded-lg bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 shrink-0">
-                    <CreditCard size={13} />
+                {/* 5. Nombre de Bons Ouverts */}
+                <div
+                  className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] cursor-help group transition-colors"
+                  title={openBonsMetrics.tooltip}
+                >
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
+                    <div className="p-1 rounded-lg bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 shrink-0">
+                      <FileText size={13} />
+                    </div>
+                    <span>Bons ouverts</span>
                   </div>
-                  <span>Soldes clients</span>
+                  <span className="font-extrabold text-[10.5px] bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-lg border border-indigo-500/20">
+                    {openBonsMetrics.total}
+                  </span>
                 </div>
-                <span className="font-extrabold text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-lg border border-amber-500/20">
-                  {clients.filter(c => c.balance > 0).length} débiteurs
-                </span>
-              </div>
 
-              {/* 5. Nombre de Bons Ouverts */}
-              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
-                <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
-                  <div className="p-1 rounded-lg bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 shrink-0">
-                    <FileText size={13} />
+                {/* 6. Utilisateur Connecté */}
+                <div className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px]">
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
+                    <div className="p-1 rounded-lg bg-purple-100 dark:bg-purple-950/80 text-purple-600 dark:text-purple-400 shrink-0">
+                      <UserCheck size={13} />
+                    </div>
+                    <span>Utilisateur</span>
                   </div>
-                  <span>Bons ouverts</span>
+                  <span className="font-black text-[10.5px] text-purple-700 dark:text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded-lg border border-purple-500/20">
+                    {currentUser ? currentUser.username.toUpperCase() : 'NON CONNECTÉ'}
+                  </span>
                 </div>
-                <span className="font-extrabold text-[10px] bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-lg border border-indigo-500/20">
-                  {purchases.length} ACHATS
-                </span>
-              </div>
 
-              {/* 6. Utilisateur Connecté */}
-              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
-                <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
-                  <div className="p-1 rounded-lg bg-purple-100 dark:bg-purple-950/80 text-purple-600 dark:text-purple-400 shrink-0">
-                    <UserCheck size={13} />
+                {/* 7. Licence Software */}
+                <div className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px]">
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
+                    <div className="p-1 rounded-lg bg-teal-100 dark:bg-teal-950/80 text-teal-600 dark:text-teal-400 shrink-0">
+                      <ShieldCheck size={13} />
+                    </div>
+                    <span>Licence</span>
                   </div>
-                  <span>Utilisateur</span>
+                  <span className={`font-bold text-[9.5px] px-2 py-0.5 rounded-lg border ${
+                    config.isActivated
+                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                      : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                  }`}>
+                    {config.isActivated ? 'ORIGINALE' : 'DÉMO ACTIVE'}
+                  </span>
                 </div>
-                <span className="font-black text-[10.5px] text-purple-700 dark:text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded-lg border border-purple-500/20">
-                  {currentUser ? currentUser.username.toUpperCase() : 'NON CONNECTÉ'}
-                </span>
-              </div>
 
-              {/* 7. Licence Software */}
-              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
-                <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
-                  <div className="p-1 rounded-lg bg-teal-100 dark:bg-teal-950/80 text-teal-600 dark:text-teal-400 shrink-0">
-                    <ShieldCheck size={13} />
+                {/* 8. Memory Usage Indicator Component */}
+                <MemoryUsageIndicator />
+
+                {/* 9. Sauvegarde Base */}
+                <div className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px]">
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
+                    <div className="p-1 rounded-lg bg-sky-100 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 shrink-0">
+                      <Database size={13} />
+                    </div>
+                    <span>Sauvegarde</span>
                   </div>
-                  <span>Licence</span>
+                  <span className="font-bold text-[9.5px] bg-sky-500/10 text-sky-600 dark:text-sky-400 px-2 py-0.5 rounded-lg border border-sky-500/20">
+                    CLOUD RUN
+                  </span>
                 </div>
-                <span className={`font-bold text-[9.5px] px-2 py-0.5 rounded-lg border ${
-                  config.isActivated
-                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
-                    : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
-                }`}>
-                  {config.isActivated ? 'ORIGINALE' : 'DÉMO ACTIVE'}
-                </span>
-              </div>
 
-              {/* 8. Memory Usage Indicator Component */}
-              <MemoryUsageIndicator />
-
-              {/* 9. Sauvegarde Base */}
-              <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
-                <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
-                  <div className="p-1 rounded-lg bg-sky-100 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 shrink-0">
-                    <Database size={13} />
+                {/* 10. Affichage & Mode Control */}
+                <div className="flex flex-col gap-1.5 p-2 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px]">
+                  <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-200">
+                    <Monitor size={13} className="text-slate-500 dark:text-slate-400" />
+                    <span>Affichage & Mode</span>
                   </div>
-                  <span>Sauvegarde</span>
+                  <div className="flex items-center gap-1.5">
+                    <select
+                      value={zoomMode}
+                      onChange={(e) => setZoomMode(e.target.value as any)}
+                      className="flex-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[10.5px] font-bold text-slate-800 dark:text-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer"
+                    >
+                      <option value="auto">Auto-Fit (Adaptatif)</option>
+                      <option value="100">100% (Normal)</option>
+                      <option value="90">90% (Intermédiaire)</option>
+                      <option value="80">80% (Compact)</option>
+                      <option value="75">75% (Petit)</option>
+                    </select>
+                    <button
+                      type="button"
+                      onClick={toggleTheme}
+                      className="p-1.5 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+                      title={theme === 'dark' ? "Passer en Mode Clair" : "Passer en Mode Sombre"}
+                    >
+                      {theme === 'dark' ? <Sun size={14} className="text-amber-400" /> : <Moon size={14} className="text-slate-600" />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleDisplayMode('tactile')}
+                      className="p-1.5 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+                      title="Passer en Mode Tactile (Grandes Icônes)"
+                    >
+                      <Tablet size={14} className="text-sky-500" />
+                    </button>
+                  </div>
                 </div>
-                <span className="font-bold text-[9.5px] bg-sky-500/10 text-sky-600 dark:text-sky-400 px-2 py-0.5 rounded-lg border border-sky-500/20">
-                  CLOUD RUN
-                </span>
-              </div>
 
-              {/* 10. Affichage & Mode Control */}
-              <div className="flex flex-col gap-1.5 p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] mt-0.5">
-                <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-200">
-                  <Monitor size={13} className="text-slate-500 dark:text-slate-400" />
-                  <span>Affichage & Mode</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <select
-                    value={zoomMode}
-                    onChange={(e) => setZoomMode(e.target.value as any)}
-                    className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[10.5px] font-bold text-slate-800 dark:text-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer"
-                  >
-                    <option value="auto">Auto-Fit (Adaptatif)</option>
-                    <option value="100">100% (Normal)</option>
-                    <option value="90">90% (Intermédiaire)</option>
-                    <option value="80">80% (Compact)</option>
-                    <option value="75">75% (Petit)</option>
-                  </select>
+                {/* Quick Vertical action buttons */}
+                <div className="flex flex-col gap-1.5 mt-2">
                   <button
+                    onClick={handleLockSession}
+                    className="py-2 px-3 flex items-center justify-center gap-2 text-xs font-bold text-slate-800 dark:text-amber-100 bg-amber-50 dark:bg-slate-950/80 rounded-xl border border-amber-200 dark:border-amber-800/60 hover:bg-amber-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+                  >
+                    <ShieldCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                    <span>Verrouiller la PME</span>
+                  </button>
+
+                  <button
+                    onClick={() => alert("Sauvegarde complète des tables locales exportée dans l'iframe sandbox.")}
+                    className="py-2 px-3 flex items-center justify-center gap-2 text-xs font-bold text-sky-900 dark:text-sky-100 bg-sky-50 dark:bg-slate-950/80 rounded-xl border border-sky-200 dark:border-sky-800/60 hover:bg-sky-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
+                  >
+                    <Database className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+                    <span>Sauvegarde Directe</span>
+                  </button>
+                </div>
+
+              </div>
+            </div>
+          ) : (
+            /* Compact Mode Navigation Panel (Switched in-place with smooth animation) */
+            <div key="navigation-view" className="h-full shrink-0 w-[260px] border-r border-slate-200/90 dark:border-slate-800 bg-[#f8fafc] dark:bg-slate-900 p-3 flex flex-col justify-between select-none z-20 shadow-lg overflow-y-auto font-sans animate-in fade-in slide-in-from-left-2 duration-300">
+              
+              {/* Header */}
+              <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/80 dark:border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-amber-500 flex items-center justify-center font-black text-slate-950 text-xs shadow-xs shrink-0">
+                    VBI
+                  </div>
+                  <div className="flex flex-col leading-tight">
+                    <div className="flex items-center gap-1.5 font-black text-sm text-slate-900 dark:text-white font-display">
+                      <span>VBI PME</span>
+                      <span className="text-[8px] font-black uppercase px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">BETA</span>
+                    </div>
+                    <span className="text-[10px] text-slate-400 font-medium">Navigation Principale</span>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => launchWindow('configuration')}
+                  className="p-1.5 rounded-xl bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-sky-600 dark:hover:text-sky-400 transition-colors cursor-pointer shadow-2xs"
+                  title="Paramètres & Configuration"
+                >
+                  <Settings size={16} />
+                </button>
+              </div>
+
+              {/* Navigation Items List */}
+              <div className="flex flex-col gap-1.5 mt-2.5 flex-1 overflow-y-auto pr-0.5">
+                
+                {/* Tableau de bord button */}
+                <div
+                  onClick={() => setShowCompactDashboard(true)}
+                  className={`p-2.5 rounded-xl border flex items-center justify-between transition-all cursor-pointer bg-white dark:bg-slate-950/60 border-slate-200/80 dark:border-slate-800/80 hover:bg-amber-50/80 hover:border-amber-300/80 dark:hover:bg-slate-850 group`}
+                >
+                  <div className="flex items-center gap-2.5 font-bold text-[12.5px] text-slate-800 dark:text-slate-100">
+                    <LayoutGrid size={18} className="text-amber-500 dark:text-amber-400 shrink-0 group-hover:scale-110 transition-transform" />
+                    <span>Tableau de bord</span>
+                  </div>
+                  <span className="text-[9px] font-black px-2 py-0.5 rounded-md border tracking-wider bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300 border-sky-200/80 dark:border-sky-800 group-hover:bg-amber-500 group-hover:text-slate-950 transition-colors">
+                    AFFICHER
+                  </span>
+                </div>
+
+                {/* Saisie Achats [F1] */}
+                {config?.affichage?.visibleButtons?.purchases !== false && (
+                  <button
+                    type="button"
+                    onClick={() => launchWindow('purchases')}
+                    className="p-2.5 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 hover:bg-amber-50/80 hover:border-amber-300/80 dark:hover:bg-amber-950/30 dark:hover:border-amber-800 flex items-center justify-between text-left transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-2.5 font-bold text-[12.5px] text-slate-800 dark:text-slate-100">
+                      <ShoppingBag size={18} className="text-amber-500 dark:text-amber-400 shrink-0 group-hover:scale-110 transition-transform" />
+                      <span>Saisie Achats</span>
+                    </div>
+                    <span className="text-[9.5px] font-mono font-extrabold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">F1</span>
+                  </button>
+                )}
+
+                {/* Saisie Ventes [F2] */}
+                {config?.affichage?.visibleButtons?.sales !== false && (
+                  <button
+                    type="button"
+                    onClick={() => launchWindow('sales')}
+                    className="p-2.5 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 hover:bg-emerald-50/80 hover:border-emerald-300/80 dark:hover:bg-emerald-950/30 dark:hover:border-emerald-800 flex items-center justify-between text-left transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-2.5 font-bold text-[12.5px] text-slate-800 dark:text-slate-100">
+                      <ShoppingCart size={18} className="text-emerald-500 dark:text-emerald-400 shrink-0 group-hover:scale-110 transition-transform" />
+                      <span>Saisie Ventes</span>
+                    </div>
+                    <span className="text-[9.5px] font-mono font-extrabold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">F2</span>
+                  </button>
+                )}
+
+                {/* Catalogue Produits [F3] */}
+                {config?.affichage?.visibleButtons?.products !== false && (
+                  <button
+                    type="button"
+                    onClick={() => launchWindow('products')}
+                    className="p-2.5 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 hover:bg-orange-50/80 hover:border-orange-300/80 dark:hover:bg-orange-950/30 dark:hover:border-orange-800 flex items-center justify-between text-left transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-2.5 font-bold text-[12.5px] text-slate-800 dark:text-slate-100">
+                      <Package size={18} className="text-orange-500 dark:text-orange-400 shrink-0 group-hover:scale-110 transition-transform" />
+                      <span>Catalogue Produits</span>
+                    </div>
+                    <span className="text-[9.5px] font-mono font-extrabold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">F3</span>
+                  </button>
+                )}
+
+                {/* Fournisseurs [F4] */}
+                {config?.affichage?.visibleButtons?.suppliers !== false && (
+                  <button
+                    type="button"
+                    onClick={() => launchWindow('suppliers')}
+                    className="p-2.5 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 hover:bg-indigo-50/80 hover:border-indigo-300/80 dark:hover:bg-indigo-950/30 dark:hover:border-indigo-800 flex items-center justify-between text-left transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-2.5 font-bold text-[12.5px] text-slate-800 dark:text-slate-100">
+                      <Truck size={18} className="text-indigo-500 dark:text-indigo-400 shrink-0 group-hover:scale-110 transition-transform" />
+                      <span>Fournisseurs</span>
+                    </div>
+                    <span className="text-[9.5px] font-mono font-extrabold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">F4</span>
+                  </button>
+                )}
+
+                {/* Clients [F5] */}
+                {config?.affichage?.visibleButtons?.clients !== false && (
+                  <button
+                    type="button"
+                    onClick={() => launchWindow('clients')}
+                    className="p-2.5 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 hover:bg-teal-50/80 hover:border-teal-300/80 dark:hover:bg-teal-950/30 dark:hover:border-teal-800 flex items-center justify-between text-left transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-2.5 font-bold text-[12.5px] text-slate-800 dark:text-slate-100">
+                      <Users size={18} className="text-teal-500 dark:text-teal-400 shrink-0 group-hover:scale-110 transition-transform" />
+                      <span>Clients</span>
+                    </div>
+                    <span className="text-[9.5px] font-mono font-extrabold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">F5</span>
+                  </button>
+                )}
+
+                {/* Situation Fournisseurs [F6] */}
+                {config?.affichage?.visibleButtons?.situation !== false && (
+                  <button
+                    type="button"
+                    onClick={() => launchWindow('situation')}
+                    className="p-2.5 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 hover:bg-rose-50/80 hover:border-rose-300/80 dark:hover:bg-rose-950/30 dark:hover:border-rose-800 flex items-center justify-between text-left transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-2.5 font-bold text-[12.5px] text-slate-800 dark:text-slate-100">
+                      <BookOpen size={18} className="text-rose-500 dark:text-rose-400 shrink-0 group-hover:scale-110 transition-transform" />
+                      <span>Situation Fournisseurs</span>
+                    </div>
+                    <span className="text-[9.5px] font-mono font-extrabold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">F6</span>
+                  </button>
+                )}
+
+                {/* Situation Clients [F7] */}
+                {config?.affichage?.visibleButtons?.situation_clients !== false && (
+                  <button
+                    type="button"
+                    onClick={() => launchWindow('situation_clients')}
+                    className="p-2.5 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 hover:bg-emerald-50/80 hover:border-emerald-300/80 dark:hover:bg-emerald-950/30 dark:hover:border-emerald-800 flex items-center justify-between text-left transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-2.5 font-bold text-[12.5px] text-slate-800 dark:text-slate-100">
+                      <BookOpen size={18} className="text-emerald-500 dark:text-emerald-400 shrink-0 group-hover:scale-110 transition-transform" />
+                      <span>Situation Clients</span>
+                    </div>
+                    <span className="text-[9.5px] font-mono font-extrabold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">F7</span>
+                  </button>
+                )}
+
+                {/* Statistiques [F8] */}
+                {config?.affichage?.visibleButtons?.stats !== false && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setStatsInitialMode('general');
+                      launchWindow('stats');
+                    }}
+                    className="p-2.5 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 hover:bg-purple-50/80 hover:border-purple-300/80 dark:hover:bg-purple-950/30 dark:hover:border-purple-800 flex items-center justify-between text-left transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-2.5 font-bold text-[12.5px] text-slate-800 dark:text-slate-100">
+                      <BarChart3 size={18} className="text-purple-500 dark:text-purple-400 shrink-0 group-hover:scale-110 transition-transform" />
+                      <span>Statistiques</span>
+                    </div>
+                    <span className="text-[9.5px] font-mono font-extrabold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">F8</span>
+                  </button>
+                )}
+
+                {/* Inventaire Stock [F9] */}
+                {config?.affichage?.visibleButtons?.inventaire !== false && (
+                  <button
+                    type="button"
+                    onClick={() => launchWindow('products')}
+                    className="p-2.5 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 hover:bg-cyan-50/80 hover:border-cyan-300/80 dark:hover:bg-cyan-950/30 dark:hover:border-cyan-800 flex items-center justify-between text-left transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-2.5 font-bold text-[12.5px] text-slate-800 dark:text-slate-100">
+                      <Search size={18} className="text-cyan-500 dark:text-cyan-400 shrink-0 group-hover:scale-110 transition-transform" />
+                      <span>Inventaire Stock</span>
+                    </div>
+                    <span className="text-[9.5px] font-mono font-extrabold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">F9</span>
+                  </button>
+                )}
+
+                {/* Coffre & Trésorerie [F10] */}
+                {config?.affichage?.visibleButtons?.coffre !== false && (
+                  <button
+                    type="button"
+                    onClick={() => launchWindow('caisse')}
+                    className="p-2.5 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 hover:bg-emerald-50/80 hover:border-emerald-300/80 dark:hover:bg-emerald-950/30 dark:hover:border-emerald-800 flex items-center justify-between text-left transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-2.5 font-bold text-[12.5px] text-slate-800 dark:text-slate-100">
+                      <Coins size={18} className="text-emerald-600 dark:text-emerald-400 shrink-0 group-hover:scale-110 transition-transform" />
+                      <span>Coffre & Trésorerie</span>
+                    </div>
+                    <span className="text-[9.5px] font-mono font-extrabold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">F10</span>
+                  </button>
+                )}
+
+              </div>
+
+              {/* Bottom Footer */}
+              <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800 flex items-center justify-between mt-auto shrink-0">
+                <div className="flex items-center gap-2 font-black text-xs text-purple-700 dark:text-purple-300">
+                  <UserCheck size={16} className="text-purple-600 dark:text-purple-400" />
+                  <span>{currentUser ? currentUser.username.toUpperCase() : 'ADMIN'}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => toggleDisplayMode('tactile')}
+                    className="p-1.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                    title="Passer en Mode Tactile (Grandes Icônes)"
+                  >
+                    <Tablet size={15} className="text-sky-500" />
+                  </button>
+                  <button
+                    type="button"
                     onClick={toggleTheme}
-                    className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                    className="p-1.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
                     title={theme === 'dark' ? "Passer en Mode Clair" : "Passer en Mode Sombre"}
                   >
-                    {theme === 'dark' ? <Sun size={14} className="text-amber-400" /> : <Moon size={14} className="text-slate-600" />}
+                    {theme === 'dark' ? <Sun size={15} className="text-amber-400" /> : <Moon size={15} className="text-slate-600" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )
+        ) : (
+          /* SIDEBAR METRICS PANEL - Tactile Mode */
+          <div className={`h-full shrink-0 border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl flex flex-col justify-between select-none text-slate-800 dark:text-white overflow-y-auto font-sans z-20 shadow-xl transition-all duration-300 ${isSidebarOpen ? 'w-[260px] p-3.5 border-r' : 'w-0 p-0 overflow-hidden border-r-0 shadow-none'}`}>
+            <div className="flex flex-col gap-3 min-w-[232px]">
+              {/* Header */}
+              <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/80 dark:border-slate-800">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-gradient-to-br from-amber-400 to-amber-600 text-slate-950 shadow-xs">
+                    <Gem size={14} className="animate-pulse" />
+                  </div>
+                  <div className="flex flex-col leading-none">
+                    <span className="font-black text-sm text-slate-900 dark:text-white tracking-tight flex items-center gap-1.5">
+                      VBI PME
+                      <span className="text-[9px] font-black uppercase px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">BETA</span>
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setIsSidebarOpen(false)}
+                    className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                    title="Masquer le panneau d'informations"
+                  >
+                    <PanelLeftClose size={16} />
                   </button>
                 </div>
               </div>
 
+              {/* Metrics List in Clean Elegant Cards */}
+              <div className="flex flex-col gap-2">
+
+                {/* 1. Nombre de Produits */}
+                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
+                    <div className="p-1 rounded-lg bg-sky-100 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 shrink-0">
+                      <Package size={13} />
+                    </div>
+                    <span>Nombre de produits</span>
+                  </div>
+                  <span className="font-extrabold text-slate-900 dark:text-white bg-slate-200/60 dark:bg-slate-800 px-2 py-0.5 rounded-lg text-[10.5px]">
+                    {products.length}
+                  </span>
+                </div>
+
+                {/* 2. Stock Minimum */}
+                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
+                    <div className={`p-1 rounded-lg shrink-0 ${lowestStockCount > 3 ? 'bg-rose-100 dark:bg-rose-950/80 text-rose-600 dark:text-rose-400' : 'bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400'}`}>
+                      {lowestStockCount > 3 ? <AlertTriangle size={13} /> : <CheckCircle2 size={13} />}
+                    </div>
+                    <span>Stock minimum</span>
+                  </div>
+                  <span className={`font-black text-[10px] px-2 py-0.5 rounded-lg ${
+                    lowestStockCount > 3
+                      ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 animate-pulse'
+                      : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20'
+                  }`}>
+                    {lowestStockCount > 3 ? "RECOMMANDÉ" : "EN ORDRE"}
+                  </span>
+                </div>
+
+                {/* 3. Produits Périmés */}
+                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
+                    <div className="p-1 rounded-lg bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 shrink-0">
+                      <Clock size={13} />
+                    </div>
+                    <span>Produits périmés</span>
+                  </div>
+                  <span className="font-bold text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-lg border border-emerald-500/20">
+                    OK (SANS ALERTE)
+                  </span>
+                </div>
+
+                {/* 4. Soldes Clients */}
+                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
+                    <div className="p-1 rounded-lg bg-amber-100 dark:bg-amber-950/80 text-amber-600 dark:text-amber-400 shrink-0">
+                      <CreditCard size={13} />
+                    </div>
+                    <span>Soldes clients</span>
+                  </div>
+                  <span className="font-extrabold text-[10px] bg-amber-500/10 text-amber-600 dark:text-amber-400 px-2 py-0.5 rounded-lg border border-amber-500/20">
+                    {clients.filter(c => c.balance > 0).length} débiteurs
+                  </span>
+                </div>
+
+                {/* 5. Nombre de Bons Ouverts */}
+                <div
+                  className="flex items-center justify-between p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition-colors cursor-help group"
+                  title={openBonsMetrics.tooltip}
+                >
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
+                    <div className="p-1 rounded-lg bg-indigo-100 dark:bg-indigo-950/80 text-indigo-600 dark:text-indigo-400 shrink-0">
+                      <FileText size={13} />
+                    </div>
+                    <span>Bons ouverts</span>
+                  </div>
+                  <span className="font-extrabold text-[10.5px] bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded-lg border border-indigo-500/20">
+                    {openBonsMetrics.total}
+                  </span>
+                </div>
+
+                {/* 6. Utilisateur Connecté */}
+                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
+                    <div className="p-1 rounded-lg bg-purple-100 dark:bg-purple-950/80 text-purple-600 dark:text-purple-400 shrink-0">
+                      <UserCheck size={13} />
+                    </div>
+                    <span>Utilisateur</span>
+                  </div>
+                  <span className="font-black text-[10.5px] text-purple-700 dark:text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded-lg border border-purple-500/20">
+                    {currentUser ? currentUser.username.toUpperCase() : 'NON CONNECTÉ'}
+                  </span>
+                </div>
+
+                {/* 7. Licence Software */}
+                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
+                    <div className="p-1 rounded-lg bg-teal-100 dark:bg-teal-950/80 text-teal-600 dark:text-teal-400 shrink-0">
+                      <ShieldCheck size={13} />
+                    </div>
+                    <span>Licence</span>
+                  </div>
+                  <span className={`font-bold text-[9.5px] px-2 py-0.5 rounded-lg border ${
+                    config.isActivated
+                      ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                      : 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20'
+                  }`}>
+                    {config.isActivated ? 'ORIGINALE' : 'DÉMO ACTIVE'}
+                  </span>
+                </div>
+
+                {/* 8. Memory Usage Indicator Component */}
+                <MemoryUsageIndicator />
+
+                {/* 9. Sauvegarde Base */}
+                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
+                    <div className="p-1 rounded-lg bg-sky-100 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 shrink-0">
+                      <Database size={13} />
+                    </div>
+                    <span>Sauvegarde</span>
+                  </div>
+                  <span className="font-bold text-[9.5px] bg-sky-500/10 text-sky-600 dark:text-sky-400 px-2 py-0.5 rounded-lg border border-sky-500/20">
+                    CLOUD RUN
+                  </span>
+                </div>
+
+                {/* 10. Affichage & Mode Control */}
+                <div className="flex flex-col gap-1.5 p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] mt-0.5">
+                  <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-slate-200">
+                    <Monitor size={13} className="text-slate-500 dark:text-slate-400" />
+                    <span>Affichage & Mode</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <select
+                      value={zoomMode}
+                      onChange={(e) => setZoomMode(e.target.value as any)}
+                      className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[10.5px] font-bold text-slate-800 dark:text-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer"
+                    >
+                      <option value="auto">Auto-Fit (Adaptatif)</option>
+                      <option value="100">100% (Normal)</option>
+                      <option value="90">90% (Intermédiaire)</option>
+                      <option value="80">80% (Compact)</option>
+                      <option value="75">75% (Petit)</option>
+                    </select>
+                    <button
+                      type="button"
+                      onClick={toggleTheme}
+                      className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+                      title={theme === 'dark' ? "Passer en Mode Clair" : "Passer en Mode Sombre"}
+                    >
+                      {theme === 'dark' ? <Sun size={14} className="text-amber-400" /> : <Moon size={14} className="text-slate-600" />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleDisplayMode('compact')}
+                      className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
+                      title="Passer en Mode Compact"
+                    >
+                      <Smartphone size={14} className="text-sky-500" />
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Quick Vertical actions buttons */}
+            <div className="flex flex-col gap-2 mt-4 select-none min-w-[226px]">
+              <button
+                onClick={() => launchWindow('configuration')}
+                className="group relative overflow-hidden py-2 px-3.5 flex items-center justify-start gap-2.5 text-xs font-bold text-slate-800 dark:text-sky-100 bg-gradient-to-r from-sky-100/90 via-white/80 to-sky-50/80 dark:from-slate-900/90 dark:via-sky-950/70 dark:to-slate-900/90 backdrop-blur-md rounded-xl border border-white/90 dark:border-sky-800/60 shadow-[inset_0_1px_1px_rgba(255,255,255,0.9),0_2px_8px_rgba(14,165,233,0.12)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_4px_16px_rgba(14,165,233,0.25)] hover:border-sky-300 dark:hover:border-sky-500 transition-all duration-200 cursor-pointer active:scale-[0.98]"
+              >
+                <div className="w-6 h-6 rounded-lg bg-sky-500/10 dark:bg-sky-400/20 flex items-center justify-center shrink-0 border border-sky-300/40 dark:border-sky-500/30">
+                  <Settings className="w-3.5 h-3.5 text-sky-600 dark:text-sky-300 group-hover:rotate-90 transition-transform duration-500" />
+                </div>
+                <span className="truncate tracking-wide">Configuration</span>
+              </button>
+
+              <button
+                onClick={handleLockSession}
+                className="group relative overflow-hidden py-2 px-3.5 flex items-center justify-start gap-2.5 text-xs font-bold text-slate-800 dark:text-amber-100 bg-gradient-to-r from-amber-100/80 via-white/80 to-amber-50/70 dark:from-amber-950/60 dark:via-slate-900/90 dark:to-slate-950/90 backdrop-blur-md rounded-xl border border-white/90 dark:border-amber-800/50 shadow-[inset_0_1px_1px_rgba(255,255,255,0.9),0_2px_8px_rgba(217,119,6,0.12)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_4px_16px_rgba(217,119,6,0.25)] hover:border-amber-300 dark:hover:border-amber-500 transition-all duration-200 cursor-pointer active:scale-[0.98]"
+              >
+                <div className="w-6 h-6 rounded-lg bg-amber-500/10 dark:bg-amber-400/20 flex items-center justify-center shrink-0 border border-amber-300/40 dark:border-amber-500/30">
+                  <ShieldCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform duration-300" />
+                </div>
+                <span className="truncate tracking-wide">Verrouiller la PME</span>
+              </button>
+
+              <button
+                onClick={() => alert("Sauvegarde complète des tables locales exportée dans l'iframe sandbox.")}
+                className="group relative overflow-hidden py-2 px-3.5 flex items-center justify-start gap-2.5 text-xs font-bold text-sky-950 dark:text-sky-100 bg-gradient-to-r from-sky-200/90 via-sky-100/80 to-blue-50/80 dark:from-sky-950/80 dark:via-blue-950/80 dark:to-slate-900/90 backdrop-blur-md rounded-xl border border-white/90 dark:border-sky-700/60 shadow-[inset_0_1px_1px_rgba(255,255,255,0.95),0_2px_10px_rgba(2,132,199,0.2)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_4px_18px_rgba(2,132,199,0.35)] hover:border-sky-400 dark:hover:border-sky-400 transition-all duration-200 cursor-pointer active:scale-[0.98]"
+              >
+                <div className="w-6 h-6 rounded-lg bg-sky-600/15 dark:bg-sky-400/20 flex items-center justify-center shrink-0 border border-sky-400/40 dark:border-sky-400/30">
+                  <Database className="w-3.5 h-3.5 text-sky-600 dark:text-sky-300 group-hover:scale-110 transition-transform duration-300" />
+                </div>
+                <span className="truncate tracking-wide">Sauvegarde Directe</span>
+              </button>
             </div>
           </div>
-
-          {/* Quick Vertical actions buttons */}
-          <div className="flex flex-col gap-2 mt-4 select-none min-w-[226px]">
-            <button
-              onClick={() => launchWindow('configuration')}
-              className="group relative overflow-hidden py-2 px-3.5 flex items-center justify-start gap-2.5 text-xs font-bold text-slate-800 dark:text-sky-100 bg-gradient-to-r from-sky-100/90 via-white/80 to-sky-50/80 dark:from-slate-900/90 dark:via-sky-950/70 dark:to-slate-900/90 backdrop-blur-md rounded-xl border border-white/90 dark:border-sky-800/60 shadow-[inset_0_1px_1px_rgba(255,255,255,0.9),0_2px_8px_rgba(14,165,233,0.12)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_4px_16px_rgba(14,165,233,0.25)] hover:border-sky-300 dark:hover:border-sky-500 transition-all duration-200 cursor-pointer active:scale-[0.98]"
-            >
-              <div className="w-6 h-6 rounded-lg bg-sky-500/10 dark:bg-sky-400/20 flex items-center justify-center shrink-0 border border-sky-300/40 dark:border-sky-500/30">
-                <Settings className="w-3.5 h-3.5 text-sky-600 dark:text-sky-300 group-hover:rotate-90 transition-transform duration-500" />
-              </div>
-              <span className="truncate tracking-wide">Configuration</span>
-            </button>
-
-            <button
-              onClick={handleLockSession}
-              className="group relative overflow-hidden py-2 px-3.5 flex items-center justify-start gap-2.5 text-xs font-bold text-slate-800 dark:text-amber-100 bg-gradient-to-r from-amber-100/80 via-white/80 to-amber-50/70 dark:from-amber-950/60 dark:via-slate-900/90 dark:to-slate-950/90 backdrop-blur-md rounded-xl border border-white/90 dark:border-amber-800/50 shadow-[inset_0_1px_1px_rgba(255,255,255,0.9),0_2px_8px_rgba(217,119,6,0.12)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_4px_16px_rgba(217,119,6,0.25)] hover:border-amber-300 dark:hover:border-amber-500 transition-all duration-200 cursor-pointer active:scale-[0.98]"
-            >
-              <div className="w-6 h-6 rounded-lg bg-amber-500/10 dark:bg-amber-400/20 flex items-center justify-center shrink-0 border border-amber-300/40 dark:border-amber-500/30">
-                <ShieldCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform duration-300" />
-              </div>
-              <span className="truncate tracking-wide">Verrouiller la PME</span>
-            </button>
-
-            <button
-              onClick={() => alert("Sauvegarde complète des tables locales exportée dans l'iframe sandbox.")}
-              className="group relative overflow-hidden py-2 px-3.5 flex items-center justify-start gap-2.5 text-xs font-bold text-sky-950 dark:text-sky-100 bg-gradient-to-r from-sky-200/90 via-sky-100/80 to-blue-50/80 dark:from-sky-950/80 dark:via-blue-950/80 dark:to-slate-900/90 backdrop-blur-md rounded-xl border border-white/90 dark:border-sky-700/60 shadow-[inset_0_1px_1px_rgba(255,255,255,0.95),0_2px_10px_rgba(2,132,199,0.2)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_4px_18px_rgba(2,132,199,0.35)] hover:border-sky-400 dark:hover:border-sky-400 transition-all duration-200 cursor-pointer active:scale-[0.98]"
-            >
-              <div className="w-6 h-6 rounded-lg bg-sky-600/15 dark:bg-sky-400/20 flex items-center justify-center shrink-0 border border-sky-400/40 dark:border-sky-400/30">
-                <Database className="w-3.5 h-3.5 text-sky-600 dark:text-sky-300 group-hover:scale-110 transition-transform duration-300" />
-              </div>
-              <span className="truncate tracking-wide">Sauvegarde Directe</span>
-            </button>
-          </div>
-        </div>
+        )}
 
          {/* WORKSPACE AREA (Central draggable stage) */}
         <div id="desktop-stage" className="flex-1 h-full relative overflow-hidden select-none">
           
           {/* Floating trigger to Open Sidebar when minimized */}
-          {!isSidebarOpen && (
+          {!isCompactMode && !isSidebarOpen && (
             <button
               onClick={() => setIsSidebarOpen(true)}
               className="absolute left-0 top-[15%] bg-yellow-450/90 dark:bg-sky-650/90 hover:bg-yellow-500 hover:scale-110 active:scale-95 text-slate-900 dark:text-white w-7 h-10 rounded-r-lg shadow-md border-y border-r border-slate-300 dark:border-sky-400/30 flex items-center justify-center z-40 transition-all cursor-pointer font-bold select-none text-xs"
@@ -2171,6 +2709,7 @@ export default function App() {
       {startMenuOpen && (
         <div
           id="start-menu-panel"
+          ref={startMenuRef}
           className="absolute bottom-6 left-2 w-72 bg-slate-100/90 backdrop-blur-2xl text-slate-800 border border-white/40 shadow-[0_20px_50px_rgba(0,0,0,0.5)] rounded-lg flex flex-col z-50 overflow-hidden"
         >
           {/* Header custom profile */}

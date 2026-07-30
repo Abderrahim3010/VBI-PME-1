@@ -80,23 +80,19 @@ export default function WindowFrame({
     const stageW = Math.max(500, (window.innerWidth / s) - 260); // 260px is modern M3 sidebar width
     const stageH = Math.max(350, (window.innerHeight - 100) / s);
 
-    const defaultW = parseTailwindLength(width, 800);
-    const defaultH = parseTailwindLength(height, 500);
+    const defaultW = parseTailwindLength(width, 850);
+    const defaultH = parseTailwindLength(height, 550);
 
-    // Calculate scaled window size based on stage size compared to standard baseline (1185 x 700)
-    // This allows the windows to scale up when screen is larger, and scale down when smaller,
-    // keeping everything in perfect proportion and avoiding layout breakages!
-    let finalW = Math.round(stageW * (defaultW / 1185));
-    let finalH = Math.round(stageH * (defaultH / 700));
+    // Keep window size matching default requested size without artificially shrinking it down
+    let finalW = Math.min(defaultW, stageW - 20);
+    let finalH = Math.min(defaultH, stageH - 20);
 
     // Constrain sizes to keep layout functional
-    const minW = Math.min(420, stageW - 16);
-    const minH = Math.min(260, stageH - 16);
-    const maxW = stageW - 16;
-    const maxH = stageH - 16;
+    const minW = Math.min(380, stageW - 16);
+    const minH = Math.min(250, stageH - 16);
 
-    finalW = Math.max(minW, Math.min(maxW, finalW));
-    finalH = Math.max(minH, Math.min(maxH, finalH));
+    finalW = Math.max(minW, finalW);
+    finalH = Math.max(minH, finalH);
 
     setSize({ width: finalW, height: finalH });
 
@@ -108,16 +104,99 @@ export default function WindowFrame({
       targetX = positionRef.current.x === 0 ? initialX : positionRef.current.x;
       targetY = positionRef.current.y === 0 ? initialY : positionRef.current.y;
     } else {
-      // Scale initial coordinates proportionally to current stage size from baseline (1185 x 700)
-      targetX = Math.round(stageW * (initialX / 1185));
-      targetY = Math.round(stageH * (initialY / 700));
+      // Center window smoothly in the stage if not manually placed
+      targetX = Math.max(8, Math.round((stageW - finalW) / 2));
+      targetY = Math.max(8, Math.round((stageH - finalH) / 2));
     }
 
-    const fittedX = Math.max(8, Math.min(targetX, stageW - finalW - 8));
-    const fittedY = Math.max(8, Math.min(targetY, stageH - finalH - 8));
+    const fittedX = Math.max(4, Math.min(targetX, stageW - finalW - 4));
+    const fittedY = Math.max(4, Math.min(targetY, stageH - finalH - 4));
 
     setPosition({ x: fittedX, y: fittedY });
   }, [height, initialX, initialY, scale, width]);
+
+  // Handle free window resizing in all 8 directions
+  const handleResizeStart = (e: React.PointerEvent, handle: string) => {
+    if (e.button !== 0 || isMaximized) return;
+    e.stopPropagation();
+    e.preventDefault();
+
+    onFocus();
+    dragCleanupRef.current?.();
+
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startW = sizeRef.current.width;
+    const startH = sizeRef.current.height;
+    const startPosX = positionRef.current.x;
+    const startPosY = positionRef.current.y;
+    const s = scale || 1;
+
+    let currentW = startW;
+    let currentH = startH;
+    let currentX = startPosX;
+    let currentY = startPosY;
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      const dx = (moveEvent.clientX - startX) / s;
+      const dy = (moveEvent.clientY - startY) / s;
+
+      const minW = 360;
+      const minH = 220;
+
+      if (handle.includes('e')) {
+        currentW = Math.max(minW, startW + dx);
+      }
+      if (handle.includes('s')) {
+        currentH = Math.max(minH, startH + dy);
+      }
+      if (handle.includes('w')) {
+        const potentialW = startW - dx;
+        if (potentialW >= minW) {
+          currentW = potentialW;
+          currentX = startPosX + dx;
+        }
+      }
+      if (handle.includes('n')) {
+        const potentialH = startH - dy;
+        if (potentialH >= minH) {
+          currentH = potentialH;
+          currentY = startPosY + dy;
+        }
+      }
+
+      if (windowRef.current) {
+        windowRef.current.style.width = `${currentW}px`;
+        windowRef.current.style.height = `${currentH}px`;
+        windowRef.current.style.left = `${currentX}px`;
+        windowRef.current.style.top = `${currentY}px`;
+      }
+
+      sizeRef.current = { width: currentW, height: currentH };
+      positionRef.current = { x: currentX, y: currentY };
+    };
+
+    function removeResizeListeners() {
+      document.removeEventListener('pointermove', handlePointerMove);
+      document.removeEventListener('pointerup', handlePointerUp);
+      document.removeEventListener('pointercancel', handlePointerUp);
+      window.removeEventListener('blur', handlePointerUp);
+      dragCleanupRef.current = null;
+    }
+
+    function handlePointerUp() {
+      removeResizeListeners();
+      setSize({ width: currentW, height: currentH });
+      setPosition({ x: currentX, y: currentY });
+      hasManuallyDraggedRef.current = true;
+    }
+
+    document.addEventListener('pointermove', handlePointerMove);
+    document.addEventListener('pointerup', handlePointerUp);
+    document.addEventListener('pointercancel', handlePointerUp);
+    window.addEventListener('blur', handlePointerUp);
+    dragCleanupRef.current = removeResizeListeners;
+  };
 
   // Run on mount, layout props update, or screen size/scale resize
   useEffect(() => {
@@ -298,6 +377,30 @@ export default function WindowFrame({
         {children}
       </div>
 
+      {/* 8-Direction Free Mouse Resize Handles */}
+      {!isMaximized && (
+        <>
+          {/* Edges */}
+          <div onPointerDown={(e) => handleResizeStart(e, 'n')} className="absolute top-0 left-4 right-4 h-2.5 cursor-ns-resize z-[100]" title="Redimensionner" />
+          <div onPointerDown={(e) => handleResizeStart(e, 's')} className="absolute bottom-0 left-4 right-4 h-2.5 cursor-ns-resize z-[100]" title="Redimensionner" />
+          <div onPointerDown={(e) => handleResizeStart(e, 'w')} className="absolute top-4 bottom-4 left-0 w-2.5 cursor-ew-resize z-[100]" title="Redimensionner" />
+          <div onPointerDown={(e) => handleResizeStart(e, 'e')} className="absolute top-4 bottom-4 right-0 w-2.5 cursor-ew-resize z-[100]" title="Redimensionner" />
+
+          {/* Corners */}
+          <div onPointerDown={(e) => handleResizeStart(e, 'nw')} className="absolute top-0 left-0 w-4 h-4 cursor-nwse-resize z-[101]" title="Redimensionner" />
+          <div onPointerDown={(e) => handleResizeStart(e, 'ne')} className="absolute top-0 right-0 w-4 h-4 cursor-nesw-resize z-[101]" title="Redimensionner" />
+          <div onPointerDown={(e) => handleResizeStart(e, 'sw')} className="absolute bottom-0 left-0 w-4 h-4 cursor-nesw-resize z-[101]" title="Redimensionner" />
+          
+          {/* Bottom Right Corner with visual grip indicator */}
+          <div
+            onPointerDown={(e) => handleResizeStart(e, 'se')}
+            className="absolute bottom-0 right-0 w-5 h-5 cursor-nwse-resize z-[101] flex items-center justify-center group"
+            title="Redimensionner librement avec la souris"
+          >
+            <div className="w-2.5 h-2.5 border-r-2 border-b-2 border-slate-400 dark:border-slate-500 rounded-br group-hover:border-sky-500 dark:group-hover:border-sky-400 transition-colors" />
+          </div>
+        </>
+      )}
     </div>
   );
 }

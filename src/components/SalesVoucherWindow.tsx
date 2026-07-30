@@ -121,6 +121,11 @@ function SalesVoucherWindow({
   const [isHistoryOverlayOpen, setIsHistoryOverlayOpen] = useState(false);
   const [historySearchQuery, setHistorySearchQuery] = useState('');
 
+  // Browse Bons Modal state
+  const [isBrowseBonsModalOpen, setIsBrowseBonsModalOpen] = useState(false);
+  const [browseBonsSearchQuery, setBrowseBonsSearchQuery] = useState('');
+  const [browseBonsStatusFilter, setBrowseBonsStatusFilter] = useState<'ALL' | 'CLOSED' | 'DRAFT'>('ALL');
+
   // Search input state
   const [showBenefit, setShowBenefit] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -507,6 +512,23 @@ function SalesVoucherWindow({
       return idA.localeCompare(idB, undefined, { numeric: true });
     });
   }, [sales, openVouchers]);
+
+  const filteredBrowseVouchers = useMemo(() => {
+    return navigableVouchers.filter(v => {
+      if (browseBonsStatusFilter === 'CLOSED' && v.type !== 'closed') return false;
+      if (browseBonsStatusFilter === 'DRAFT' && v.type !== 'draft') return false;
+
+      if (!browseBonsSearchQuery.trim()) return true;
+      const q = browseBonsSearchQuery.trim().toLowerCase();
+      
+      const idMatch = String(v.id).toLowerCase().includes(q);
+      const clientName = v.type === 'closed' ? String(v.data.client || '') : String(v.data.clientName || '');
+      const clientMatch = clientName.toLowerCase().includes(q);
+      const dateMatch = String(v.data.date || '').toLowerCase().includes(q);
+      
+      return idMatch || clientMatch || dateMatch;
+    });
+  }, [navigableVouchers, browseBonsSearchQuery, browseBonsStatusFilter]);
 
   // Map of product codes to effective/live stock values
   const effectiveStockMap = useMemo(() => {
@@ -1840,15 +1862,22 @@ function SalesVoucherWindow({
             {/* N° de bon, Date, Heure (now side by side next to Client group) */}
             <div className="flex items-center gap-1.5 shrink-0">
               {/* N° de bon */}
-              <div className="flex flex-col gap-0.5 w-[75px]">
+              <div className="flex flex-col gap-0.5 shrink-0">
                 <span className="font-extrabold text-[8.5px] text-slate-400 dark:text-slate-400 leading-none uppercase tracking-wide">N° de bon</span>
-                <input
-                  type="text"
-                  readOnly
-                  value={mode === 'create' ? newSaleId : (selectedSale?.id || '')}
-                  style={{ fontSize: '12px', textDecorationLine: 'none', fontFamily: 'Arial' }}
-                  className="h-7 px-1.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg font-mono font-black text-center text-rose-600 focus:outline-none"
-                />
+                <div 
+                  onClick={() => setIsBrowseBonsModalOpen(true)}
+                  title="Rechercher / Parcourir les bons de vente"
+                  className="h-7 px-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-sky-400 dark:hover:border-sky-500 rounded-lg flex items-center justify-between gap-1 cursor-pointer transition-all shrink-0 group shadow-2xs"
+                >
+                  <input
+                    type="text"
+                    readOnly
+                    value={mode === 'create' ? newSaleId : (selectedSale?.id || '')}
+                    style={{ fontSize: '12px', textDecorationLine: 'none', fontFamily: 'Arial' }}
+                    className="w-[56px] bg-transparent font-mono font-black text-center text-rose-600 border-none outline-none ring-0 shadow-none focus:outline-none focus:ring-0 p-0 m-0 pointer-events-none"
+                  />
+                  <Search size={13} className="text-slate-400 dark:text-slate-500 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors shrink-0" />
+                </div>
               </div>
 
               {/* Date d'édition */}
@@ -4606,6 +4635,188 @@ function SalesVoucherWindow({
                 <button
                   type="button"
                   onClick={() => setIsHistoryOverlayOpen(false)}
+                  className="px-4 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl transition-all cursor-pointer text-xs"
+                >
+                  Fermer
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* -------------------- BROWSE BONS MODAL -------------------- */}
+      {isBrowseBonsModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-xs flex items-center justify-center z-[10030] p-4 text-xs select-none animate-in fade-in duration-150">
+          <div className="w-[720px] max-w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden text-slate-800 dark:text-slate-200 animate-in zoom-in-95 duration-150">
+            
+            {/* Header */}
+            <div className="bg-gradient-to-r from-sky-700 to-indigo-800 dark:from-slate-950 dark:to-slate-900 px-5 py-3.5 flex items-center justify-between">
+              <div className="flex items-center gap-2.5 text-white font-bold text-sm">
+                <Search size={18} className="text-sky-300" />
+                <span>Rechercher & Parcourir les Bons de Vente</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsBrowseBonsModalOpen(false)}
+                className="w-7 h-7 bg-white/10 text-white rounded-full flex items-center justify-center hover:bg-white/20 transition-all cursor-pointer"
+              >
+                <X size={15} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-4 flex flex-col gap-3">
+              {/* Search & Filter bar */}
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="flex-1 flex items-center gap-2 bg-slate-50 dark:bg-slate-950 p-2 rounded-2xl border border-slate-200/80 dark:border-slate-800">
+                  <Search size={14} className="text-slate-400 shrink-0 ml-1" />
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder="Saisir N° de bon, nom du client ou date..."
+                    value={browseBonsSearchQuery}
+                    onChange={(e) => setBrowseBonsSearchQuery(e.target.value)}
+                    className="flex-1 bg-transparent font-sans text-xs focus:outline-none font-bold text-slate-800 dark:text-slate-100"
+                  />
+                  {browseBonsSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setBrowseBonsSearchQuery('')}
+                      className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs font-bold mr-1 cursor-pointer"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                {/* Status Tabs */}
+                <div className="flex items-center bg-slate-100 dark:bg-slate-850 p-1 rounded-2xl border border-slate-200 dark:border-slate-800 shrink-0 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setBrowseBonsStatusFilter('ALL')}
+                    className={`px-3 py-1 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                      browseBonsStatusFilter === 'ALL'
+                        ? 'bg-sky-600 text-white shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    Tous ({navigableVouchers.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBrowseBonsStatusFilter('CLOSED')}
+                    className={`px-3 py-1 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                      browseBonsStatusFilter === 'CLOSED'
+                        ? 'bg-emerald-600 text-white shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    Validés ({sales.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBrowseBonsStatusFilter('DRAFT')}
+                    className={`px-3 py-1 text-xs font-bold rounded-xl transition-all cursor-pointer ${
+                      browseBonsStatusFilter === 'DRAFT'
+                        ? 'bg-amber-600 text-white shadow-2xs'
+                        : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    Brouillons ({openVouchers.length})
+                  </button>
+                </div>
+              </div>
+
+              {/* Table */}
+              <div className="border border-slate-200/80 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-slate-950 max-h-[360px] overflow-y-auto">
+                <table className="w-full text-left font-sans text-xs border-collapse">
+                  <thead className="sticky top-0 bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-400 font-black text-[9.5px] uppercase tracking-wider border-b border-slate-200/80 dark:border-slate-800 z-10">
+                    <tr>
+                      <th className="px-3 py-2.5">N° Bon</th>
+                      <th className="px-3 py-2.5">Statut</th>
+                      <th className="px-3 py-2.5">Client</th>
+                      <th className="px-3 py-2.5">Date / Heure</th>
+                      <th className="px-3 py-2.5 text-center">Articles</th>
+                      <th className="px-3 py-2.5 text-right">Montant (DA)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
+                    {filteredBrowseVouchers.length > 0 ? (
+                      filteredBrowseVouchers.map((item) => {
+                        const isClosed = item.type === 'closed';
+                        const isSelected = item.id === (mode === 'create' ? newSaleId : selectedSaleId);
+                        const clientName = isClosed ? item.data.client : item.data.clientName;
+                        const dateVal = item.data.date;
+                        const timeVal = item.data.time || '';
+                        const itemCount = isClosed
+                          ? (item.data.items?.length || 0)
+                          : (item.data.draftItems?.length || 0);
+                        const totalAmount = isClosed
+                          ? (item.data.ttc || 0)
+                          : (item.data.draftItems?.reduce((s: number, i: any) => s + (i.total || 0), 0) || 0);
+
+                        return (
+                          <tr
+                            key={item.id}
+                            onClick={() => {
+                              selectVoucherById(item.id);
+                              setIsBrowseBonsModalOpen(false);
+                            }}
+                            className={`cursor-pointer transition-colors hover:bg-sky-50/70 dark:hover:bg-slate-900/80 ${
+                              isSelected
+                                ? 'bg-sky-100/60 dark:bg-sky-950/50 font-bold border-l-4 border-l-sky-500'
+                                : ''
+                            }`}
+                          >
+                            <td className="px-3 py-2.5 font-mono text-xs font-black text-rose-600 dark:text-rose-400 whitespace-nowrap">
+                              N° {String(item.id).padStart(4, '0')}
+                            </td>
+                            <td className="px-3 py-2.5 whitespace-nowrap">
+                              {isClosed ? (
+                                <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/40">
+                                  Validé
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-900/40">
+                                  Brouillon
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2.5 font-bold text-slate-800 dark:text-slate-200 truncate max-w-[180px]">
+                              {clientName || 'Anonyme'}
+                            </td>
+                            <td className="px-3 py-2.5 font-mono text-[11px] text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                              {dateVal} {timeVal && <span className="text-[9.5px] text-slate-400 ml-1">{timeVal}</span>}
+                            </td>
+                            <td className="px-3 py-2.5 text-center font-mono font-bold text-slate-700 dark:text-slate-300">
+                              {itemCount}
+                            </td>
+                            <td className="px-3 py-2.5 text-right font-mono font-extrabold text-slate-900 dark:text-slate-100 whitespace-nowrap">
+                              {totalAmount.toLocaleString('fr-FR', { minimumFractionDigits: 2 })}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    ) : (
+                      <tr>
+                        <td colSpan={6} className="px-3 py-8 text-center text-slate-400 font-bold text-xs">
+                          Aucun bon de vente ne correspond à votre recherche.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Footer */}
+              <div className="flex justify-between items-center pt-2 border-t border-slate-100 dark:border-slate-800">
+                <span className="text-[10.5px] text-slate-400 font-medium">
+                  Astuce : Cliquez sur un bon pour l'ouvrir dans la fenêtre de saisie.
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsBrowseBonsModalOpen(false)}
                   className="px-4 py-1.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold rounded-xl transition-all cursor-pointer text-xs"
                 >
                   Fermer

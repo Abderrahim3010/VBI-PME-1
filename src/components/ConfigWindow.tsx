@@ -3,7 +3,7 @@ import {
   Settings, Save, LogOut, Upload, Trash2, Image, Sliders, 
   CheckSquare, Square, Users, Truck, FileText, Check, HelpCircle, 
   RotateCcw, SlidersHorizontal, Layers, Database, Printer, HardDrive, Cpu,
-  AlertTriangle
+  AlertTriangle, Smartphone, Monitor
 } from 'lucide-react';
 
 interface ConfigWindowProps {
@@ -69,6 +69,7 @@ function ConfigWindow({
   const [companyName, setCompanyName] = useState(config?.company || '');
   const [bgImage, setBgImage] = useState(config?.affichage?.backgroundImage || '');
   const [customUrl, setCustomUrl] = useState(config?.affichage?.backgroundImage || '');
+  const [displayMode, setDisplayMode] = useState<'tactile' | 'compact'>(config?.affichage?.displayMode || 'tactile');
   
   // Checked/unchecked buttons mapping (initialized from config?.affichage?.visibleButtons or defaulting to all true)
   const defaultButtons = {
@@ -164,6 +165,7 @@ function ConfigWindow({
       affichage: {
         backgroundImage: bgImage,
         visibleButtons: visibleButtons,
+        displayMode: displayMode,
       }
     };
     onUpdateConfig(updatedConfig);
@@ -844,6 +846,78 @@ function ConfigWindow({
             {/* TAB 3: AFFICHAGE & WALLPAPER */}
             {activeTab === 'affichage' && (
               <div className="flex flex-col gap-4 select-none">
+                
+                {/* Display Mode Options */}
+                <div className="border border-indigo-200/50 dark:border-slate-800/80 rounded-2xl bg-white dark:bg-slate-950 p-4 shadow-xs relative">
+                  <span className="absolute top-[-9px] left-4 px-2 bg-white dark:bg-slate-950 text-[9.5px] font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-wide">
+                    Mode d'affichage de l'application
+                  </span>
+
+                  <div className="flex flex-col gap-3 mt-1.5">
+                    <p className="text-[10.5px] text-slate-500 dark:text-slate-400 leading-relaxed font-medium">
+                      Sélectionnez le mode d'affichage de l'interface utilisateur.
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Tactile Mode */}
+                      <button
+                        type="button"
+                        onClick={() => setDisplayMode('tactile')}
+                        className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col gap-1.5 relative ${
+                          displayMode === 'tactile'
+                            ? 'bg-indigo-50/70 border-indigo-500 dark:bg-indigo-950/40 dark:border-indigo-400 shadow-xs ring-1 ring-indigo-500/30'
+                            : 'bg-slate-50 border-slate-200 dark:bg-slate-900 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-850'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 font-black text-xs text-indigo-950 dark:text-sky-300">
+                            <Smartphone size={16} className="text-indigo-600 dark:text-sky-400" />
+                            <span>Tactile mode</span>
+                          </div>
+                          {displayMode === 'tactile' && (
+                            <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-indigo-600 text-white uppercase tracking-wider">
+                              Actif (Design Actuel)
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[10.5px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
+                          Le design actuel complet de l'application, optimisé pour les écrans tactiles et la caisse POS.
+                        </p>
+                      </button>
+
+                      {/* Compact Mode */}
+                      <button
+                        type="button"
+                        onClick={() => setDisplayMode('compact')}
+                        className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col gap-1.5 relative ${
+                          displayMode === 'compact'
+                            ? 'bg-indigo-50/70 border-indigo-500 dark:bg-indigo-950/40 dark:border-indigo-400 shadow-xs ring-1 ring-indigo-500/30'
+                            : 'bg-slate-50 border-slate-200 dark:bg-slate-900 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-850'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 font-black text-xs text-slate-800 dark:text-slate-200">
+                            <Monitor size={16} className="text-slate-500 dark:text-slate-400" />
+                            <span>Compact mode</span>
+                          </div>
+                          <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 uppercase tracking-wider">
+                            Option Enregistrable
+                          </span>
+                        </div>
+                        <p className="text-[10.5px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
+                          Option pour le mode compact. N'affectera pas l'affichage tant que vous ne spécifiez pas son fonctionnement.
+                        </p>
+                      </button>
+                    </div>
+
+                    {displayMode === 'compact' && (
+                      <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300/50 text-amber-800 dark:text-amber-300 text-[10.5px] font-semibold flex items-center gap-2">
+                        <AlertTriangle size={14} className="shrink-0 text-amber-600 dark:text-amber-400" />
+                        <span>Le Compact mode est sélectionné. L'interface reste en Tactile mode par défaut jusqu'à ce que vous m'indiquiez ce qu'il doit faire.</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
                 
                 {/* Background Selector */}
                 <div className="border border-indigo-200/50 dark:border-slate-800/80 rounded-2xl bg-white dark:bg-slate-950 p-4 shadow-xs relative">
