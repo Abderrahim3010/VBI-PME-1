@@ -702,12 +702,6 @@ export default function App() {
     const nextZ = maxZIndex + 1;
     setMaxZIndex(nextZ);
 
-    // If sales window is currently open and we are switching to another window, trigger sales closing cleanup
-    const isSalesOpen = windows.find(w => w.id === 'sales')?.isOpen;
-    if (isSalesOpen && id !== 'sales') {
-      window.dispatchEvent(new Event('vbi:sales-window-closing'));
-    }
-
     setWindows(prev => prev.map(w => {
       if (w.id === id) {
         return { ...w, isOpen: true, isMinimized: false, zIndex: nextZ };
@@ -722,11 +716,6 @@ export default function App() {
       return;
     }
 
-    const isSalesOpen = windows.find(w => w.id === 'sales')?.isOpen;
-    if (isSalesOpen && id !== 'sales') {
-      window.dispatchEvent(new Event('vbi:sales-window-closing'));
-    }
-
     const nextZ = maxZIndex + 1;
     setMaxZIndex(nextZ);
 
@@ -739,9 +728,6 @@ export default function App() {
   };
 
   const closeWindow = (id: ActiveWindowId) => {
-    if (id === 'sales') {
-      window.dispatchEvent(new Event('vbi:sales-window-closing'));
-    }
     setWindows(prev => prev.map(w => {
       if (w.id === id) {
         return { ...w, isOpen: false };

@@ -728,32 +728,6 @@ function SalesVoucherWindow({
     }
   }, [storageReady]);
 
-  useEffect(() => {
-    if (isOpen || !draftsHydratedRef.current) return;
-    void releaseAllDrafts().then(released => {
-      if (!released) return;
-      setActiveDraftId(null);
-      setEditingVoucherId(null);
-      setDraftItems([]);
-      setMode('view');
-    });
-  }, [isOpen]);
-
-  useEffect(() => {
-    const handleSalesWindowClosing = () => {
-      if (!draftsHydratedRef.current) return;
-      void releaseAllDrafts().then(released => {
-        if (!released) return;
-        setActiveDraftId(null);
-        setEditingVoucherId(null);
-        setDraftItems([]);
-        setMode('view');
-      });
-    };
-    window.addEventListener('vbi:sales-window-closing', handleSalesWindowClosing);
-    return () => window.removeEventListener('vbi:sales-window-closing', handleSalesWindowClosing);
-  }, []);
-
   // Handle invoice index traversal using pager buttons
   const handleFirst = () => {
     if (navigableVouchers.length > 0) {
