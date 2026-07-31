@@ -877,24 +877,24 @@ function ConfigWindow({
                       Sélectionnez le mode d'affichage de l'interface utilisateur.
                     </p>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full min-w-0">
                       {/* Tactile Mode */}
                       <button
                         type="button"
                         onClick={() => handleDisplayModeChange('tactile')}
-                        className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col gap-2 relative ${
+                        className={`w-full min-w-0 overflow-hidden p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col gap-2 relative ${
                           displayMode === 'tactile'
                             ? 'bg-indigo-50/70 border-indigo-500 dark:bg-indigo-950/40 dark:border-indigo-400 shadow-xs ring-1 ring-indigo-500/30'
                             : 'bg-slate-50 border-slate-200 dark:bg-slate-900 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-850'
                         }`}
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 font-black text-xs text-indigo-950 dark:text-sky-300">
-                            <Smartphone size={16} className="text-indigo-600 dark:text-sky-400" />
-                            <span>Tactile mode (POS)</span>
+                        <div className="flex items-center justify-between w-full min-w-0">
+                          <div className="flex items-center gap-2 font-black text-xs text-indigo-950 dark:text-sky-300 min-w-0">
+                            <Smartphone size={16} className="text-indigo-600 dark:text-sky-400 shrink-0" />
+                            <span className="truncate">Tactile mode (POS)</span>
                           </div>
                           {displayMode === 'tactile' && (
-                            <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-indigo-600 text-white uppercase tracking-wider">
+                            <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-indigo-600 text-white uppercase tracking-wider shrink-0">
                               Actif
                             </span>
                           )}
@@ -936,8 +936,8 @@ function ConfigWindow({
                           </div>
                         </div>
 
-                        <p className="text-[10.5px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
-                          Le design avec grand bureau, fenêtres flottantes et boutons larges, optimisé pour les écrans tactiles et caisses POS.
+                        <p className="text-[10.5px] text-slate-500 dark:text-slate-400 font-medium leading-normal break-words w-full text-left">
+                          Interface avec grandes icônes et boutons larges pour écrans tactiles et caisses POS.
                         </p>
                       </button>
 
@@ -945,23 +945,23 @@ function ConfigWindow({
                       <button
                         type="button"
                         onClick={() => handleDisplayModeChange('compact')}
-                        className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col gap-2 relative ${
+                        className={`w-full min-w-0 overflow-hidden p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col gap-2 relative ${
                           displayMode === 'compact'
                             ? 'bg-indigo-50/70 border-indigo-500 dark:bg-indigo-950/40 dark:border-indigo-400 shadow-xs ring-1 ring-indigo-500/30'
                             : 'bg-slate-50 border-slate-200 dark:bg-slate-900 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-850'
                         }`}
                       >
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 font-black text-xs text-slate-800 dark:text-slate-200">
-                            <Monitor size={16} className="text-slate-500 dark:text-slate-400" />
-                            <span>Compact mode (Dense)</span>
+                        <div className="flex items-center justify-between w-full min-w-0">
+                          <div className="flex items-center gap-2 font-black text-xs text-slate-800 dark:text-slate-200 min-w-0">
+                            <Monitor size={16} className="text-slate-500 dark:text-slate-400 shrink-0" />
+                            <span className="truncate">Compact mode (Dense)</span>
                           </div>
                           {displayMode === 'compact' ? (
-                            <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-indigo-600 text-white uppercase tracking-wider">
+                            <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-indigo-600 text-white uppercase tracking-wider shrink-0">
                               Actif
                             </span>
                           ) : (
-                            <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 uppercase tracking-wider">
+                            <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 uppercase tracking-wider shrink-0">
                               Disponible
                             </span>
                           )}
@@ -1000,22 +1000,22 @@ function ConfigWindow({
                           </div>
                         </div>
 
-                        <p className="text-[10.5px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
-                          Interface allégée et condensée pour un usage rapide au clavier, avec listes optimisées pour écrans standards.
+                        <p className="text-[10.5px] text-slate-500 dark:text-slate-400 font-medium leading-normal break-words w-full text-left">
+                          Interface condensée en liste dense pour usage au clavier et écrans standards.
                         </p>
                       </button>
                     </div>
 
                     {displayMode === 'compact' && (
-                      <div className="p-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-300/50 text-sky-800 dark:text-sky-300 text-[10.5px] font-semibold flex items-center gap-2">
+                      <div className="p-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-300/50 text-sky-800 dark:text-sky-300 text-[10.5px] font-semibold flex items-center gap-2 w-full min-w-0 overflow-hidden">
                         <Monitor size={14} className="shrink-0 text-sky-600 dark:text-sky-400" />
-                        <span>Le mode compact est actif : affichage en liste dense optimisé pour le clavier et les écrans standards.</span>
+                        <span className="break-words min-w-0 flex-1">Mode compact actif : affichage dense optimisé pour clavier et écrans standards.</span>
                       </div>
                     )}
                     {displayMode === 'tactile' && (
-                      <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-300/50 text-indigo-800 dark:text-indigo-300 text-[10.5px] font-semibold flex items-center gap-2">
+                      <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-300/50 text-indigo-800 dark:text-indigo-300 text-[10.5px] font-semibold flex items-center gap-2 w-full min-w-0 overflow-hidden">
                         <Smartphone size={14} className="shrink-0 text-indigo-600 dark:text-indigo-400" />
-                        <span>Le mode tactile est actif : grandes icônes et boutons larges optimisés pour caisses POS et écrans tactiles.</span>
+                        <span className="break-words min-w-0 flex-1">Mode tactile actif : grandes icônes et boutons larges pour écrans tactiles et POS.</span>
                       </div>
                     )}
                   </div>
