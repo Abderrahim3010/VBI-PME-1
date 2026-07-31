@@ -49,6 +49,12 @@ export default function WindowFrame({
   scale = 1,
   overflowVisible = false
 }: WindowFrameProps) {
+  window.__vbiPerfRecorder?.render('WindowFrame', {
+    instanceId: id,
+    isOpen,
+    isMinimized
+  });
+
   const [position, setPosition] = useState({ x: initialX, y: initialY });
   const windowRef = useRef<HTMLDivElement>(null);
   const dragCleanupRef = useRef<(() => void) | null>(null);
@@ -189,6 +195,7 @@ export default function WindowFrame({
       setSize({ width: currentW, height: currentH });
       setPosition({ x: currentX, y: currentY });
       hasManuallyDraggedRef.current = true;
+      window.__vbiPerfRecorder?.interaction('window-resized', id);
     }
 
     document.addEventListener('pointermove', handlePointerMove);
@@ -264,6 +271,7 @@ export default function WindowFrame({
       // Update React state at the end of the drag session
       setPosition({ x: currentX, y: currentY });
       hasManuallyDraggedRef.current = true;
+      window.__vbiPerfRecorder?.interaction('window-moved', id);
     }
 
     document.addEventListener('pointermove', handlePointerMove);

@@ -59,6 +59,8 @@ function ProductListWindow({
   onCreatedFamillesChange,
   config
 }: ProductListWindowProps) {
+  window.__vbiPerfRecorder?.render('ProductListWindow');
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFamilies, setSelectedFamilies] = useState<string[]>([]);
   const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>([]);

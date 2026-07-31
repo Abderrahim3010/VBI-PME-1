@@ -37,6 +37,8 @@ function PurchaseVoucherWindow({
   isOpen = false,
   config
 }: PurchaseVoucherWindowProps) {
+  window.__vbiPerfRecorder?.render('PurchaseVoucherWindow', { isOpen });
+
   // Navigation / Selection of historical vouchers
   const [selectedVoucherId, setSelectedVoucherId] = useState<string>(
     purchases.length > 0 ? purchases[purchases.length - 1].id : ''

@@ -95,6 +95,9 @@ function WindowLoadingFallback() {
 }
 
 export default function App() {
+  window.__vbiPerfRecorder?.render('App');
+  window.__vbiPerfRecorder?.render('DesktopShell');
+
   // Keep the old clean-version marker without wiping user data.
   React.useEffect(() => {
     const CLEAN_VERSION = 'v9_auth_security_clean';
@@ -225,6 +228,10 @@ export default function App() {
       return null;
     }
   });
+
+  useEffect(() => {
+    window.__vbiPerfRecorder?.appMounted(currentUser === null ? 'login' : 'desktop');
+  }, []);
 
   useEffect(() => {
     if (currentUser) {
@@ -410,16 +417,49 @@ export default function App() {
     let cancelled = false;
 
     function parseValue<T>(data: Record<string, string>, key: string, fallback: T): T {
-      if (data[key] === undefined) return fallback;
+      const diagnostics = window.__vbiPerfRecorder;
+      const startedAt = diagnostics ? performance.now() : 0;
+      const raw = data[key];
+      if (raw === undefined) {
+        diagnostics?.storageRead(
+          key,
+          0,
+          diagnostics ? performance.now() - startedAt : 0,
+          Array.isArray(fallback) ? fallback.length : null,
+          false,
+          'fallback'
+        );
+        return fallback;
+      }
       try {
-        return JSON.parse(data[key]) as T;
+        const parsed = JSON.parse(raw) as T;
+        diagnostics?.storageRead(
+          key,
+          new TextEncoder().encode(raw).byteLength,
+          diagnostics ? performance.now() - startedAt : 0,
+          Array.isArray(parsed) ? parsed.length : null,
+          false,
+          'sqlite'
+        );
+        return parsed;
       } catch (error) {
+        diagnostics?.storageRead(
+          key,
+          new TextEncoder().encode(raw).byteLength,
+          diagnostics ? performance.now() - startedAt : 0,
+          Array.isArray(fallback) ? fallback.length : null,
+          true,
+          'sqlite'
+        );
         console.error(`[localDb] Invalid JSON for ${key}; keeping fallback state.`, error instanceof Error ? error.message : String(error));
         return fallback;
       }
     }
 
     async function hydratePersistentState() {
+      const diagnostics = window.__vbiPerfRecorder;
+      const hydrationStartedAt = diagnostics ? performance.now() : 0;
+      diagnostics?.setActivity({ hydration: true });
       try {
         await migrateLocalStorageToSqlite();
         const data = await loadPersistentData();
@@ -456,6 +496,12 @@ export default function App() {
           setZoomMode(storedZoom);
         }
       } finally {
+        diagnostics?.timing(
+          'renderer.hydration',
+          diagnostics ? performance.now() - hydrationStartedAt : 0,
+          { completed: !cancelled }
+        );
+        diagnostics?.setActivity({ hydration: false });
         if (!cancelled) {
           setPersistentStorageReady(true);
         }
@@ -484,6 +530,14 @@ export default function App() {
     { id: 'situation_clients', title: 'SITUATION CLIENTS (F7)', isOpen: false, isMinimized: false, isMaximized: false, zIndex: 10, x: 290, y: 40 },
     { id: 'user_management', title: 'Gestion des Utilisateurs & Journal de Transactions', isOpen: false, isMinimized: false, isMaximized: false, zIndex: 10, x: 220, y: 60 }
   ]);
+
+  useEffect(() => {
+    window.__vbiPerfRecorder?.setOpenWindows(
+      windows
+        .filter(windowInstance => windowInstance.isOpen && !windowInstance.isMinimized)
+        .map(windowInstance => windowInstance.id)
+    );
+  }, [windows]);
 
   const [maxZIndex, setMaxZIndex] = useState(10);
   const [startMenuOpen, setStartMenuOpen] = useState(false);

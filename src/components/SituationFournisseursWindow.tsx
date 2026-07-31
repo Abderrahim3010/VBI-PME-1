@@ -32,6 +32,8 @@ function SituationFournisseursWindow({
   onDeletePayment,
   onClose
 }: SituationFournisseursWindowProps) {
+  window.__vbiPerfRecorder?.render('SituationFournisseursWindow');
+
   // Current chosen supplier ID
   const [selectedSupplierId, setSelectedSupplierId] = useState<string>(() => {
     return suppliers.length > 0 ? suppliers[0].id : '';

@@ -54,6 +54,8 @@ function SalesVoucherWindow({
   storageReady = true,
   onBeforeReservationPersist
 }: SalesVoucherWindowProps) {
+  window.__vbiPerfRecorder?.render('SalesVoucherWindow', { isOpen });
+
   // Selection/navigation between previous invoices
   const [selectedSaleId, setSelectedSaleId] = useState<string>(() => {
     return sales.length > 0 ? sales[sales.length - 1].id : '';

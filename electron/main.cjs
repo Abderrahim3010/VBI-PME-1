@@ -1,4 +1,5 @@
-const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron');
+const electronProcessStartedAt = process.hrtime.bigint();
+const { app, BrowserWindow, Menu, ipcMain, dialog, screen } = require('electron');
 const path = require('path');
 const {
   initializeDatabase,
@@ -9,13 +10,45 @@ const {
   getMeta,
   setMeta,
   getDatabaseInfo,
+  getPerformanceDiagnosticsSnapshot,
   exportBackup,
   restoreBackup,
   getDefaultBackupName,
   saveSalesReservationState
 } = require('./db/database.cjs');
+const {
+  createPerformanceDiagnostics,
+  elapsedMs
+} = require('./performanceDiagnostics.cjs');
+
+const hardwareAccelerationDisabled =
+  process.env.VBI_DISABLE_HARDWARE_ACCELERATION === '1';
+const performanceDiagnosticsEnabled =
+  process.env.VBI_PERF_DIAGNOSTICS === '1';
+
+// Diagnostic escape hatch for problematic store-PC GPU drivers.
+if (hardwareAccelerationDisabled) {
+  app.disableHardwareAcceleration();
+}
 
 app.setName('VBI PME');
+
+if (
+  typeof process.env.VBI_DIAGNOSTIC_USER_DATA_DIR === 'string' &&
+  process.env.VBI_DIAGNOSTIC_USER_DATA_DIR.trim()
+) {
+  app.setPath(
+    'userData',
+    path.resolve(process.env.VBI_DIAGNOSTIC_USER_DATA_DIR.trim())
+  );
+}
+
+const performanceDiagnostics = createPerformanceDiagnostics({
+  app,
+  appStartNs: electronProcessStartedAt,
+  hardwareAccelerationDisabled,
+  enabled: performanceDiagnosticsEnabled
+});
 
 // Performance Tune: Optimize memory & rendering operations
 app.commandLine.appendSwitch('enable-gpu-rasterization');
@@ -25,6 +58,20 @@ app.commandLine.appendSwitch('ignore-gpu-blocklist');
 app.commandLine.appendSwitch('disable-background-timer-throttled-processes');
 
 let mainWindow;
+
+function serializedBytes(value) {
+  return typeof value === 'string' ? Buffer.byteLength(value, 'utf8') : 0;
+}
+
+function safeArrayItemCount(value) {
+  if (typeof value !== 'string' || !value.trimStart().startsWith('[')) return null;
+  try {
+    const parsed = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.length : null;
+  } catch {
+    return null;
+  }
+}
 
 function registerDbIpcHandlers() {
   ipcMain.handle('vbi-db:save-sales-reservation-state', (_event, payload) => {
@@ -50,22 +97,80 @@ function registerDbIpcHandlers() {
         throw new Error(`Sales reservation ${key} must be a JSON array`);
       }
     }
-    return saveSalesReservationState(payload);
+    if (!performanceDiagnostics.enabled) {
+      return saveSalesReservationState(payload);
+    }
+
+    const startedAt = process.hrtime.bigint();
+    const result = saveSalesReservationState(payload);
+    const durationMs = elapsedMs(startedAt);
+    const entries = [
+      ['compos_products', payload.products],
+      ['sales_open_drafts', payload.openDrafts],
+      ...(payload.sales !== undefined ? [['compos_sales', payload.sales]] : []),
+      ...(payload.clients !== undefined ? [['compos_clients', payload.clients]] : [])
+    ];
+    entries.forEach(([key, value], index) => {
+      performanceDiagnostics.recordSqliteWrite({
+        operation: 'saveSalesReservationState',
+        key,
+        durationMs: index === 0 ? durationMs : 0,
+        serializedBytes: serializedBytes(value),
+        itemCount: safeArrayItemCount(value)
+      });
+    });
+    return result;
   });
 
   ipcMain.handle('vbi-db:get-all-data', (_event, keys) => {
-    return getAllData(keys);
+    if (!performanceDiagnostics.enabled) return getAllData(keys);
+
+    const startedAt = process.hrtime.bigint();
+    const data = getAllData(keys);
+    performanceDiagnostics.recordSqliteRead({
+      operation: 'getAllData',
+      durationMs: elapsedMs(startedAt),
+      requestedKeyCount: Array.isArray(keys) ? keys.length : null,
+      returnedKeyCount: Object.keys(data).length,
+      serializedBytes: Object.values(data).reduce(
+        (total, value) => total + serializedBytes(value),
+        0
+      )
+    });
+    return data;
   });
 
   ipcMain.handle('vbi-db:get-data', (_event, key) => {
-    return getData(key);
+    if (!performanceDiagnostics.enabled) return getData(key);
+
+    const startedAt = process.hrtime.bigint();
+    const value = getData(key);
+    performanceDiagnostics.recordSqliteRead({
+      operation: 'getData',
+      durationMs: elapsedMs(startedAt),
+      requestedKeyCount: 1,
+      returnedKeyCount: value === null ? 0 : 1,
+      serializedBytes: serializedBytes(value)
+    });
+    return value;
   });
 
   ipcMain.handle('vbi-db:save-data', (_event, key, value) => {
     if (typeof key !== 'string' || typeof value !== 'string') {
       throw new Error('Invalid SQLite key-value payload');
     }
-    return saveData(key, value);
+    if (!performanceDiagnostics.enabled) return saveData(key, value);
+
+    const startedAt = process.hrtime.bigint();
+    const result = saveData(key, value);
+    performanceDiagnostics.recordSqliteWrite({
+      operation: 'saveData',
+      key,
+      durationMs: elapsedMs(startedAt),
+      serializedBytes: serializedBytes(value),
+      itemCount: safeArrayItemCount(value)
+    });
+    return result;
   });
 
   ipcMain.handle('vbi-db:delete-data', (_event, key) => {
@@ -141,6 +246,13 @@ function registerDbIpcHandlers() {
       return { success: false, error: error.message };
     }
   });
+
+  if (performanceDiagnostics.enabled) {
+    performanceDiagnostics.registerIpc(
+      ipcMain,
+      () => getPerformanceDiagnosticsSnapshot()
+    );
+  }
 }
 
 function createWindow() {
@@ -163,6 +275,13 @@ function createWindow() {
 
   // Load the built index.html from dist
   const isDev = !app.isPackaged;
+  if (performanceDiagnostics.enabled) {
+    performanceDiagnostics.recordTiming(
+      'electron.renderer_load_started',
+      elapsedMs(electronProcessStartedAt),
+      { measurement: 'since-process-start' }
+    );
+  }
   if (isDev) {
     mainWindow.loadURL('http://localhost:3000');
     mainWindow.webContents.openDevTools();
@@ -170,8 +289,28 @@ function createWindow() {
     mainWindow.loadFile(path.join(app.getAppPath(), 'dist', 'index.html'));
   }
 
+  mainWindow.webContents.once('did-finish-load', () => {
+    if (!performanceDiagnostics.enabled) return;
+    performanceDiagnostics.recordTiming(
+      'electron.renderer_did_finish_load',
+      elapsedMs(electronProcessStartedAt),
+      { measurement: 'since-process-start' }
+    );
+  });
+
   mainWindow.once('ready-to-show', () => {
+    if (performanceDiagnostics.enabled) {
+      performanceDiagnostics.recordTiming(
+        'electron.ready_to_show',
+        elapsedMs(electronProcessStartedAt),
+        { measurement: 'since-process-start' }
+      );
+    }
     mainWindow.show();
+
+    if (performanceDiagnostics.enabled) {
+      void performanceDiagnostics.collectSystemSnapshot(mainWindow, screen);
+    }
   });
 
   mainWindow.on('closed', () => {
@@ -195,7 +334,38 @@ if (!gotTheLock) {
   });
 
   app.whenReady().then(() => {
-    initializeDatabase(app.getPath('userData'));
+    if (performanceDiagnostics.enabled) {
+      performanceDiagnostics.recordTiming(
+        'electron.application_initialization',
+        elapsedMs(electronProcessStartedAt),
+        { measurement: 'process-start-to-app-ready' }
+      );
+    }
+
+    const databaseInitialization = initializeDatabase(
+      app.getPath('userData'),
+      performanceDiagnostics.enabled
+    );
+    if (performanceDiagnostics.enabled && databaseInitialization.timings) {
+      performanceDiagnostics.recordTiming(
+        'sqlite.database_open',
+        databaseInitialization.timings.databaseOpenMs
+      );
+      performanceDiagnostics.recordTiming(
+        'sqlite.database_migration',
+        databaseInitialization.timings.migrationMs
+      );
+      performanceDiagnostics.recordTiming(
+        'sqlite.database_initialization',
+        databaseInitialization.timings.totalMs
+      );
+      performanceDiagnostics.setDatabaseSnapshot(
+        getPerformanceDiagnosticsSnapshot()
+      );
+      console.log(
+        `[VBI PERF] Report file: ${performanceDiagnostics.getReportPath()}`
+      );
+    }
     registerDbIpcHandlers();
     createWindow();
 

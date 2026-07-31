@@ -23,6 +23,8 @@ function StatsWindow({
   initialMode = 'general',
   onClose
 }: StatsWindowProps) {
+  window.__vbiPerfRecorder?.render('StatsWindow');
+
   // Main 3-Option Top Mode: 'general' (Statistiques Générales), 'achats' (Consultation des Achats), 'ventes' (Consultation des Ventes)
   const [mainMode, setMainMode] = useState<'general' | 'achats' | 'ventes'>(initialMode);
 

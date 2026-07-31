@@ -79,6 +79,10 @@ function hasBridge() {
   return typeof window !== 'undefined' && !!window.vbiDb;
 }
 
+function diagnosticByteLength(value: string): number {
+  return new TextEncoder().encode(value).byteLength;
+}
+
 function recoverLocalSalesReservationJournal(): void {
   try {
     const raw = localStorage.getItem(SALES_RESERVATION_JOURNAL_KEY);
@@ -110,27 +114,60 @@ export function getStorageString(key: PersistentKey | string, fallback: string |
 }
 
 export function getStorageJson<T>(key: PersistentKey | string, fallback: T): T {
+  const diagnostics = window.__vbiPerfRecorder;
+  const startedAt = diagnostics ? performance.now() : 0;
+  let cached: string | null = null;
   try {
-    const cached = localStorage.getItem(key);
-    return cached ? JSON.parse(cached) : fallback;
+    cached = localStorage.getItem(key);
+    const parsed = cached ? JSON.parse(cached) as T : fallback;
+    diagnostics?.storageRead(
+      key,
+      cached ? diagnosticByteLength(cached) : 0,
+      diagnostics ? performance.now() - startedAt : 0,
+      Array.isArray(parsed) ? parsed.length : null,
+      false,
+      cached ? 'localStorage' : 'fallback'
+    );
+    return parsed;
   } catch {
+    diagnostics?.storageRead(
+      key,
+      cached ? diagnosticByteLength(cached) : 0,
+      diagnostics ? performance.now() - startedAt : 0,
+      Array.isArray(fallback) ? fallback.length : null,
+      true,
+      cached ? 'localStorage' : 'fallback'
+    );
     return fallback;
   }
 }
 
 export async function saveData(key: PersistentKey | string, value: string): Promise<void> {
+  const diagnostics = window.__vbiPerfRecorder;
+  const startedAt = diagnostics ? performance.now() : 0;
+  diagnostics?.setActivity({ persistence: true });
   try {
-    localStorage.setItem(key, value);
-  } catch (error) {
-    console.error('[localDb] localStorage mirror save failed:', key, error instanceof Error ? error.message : String(error));
-  }
+    try {
+      localStorage.setItem(key, value);
+    } catch (error) {
+      console.error('[localDb] localStorage mirror save failed:', key, error instanceof Error ? error.message : String(error));
+    }
 
-  if (!hasBridge()) return;
+    if (!hasBridge()) return;
 
-  try {
-    await window.vbiDb!.saveData(key, value);
-  } catch (error) {
-    console.error('[localDb] SQLite save failed, localStorage fallback kept:', key, error instanceof Error ? error.message : String(error));
+    try {
+      await window.vbiDb!.saveData(key, value);
+    } catch (error) {
+      console.error('[localDb] SQLite save failed, localStorage fallback kept:', key, error instanceof Error ? error.message : String(error));
+    }
+  } finally {
+    diagnostics?.persistenceWrite(
+      'saveData',
+      key,
+      diagnostics ? diagnosticByteLength(value) : 0,
+      diagnostics ? performance.now() - startedAt : 0
+    );
+    diagnostics?.setActivity({ persistence: false });
   }
 }
 
@@ -165,10 +202,22 @@ export function safeStringify(obj: any, indent?: number): string {
 }
 
 export async function saveJson(key: PersistentKey | string, value: unknown): Promise<void> {
-  await saveData(key, safeStringify(value));
+  const diagnostics = window.__vbiPerfRecorder;
+  const startedAt = diagnostics ? performance.now() : 0;
+  const serialized = safeStringify(value);
+  diagnostics?.persistenceWrite(
+    'saveJson.serialize',
+    key,
+    diagnostics ? diagnosticByteLength(serialized) : 0,
+    diagnostics ? performance.now() - startedAt : 0
+  );
+  await saveData(key, serialized);
 }
 
 export async function saveSalesReservationState(state: SalesReservationState): Promise<void> {
+  const diagnostics = window.__vbiPerfRecorder;
+  const startedAt = diagnostics ? performance.now() : 0;
+  diagnostics?.setActivity({ persistence: true });
   const serialized: SerializedSalesReservationState = {
     products: safeStringify(state.products),
     openDrafts: safeStringify(state.openDrafts),
@@ -183,28 +232,43 @@ export async function saveSalesReservationState(state: SalesReservationState): P
     ...(serialized.clients ? { compos_clients: serialized.clients } : {})
   };
 
-  if (hasBridge()) {
-    await window.vbiDb!.saveSalesReservationState(serialized);
-    try {
-      for (const [key, value] of Object.entries(values)) {
-        localStorage.setItem(key, value);
+  try {
+    if (hasBridge()) {
+      await window.vbiDb!.saveSalesReservationState(serialized);
+      try {
+        for (const [key, value] of Object.entries(values)) {
+          localStorage.setItem(key, value);
+        }
+      } catch (error) {
+        console.error('[localDb] Sales reservation localStorage mirror failed:', error instanceof Error ? error.message : String(error));
       }
-    } catch (error) {
-      console.error('[localDb] Sales reservation localStorage mirror failed:', error instanceof Error ? error.message : String(error));
+      return;
     }
-    return;
-  }
 
-  const journal = safeStringify({
-    version: 1,
-    createdAt: new Date().toISOString(),
-    values
-  });
-  localStorage.setItem(SALES_RESERVATION_JOURNAL_KEY, journal);
-  for (const [key, value] of Object.entries(values)) {
-    localStorage.setItem(key, value);
+    const journal = safeStringify({
+      version: 1,
+      createdAt: new Date().toISOString(),
+      values
+    });
+    localStorage.setItem(SALES_RESERVATION_JOURNAL_KEY, journal);
+    for (const [key, value] of Object.entries(values)) {
+      localStorage.setItem(key, value);
+    }
+    localStorage.removeItem(SALES_RESERVATION_JOURNAL_KEY);
+  } finally {
+    diagnostics?.persistenceWrite(
+      'saveSalesReservationState',
+      'sales-reservation-batch',
+      diagnostics
+        ? Object.values(serialized).reduce(
+            (total, value) => total + diagnosticByteLength(value),
+            0
+          )
+        : 0,
+      diagnostics ? performance.now() - startedAt : 0
+    );
+    diagnostics?.setActivity({ persistence: false });
   }
-  localStorage.removeItem(SALES_RESERVATION_JOURNAL_KEY);
 }
 
 export async function getData(key: PersistentKey | string): Promise<string | null> {
@@ -226,47 +290,96 @@ export async function getData(key: PersistentKey | string): Promise<string | nul
 }
 
 export async function loadPersistentData(keys: readonly string[] = PERSISTENT_STORAGE_KEYS): Promise<DataMap> {
+  const diagnostics = window.__vbiPerfRecorder;
+  const startedAt = diagnostics ? performance.now() : 0;
   recoverLocalSalesReservationJournal();
   if (hasBridge()) {
     try {
       const data = await window.vbiDb!.getAllData([...keys]);
       Object.entries(data).forEach(([key, value]) => {
+        diagnostics?.storageRead(
+          key,
+          diagnosticByteLength(value),
+          0,
+          null,
+          false,
+          'sqlite'
+        );
         try {
           localStorage.setItem(key, value);
         } catch {}
       });
+      diagnostics?.timing(
+        'renderer.initial_database_read',
+        diagnostics ? performance.now() - startedAt : 0,
+        { keyCount: Object.keys(data).length }
+      );
       return data;
     } catch (error) {
       console.error('[localDb] SQLite bulk load failed, using localStorage fallback:', error instanceof Error ? error.message : String(error));
     }
   }
 
-  return keys.reduce<DataMap>((acc, key) => {
+  const data = keys.reduce<DataMap>((acc, key) => {
     const value = getStorageString(key);
     if (value !== null) acc[key] = value;
     return acc;
   }, {});
+  diagnostics?.timing(
+    'renderer.initial_localStorage_read',
+    diagnostics ? performance.now() - startedAt : 0,
+    { keyCount: Object.keys(data).length }
+  );
+  return data;
 }
 
 export async function migrateLocalStorageToSqlite(keys: readonly string[] = PERSISTENT_STORAGE_KEYS): Promise<void> {
+  const diagnostics = window.__vbiPerfRecorder;
+  const startedAt = diagnostics ? performance.now() : 0;
   recoverLocalSalesReservationJournal();
-  if (!hasBridge()) return;
+  if (!hasBridge()) {
+    diagnostics?.timing(
+      'renderer.localStorage_to_sqlite_migration',
+      diagnostics ? performance.now() - startedAt : 0,
+      { bridgeAvailable: false }
+    );
+    return;
+  }
 
   try {
     const completed = await window.vbiDb!.getMeta(MIGRATION_META_KEY);
-    if (completed === 'true') return;
+    if (completed === 'true') {
+      diagnostics?.timing(
+        'renderer.localStorage_to_sqlite_migration',
+        diagnostics ? performance.now() - startedAt : 0,
+        { alreadyCompleted: true }
+      );
+      return;
+    }
 
     const existingSqliteData = await window.vbiDb!.getAllData([...keys]);
+    let migratedKeyCount = 0;
     for (const key of keys) {
       const localValue = getStorageString(key);
       if (localValue !== null && existingSqliteData[key] === undefined) {
         await window.vbiDb!.saveData(key, localValue);
+        migratedKeyCount += 1;
       }
     }
 
     await window.vbiDb!.setMeta(MIGRATION_META_KEY, 'true');
+    diagnostics?.timing(
+      'renderer.localStorage_to_sqlite_migration',
+      diagnostics ? performance.now() - startedAt : 0,
+      { alreadyCompleted: false, migratedKeyCount }
+    );
   } catch (error) {
     console.error('[localDb] localStorage to SQLite migration failed; localStorage left untouched:', error instanceof Error ? error.message : String(error));
+    diagnostics?.timing(
+      'renderer.localStorage_to_sqlite_migration',
+      diagnostics ? performance.now() - startedAt : 0,
+      { failed: true }
+    );
   }
 }
 

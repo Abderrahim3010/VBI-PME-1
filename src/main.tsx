@@ -22,9 +22,33 @@ document.addEventListener(
   { passive: false }
 );
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+function renderApplication() {
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  );
+}
+
+if (window.vbiPerf?.enabled) {
+  void import('./services/perfDiagnostics')
+    .then(({installPerformanceDiagnostics}) => {
+      installPerformanceDiagnostics();
+      window.__vbiPerfRecorder?.timing(
+        'renderer.bootstrap',
+        performance.now(),
+        {measurement: 'navigation-start-to-react-render-call'},
+      );
+      renderApplication();
+    })
+    .catch((error) => {
+      console.error(
+        '[VBI PERF] Diagnostic bootstrap failed; continuing without renderer diagnostics.',
+        error instanceof Error ? error.message : String(error),
+      );
+      renderApplication();
+    });
+} else {
+  renderApplication();
+}
 

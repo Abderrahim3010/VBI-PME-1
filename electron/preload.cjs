@@ -12,3 +12,15 @@ contextBridge.exposeInMainWorld('vbiDb', {
   restoreBackup: () => ipcRenderer.invoke('vbi-db:restore-backup'),
   saveSalesReservationState: (payload) => ipcRenderer.invoke('vbi-db:save-sales-reservation-state', payload)
 });
+
+if (process.env.VBI_PERF_DIAGNOSTICS === '1') {
+  contextBridge.exposeInMainWorld('vbiPerf', {
+    enabled: true,
+    hardwareAccelerationDisabled:
+      process.env.VBI_DISABLE_HARDWARE_ACCELERATION === '1',
+    updateSnapshot: (snapshot) => {
+      ipcRenderer.send('vbi-perf:renderer-snapshot', snapshot);
+    },
+    flushReport: () => ipcRenderer.invoke('vbi-perf:flush')
+  });
+}

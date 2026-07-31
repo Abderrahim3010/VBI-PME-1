@@ -19,6 +19,8 @@ function ConfigWindow({
   onClose,
   onResetDemo
 }: ConfigWindowProps) {
+  window.__vbiPerfRecorder?.render('ConfigWindow');
+
   const [activeTab, setActiveTab] = useState<'delivery' | 'invoice' | 'affichage'>('delivery');
   const [saveSuccess, setSaveSuccess] = useState(false);
   const saveSuccessTimeoutRef = useRef<number | null>(null);

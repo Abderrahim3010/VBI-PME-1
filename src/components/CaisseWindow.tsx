@@ -26,6 +26,8 @@ function CaisseWindow({
   supplierPayments,
   onClose
 }: CaisseWindowProps) {
+  window.__vbiPerfRecorder?.render('CaisseWindow');
+
   const [manualLogs, setManualLogs] = useState<CashFlowLog[]>(() => {
     try {
       const raw = localStorage.getItem('compos_manual_cash_logs');

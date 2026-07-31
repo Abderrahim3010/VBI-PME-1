@@ -32,6 +32,8 @@ function SituationClientsWindow({
   onDeletePayment,
   onClose
 }: SituationClientsWindowProps) {
+  window.__vbiPerfRecorder?.render('SituationClientsWindow');
+
   // Filter out Anonyme from SituationClientsWindow list
   const activeClients = useMemo(() => {
     return clients.filter(c => c.name.toLowerCase() !== 'anonyme' && c.id !== 'client-anonyme');
