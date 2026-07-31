@@ -72,6 +72,23 @@ function ConfigWindow({
   const [bgImage, setBgImage] = useState(config?.affichage?.backgroundImage || '');
   const [customUrl, setCustomUrl] = useState(config?.affichage?.backgroundImage || '');
   const [displayMode, setDisplayMode] = useState<'tactile' | 'compact'>(config?.affichage?.displayMode || 'tactile');
+
+  useEffect(() => {
+    if (config?.affichage?.displayMode) {
+      setDisplayMode(config.affichage.displayMode);
+    }
+  }, [config?.affichage?.displayMode]);
+
+  const handleDisplayModeChange = (newMode: 'tactile' | 'compact') => {
+    setDisplayMode(newMode);
+    onUpdateConfig({
+      ...config,
+      affichage: {
+        ...config?.affichage,
+        displayMode: newMode,
+      },
+    });
+  };
   
   // Checked/unchecked buttons mapping (initialized from config?.affichage?.visibleButtons or defaulting to all true)
   const defaultButtons = {
@@ -864,8 +881,8 @@ function ConfigWindow({
                       {/* Tactile Mode */}
                       <button
                         type="button"
-                        onClick={() => setDisplayMode('tactile')}
-                        className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col gap-1.5 relative ${
+                        onClick={() => handleDisplayModeChange('tactile')}
+                        className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col gap-2 relative ${
                           displayMode === 'tactile'
                             ? 'bg-indigo-50/70 border-indigo-500 dark:bg-indigo-950/40 dark:border-indigo-400 shadow-xs ring-1 ring-indigo-500/30'
                             : 'bg-slate-50 border-slate-200 dark:bg-slate-900 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-850'
@@ -874,24 +891,61 @@ function ConfigWindow({
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2 font-black text-xs text-indigo-950 dark:text-sky-300">
                             <Smartphone size={16} className="text-indigo-600 dark:text-sky-400" />
-                            <span>Tactile mode</span>
+                            <span>Tactile mode (POS)</span>
                           </div>
                           {displayMode === 'tactile' && (
                             <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-indigo-600 text-white uppercase tracking-wider">
-                              Actif (Design Actuel)
+                              Actif
                             </span>
                           )}
                         </div>
+
+                        {/* Animated GIF-like UI simulation for Tactile Mode */}
+                        <div className="h-28 w-full rounded-lg bg-slate-950 border border-slate-800 overflow-hidden relative flex flex-col justify-between p-2 shadow-inner">
+                          <div className="flex items-center justify-between border-b border-slate-800/80 pb-1">
+                            <div className="flex items-center gap-1">
+                              <span className="w-2 h-2 rounded-full bg-rose-500 inline-block" />
+                              <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
+                              <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                            </div>
+                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-wider">Bureau & Grandes Icônes</span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-1.5 my-auto px-1">
+                            <div className="h-8 rounded-md bg-indigo-600/80 border border-indigo-400/40 flex items-center justify-center animate-pulse">
+                              <div className="w-3.5 h-3.5 rounded bg-white/80" />
+                            </div>
+                            <div className="h-8 rounded-md bg-emerald-600/80 border border-emerald-400/40 flex items-center justify-center">
+                              <div className="w-3.5 h-3.5 rounded bg-white/80" />
+                            </div>
+                            <div className="h-8 rounded-md bg-amber-600/80 border border-amber-400/40 flex items-center justify-center">
+                              <div className="w-3.5 h-3.5 rounded bg-white/80" />
+                            </div>
+                            <div className="h-8 rounded-md bg-sky-600/80 border border-sky-400/40 flex items-center justify-center">
+                              <div className="w-3.5 h-3.5 rounded bg-white/80" />
+                            </div>
+                            <div className="h-8 rounded-md bg-purple-600/80 border border-purple-400/40 flex items-center justify-center">
+                              <div className="w-3.5 h-3.5 rounded bg-white/80" />
+                            </div>
+                            <div className="h-8 rounded-md bg-rose-600/80 border border-rose-400/40 flex items-center justify-center">
+                              <div className="w-3.5 h-3.5 rounded bg-white/80" />
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between text-[8px] text-slate-400 font-semibold pt-0.5 border-t border-slate-800/80">
+                            <span>Écran tactile POS</span>
+                            <span className="text-indigo-400 font-bold">Boutons larges</span>
+                          </div>
+                        </div>
+
                         <p className="text-[10.5px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
-                          Le design actuel complet de l'application, optimisé pour les écrans tactiles et la caisse POS.
+                          Le design avec grand bureau, fenêtres flottantes et boutons larges, optimisé pour les écrans tactiles et caisses POS.
                         </p>
                       </button>
 
                       {/* Compact Mode */}
                       <button
                         type="button"
-                        onClick={() => setDisplayMode('compact')}
-                        className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col gap-1.5 relative ${
+                        onClick={() => handleDisplayModeChange('compact')}
+                        className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col gap-2 relative ${
                           displayMode === 'compact'
                             ? 'bg-indigo-50/70 border-indigo-500 dark:bg-indigo-950/40 dark:border-indigo-400 shadow-xs ring-1 ring-indigo-500/30'
                             : 'bg-slate-50 border-slate-200 dark:bg-slate-900 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-850'
@@ -900,22 +954,68 @@ function ConfigWindow({
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2 font-black text-xs text-slate-800 dark:text-slate-200">
                             <Monitor size={16} className="text-slate-500 dark:text-slate-400" />
-                            <span>Compact mode</span>
+                            <span>Compact mode (Dense)</span>
                           </div>
-                          <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 uppercase tracking-wider">
-                            Option Enregistrable
-                          </span>
+                          {displayMode === 'compact' ? (
+                            <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-indigo-600 text-white uppercase tracking-wider">
+                              Actif
+                            </span>
+                          ) : (
+                            <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 uppercase tracking-wider">
+                              Disponible
+                            </span>
+                          )}
                         </div>
+
+                        {/* Animated GIF-like UI simulation for Compact Mode */}
+                        <div className="h-28 w-full rounded-lg bg-slate-950 border border-slate-800 overflow-hidden relative flex flex-col justify-between p-2 shadow-inner">
+                          <div className="flex items-center justify-between border-b border-slate-800/80 pb-1">
+                            <div className="h-3 w-28 rounded bg-slate-800 flex items-center px-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-sky-400 mr-1 animate-pulse" />
+                              <span className="text-[7px] text-slate-400">Recherche rapide...</span>
+                            </div>
+                            <span className="text-[8px] font-bold text-sky-400 uppercase tracking-wider">Liste Dense</span>
+                          </div>
+                          <div className="flex flex-col gap-1 my-auto px-0.5">
+                            <div className="h-3.5 rounded bg-slate-850 border border-slate-700/60 flex items-center justify-between px-1.5">
+                              <span className="w-12 h-1.5 rounded bg-sky-400/80" />
+                              <span className="w-8 h-1.5 rounded bg-slate-600" />
+                            </div>
+                            <div className="h-3.5 rounded bg-slate-900 border border-slate-800 flex items-center justify-between px-1.5">
+                              <span className="w-16 h-1.5 rounded bg-slate-400" />
+                              <span className="w-6 h-1.5 rounded bg-emerald-500/80" />
+                            </div>
+                            <div className="h-3.5 rounded bg-slate-900 border border-slate-800 flex items-center justify-between px-1.5">
+                              <span className="w-14 h-1.5 rounded bg-slate-400" />
+                              <span className="w-8 h-1.5 rounded bg-amber-500/80" />
+                            </div>
+                            <div className="h-3.5 rounded bg-slate-900 border border-slate-800 flex items-center justify-between px-1.5">
+                              <span className="w-10 h-1.5 rounded bg-slate-400" />
+                              <span className="w-7 h-1.5 rounded bg-slate-600" />
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between text-[8px] text-slate-400 font-semibold pt-0.5 border-t border-slate-800/80">
+                            <span>Usage clavier & souris</span>
+                            <span className="text-sky-400 font-bold">Haute densité</span>
+                          </div>
+                        </div>
+
                         <p className="text-[10.5px] text-slate-500 dark:text-slate-400 font-medium leading-relaxed">
-                          Option pour le mode compact. N'affectera pas l'affichage tant que vous ne spécifiez pas son fonctionnement.
+                          Interface allégée et condensée pour un usage rapide au clavier, avec listes optimisées pour écrans standards.
                         </p>
                       </button>
                     </div>
 
                     {displayMode === 'compact' && (
-                      <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300/50 text-amber-800 dark:text-amber-300 text-[10.5px] font-semibold flex items-center gap-2">
-                        <AlertTriangle size={14} className="shrink-0 text-amber-600 dark:text-amber-400" />
-                        <span>Le Compact mode est sélectionné. L'interface reste en Tactile mode par défaut jusqu'à ce que vous m'indiquiez ce qu'il doit faire.</span>
+                      <div className="p-2.5 rounded-xl bg-sky-50 dark:bg-sky-950/40 border border-sky-300/50 text-sky-800 dark:text-sky-300 text-[10.5px] font-semibold flex items-center gap-2">
+                        <Monitor size={14} className="shrink-0 text-sky-600 dark:text-sky-400" />
+                        <span>Le mode compact est actif : affichage en liste dense optimisé pour le clavier et les écrans standards.</span>
+                      </div>
+                    )}
+                    {displayMode === 'tactile' && (
+                      <div className="p-2.5 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-300/50 text-indigo-800 dark:text-indigo-300 text-[10.5px] font-semibold flex items-center gap-2">
+                        <Smartphone size={14} className="shrink-0 text-indigo-600 dark:text-indigo-400" />
+                        <span>Le mode tactile est actif : grandes icônes et boutons larges optimisés pour caisses POS et écrans tactiles.</span>
                       </div>
                     )}
                   </div>
