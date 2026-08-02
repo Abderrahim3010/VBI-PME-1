@@ -3,7 +3,7 @@ import {
   Settings, Save, LogOut, Upload, Trash2, Image, Sliders, 
   CheckSquare, Square, Users, Truck, FileText, Check, HelpCircle, 
   RotateCcw, SlidersHorizontal, Layers, Database, Printer, HardDrive, Cpu,
-  AlertTriangle, Smartphone, Monitor
+  AlertTriangle, Smartphone, Monitor, Key, Lock, Shield
 } from 'lucide-react';
 
 interface ConfigWindowProps {
@@ -11,17 +11,21 @@ interface ConfigWindowProps {
   onUpdateConfig: (newConfig: any) => void;
   onClose: () => void;
   onResetDemo?: () => void;
+  onOpenUserManagement?: () => void;
+  onChangePassword?: () => void;
 }
 
 function ConfigWindow({
   config,
   onUpdateConfig,
   onClose,
-  onResetDemo
+  onResetDemo,
+  onOpenUserManagement,
+  onChangePassword
 }: ConfigWindowProps) {
   window.__vbiPerfRecorder?.render('ConfigWindow');
 
-  const [activeTab, setActiveTab] = useState<'delivery' | 'invoice' | 'affichage'>('delivery');
+  const [activeTab, setActiveTab] = useState<'delivery' | 'invoice' | 'affichage' | 'securite'>('delivery');
   const [saveSuccess, setSaveSuccess] = useState(false);
   const saveSuccessTimeoutRef = useRef<number | null>(null);
 
@@ -329,6 +333,14 @@ function ConfigWindow({
             <span className="truncate">Affichage & Wallpaper</span>
           </button>
 
+          <button
+            onClick={() => setActiveTab('securite')}
+            className={`w-full text-left py-2 px-3 rounded-lg flex items-center gap-2.5 font-semibold transition-all duration-150 ${activeTab === 'securite' ? 'bg-[#b6d1f7] text-indigo-950 dark:bg-sky-600/30 dark:text-sky-300 shadow-sm border-l-4 border-indigo-650' : 'hover:bg-[#d0dff4] dark:hover:bg-slate-900 text-slate-700 dark:text-slate-400'}`}
+          >
+            <Shield size={13} className="shrink-0" />
+            <span className="truncate">Utilisateurs & Sécurité</span>
+          </button>
+
           {/* Decorative placeholders matching real system menu tabs in image */}
           <div className="h-[1px] bg-slate-300 dark:bg-slate-800 my-2" />
           <span className="text-[9px] uppercase tracking-widest text-slate-400 dark:text-slate-600 font-bold px-3">Autres Modules</span>
@@ -403,6 +415,7 @@ function ConfigWindow({
                 {activeTab === 'delivery' && 'INFORMATIONS SUR BON DE LIVRAISON'}
                 {activeTab === 'invoice' && 'INFORMATIONS SUR LA FACTURE'}
                 {activeTab === 'affichage' && "AFFICHAGE & WALLPAPER DE L'APPLICATION"}
+                {activeTab === 'securite' && "UTILISATEURS & SÉCURITÉ DE L'APPLICATION"}
               </h1>
               <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 font-semibold">
                 Configuration générale de l'ERP VBI PME BETA
@@ -1171,6 +1184,64 @@ function ConfigWindow({
                   </div>
                 </div>
 
+              </div>
+            )}
+
+            {activeTab === 'securite' && (
+              <div className="flex flex-col gap-4 text-left">
+                <div className="border border-indigo-200/50 dark:border-slate-800/80 rounded-2xl bg-white dark:bg-slate-950 p-5 shadow-xs relative">
+                  <span className="absolute top-[-9px] left-4 px-2 bg-white dark:bg-slate-950 text-[9.5px] font-black text-indigo-700 dark:text-indigo-400 uppercase tracking-wide">
+                    Gestion des comptes & Sécurité
+                  </span>
+
+                  <p className="text-xs text-slate-600 dark:text-slate-300 mb-4">
+                    Gérez ici les comptes utilisateurs de l'application, leurs permissions d'accès aux modules ainsi que les mots de passe et la sécurité.
+                  </p>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 font-black text-xs text-indigo-950 dark:text-sky-300 mb-1.5">
+                          <Users size={18} className="text-rose-500" />
+                          <span>Gestion des utilisateurs</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal mb-3">
+                          Ajoutez, modifiez ou supprimez des comptes utilisateurs et personnalisez leurs droits d'accès.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onOpenUserManagement?.();
+                        }}
+                        className="w-full py-2.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+                      >
+                        <Users size={14} /> Ouvrir la gestion des utilisateurs
+                      </button>
+                    </div>
+
+                    <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/60 flex flex-col justify-between">
+                      <div>
+                        <div className="flex items-center gap-2 font-black text-xs text-indigo-950 dark:text-sky-300 mb-1.5">
+                          <Key size={18} className="text-amber-500" />
+                          <span>Changer le mot de passe</span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-normal mb-3">
+                          Modifiez votre mot de passe administrateur ou utilisateur pour sécuriser votre accès.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onChangePassword?.();
+                        }}
+                        className="w-full py-2.5 px-3 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
+                      >
+                        <Key size={14} /> Changer le mot de passe
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
 

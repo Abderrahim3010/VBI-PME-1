@@ -69,7 +69,6 @@ import type { SupplierPayment } from './components/SituationFournisseursWindow';
 import SituationClientsWindow from './components/SituationClientsWindow';
 import { LoginOverlay } from './components/LoginOverlay';
 import { UserManagementWindow } from './components/UserManagementWindow';
-import MemoryUsageIndicator from './components/MemoryUsageIndicator';
 import {
   getStorageJson,
   getStorageString,
@@ -541,14 +540,12 @@ export default function App() {
 
   const [maxZIndex, setMaxZIndex] = useState(10);
   const [startMenuOpen, setStartMenuOpen] = useState(false);
-  const [fichierDropdownOpen, setFichierDropdownOpen] = useState(false);
   const [unauthorizedModal, setUnauthorizedModal] = useState<{ isOpen: boolean; moduleName: string; code: string } | null>(null);
 
   // States for F8 Statistiques multi-option button
   const [statsInitialMode, setStatsInitialMode] = useState<'general' | 'achats' | 'ventes'>('general');
   const [statsMenuOpen, setStatsMenuOpen] = useState(false);
   const statsDropdownRef = useRef<HTMLDivElement>(null);
-  const fichierDropdownRef = useRef<HTMLDivElement>(null);
   const startMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -556,9 +553,6 @@ export default function App() {
       const target = e.target as Node;
       if (statsDropdownRef.current && !statsDropdownRef.current.contains(target)) {
         setStatsMenuOpen(false);
-      }
-      if (fichierDropdownRef.current && !fichierDropdownRef.current.contains(target)) {
-        setFichierDropdownOpen(false);
       }
       if (startMenuRef.current && !startMenuRef.current.contains(target)) {
         const startBtn = document.getElementById('start-menu-button');
@@ -752,7 +746,6 @@ export default function App() {
   const launchWindow = (id: ActiveWindowId) => {
     if (!checkWindowAccess(id)) return;
     setStartMenuOpen(false);
-    setFichierDropdownOpen(false);
     const nextZ = maxZIndex + 1;
     setMaxZIndex(nextZ);
 
@@ -1197,6 +1190,21 @@ export default function App() {
     setWindows(prev => prev.map(w => ({ ...w, isOpen: false, isMinimized: false, isMaximized: false })));
   };
 
+  const handleChangePassword = () => {
+    const curPass = prompt("Entrez votre mot de passe actuel :");
+    if (curPass === currentUser?.password) {
+      const newPass = prompt("Entrez votre NOUVEAU mot de passe :");
+      if (newPass) {
+        setUsers(prev => prev.map(u => u.id === currentUser?.id ? { ...u, password: newPass } : u));
+        setCurrentUser(prev => prev ? { ...prev, password: newPass } : null);
+        alert("Mot de passe modifié avec succès !");
+        addLog("Changement de mot de passe réussi");
+      }
+    } else {
+      alert("Mot de passe actuel incorrect.");
+    }
+  };
+
   const handleClearCache = () => {
     if (confirm("Voulez-vous complètement réinitialiser les données d'évaluation (Effacer le cache) ?")) {
       Promise.all([
@@ -1228,168 +1236,6 @@ export default function App() {
   return (
     <div className="w-screen h-screen bg-slate-100 dark:bg-slate-950 text-slate-800 dark:text-slate-100 overflow-hidden flex flex-col font-sans select-none relative transition-colors duration-300">
       
-      {/* 1. OS Menu Bar (At the absolute top of the screen) */}
-      <div className="h-8 bg-slate-200/60 dark:bg-slate-900/95 text-slate-800 dark:text-slate-100 border-b border-slate-300 dark:border-slate-800 flex items-center justify-between px-3 text-xs select-none shadow-sm z-40 relative">
-        <div className="flex items-center gap-3">
-          <span className="font-sans font-black text-sky-600 dark:text-sky-400 tracking-wider flex items-center gap-1.5">
-            <Gem size={13} className="text-sky-500 animate-pulse" /> VBI PME BETA
-          </span>
-          
-          <div className="h-4 w-[1px] bg-slate-300 dark:bg-slate-800" />
- 
-          {/* Nav Dropdowns list */}
-          <div className="flex items-center gap-1 text-[11px]">
-            {/* Elegant Fichier Dropdown */}
-            <div className="relative inline-block text-left" ref={fichierDropdownRef}>
-              <button 
-                onClick={() => {
-                  setFichierDropdownOpen(!fichierDropdownOpen);
-                  setStartMenuOpen(false);
-                }} 
-                className={`hover:bg-slate-300 dark:hover:bg-slate-800 hover:text-slate-950 dark:hover:text-white px-2 py-1 rounded transition-colors cursor-default font-semibold text-slate-650 dark:text-slate-300 ${fichierDropdownOpen ? 'bg-slate-300 dark:bg-slate-800 text-slate-950 dark:text-white' : ''}`}
-              >
-                Fichier
-              </button>
-              {fichierDropdownOpen && (
-                <div className="absolute left-0 mt-2 w-64 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-2xl p-1.5 z-[2000] text-slate-800 dark:text-slate-100 font-sans font-medium animate-in fade-in slide-in-from-top-1 duration-100">
-                  <button
-                    onClick={() => { setFichierDropdownOpen(false); alert("Dossier chargé avec succès !"); }}
-                    className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-[12px] flex items-center justify-between transition-colors cursor-pointer"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Folder size={14} className="text-amber-500" />
-                      <span><u>C</u>harger un dossier</span>
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => { setFichierDropdownOpen(false); window.location.reload(); }}
-                    className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-[12px] flex items-center justify-between transition-colors cursor-pointer"
-                  >
-                    <span className="flex items-center gap-2">
-                      <RotateCw size={14} className="text-sky-500" />
-                      <span><u>A</u>ctualisation du tableau de bord</span>
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => { setFichierDropdownOpen(false); alert("Tous les registres et bons ont été enregistrés localement."); }}
-                    className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-[12px] flex items-center justify-between transition-colors cursor-pointer"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Save size={14} className="text-emerald-500" />
-                      <span>Enregistrer (<u>E</u>)</span>
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => { setFichierDropdownOpen(false); const filename = prompt("Nom de la sauvegarde :", "sauvegarde_pme.vbi"); if (filename) alert(`Enregistré sous ${filename}`); }}
-                    className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-[12px] flex items-center justify-between transition-colors cursor-pointer"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Save size={14} className="text-teal-500" />
-                      <span>Enregistrer <u>s</u>ous</span>
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => { setFichierDropdownOpen(false); alert("Données synchronisées avec succès ! Envoyées au Terminal Mobile."); }}
-                    className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-[12px] flex items-center justify-between transition-colors cursor-pointer"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Smartphone size={14} className="text-indigo-500" />
-                      <span>En<u>v</u>oyer au Terminal Mobile</span>
-                    </span>
-                  </button>
-                  
-                  <hr className="my-1 border-slate-100 dark:border-slate-800/65" />
-                  
-                  <button
-                    onClick={() => { setFichierDropdownOpen(false); launchWindow('configuration'); }}
-                    className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-[12px] flex items-center justify-between transition-colors cursor-pointer"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Settings size={14} className="text-slate-500" />
-                      <span><u>C</u>onfiguration</span>
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => { setFichierDropdownOpen(false); handleLockSession(); }}
-                    className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-[12px] flex items-center justify-between font-bold text-indigo-650 dark:text-indigo-400 transition-colors cursor-pointer"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Lock size={14} className="text-indigo-500" />
-                      <span><u>V</u>errouiller session</span>
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => { 
-                      setFichierDropdownOpen(false); 
-                      const curPass = prompt("Entrez votre mot de passe actuel :"); 
-                      if (curPass === currentUser?.password) {
-                        const newPass = prompt("Entrez votre NOUVEAU mot de passe :"); 
-                        if (newPass) {
-                          setUsers(prev => prev.map(u => u.id === currentUser?.id ? { ...u, password: newPass } : u));
-                          setCurrentUser(prev => prev ? { ...prev, password: newPass } : null);
-                          alert("Mot de passe modifié avec succès !");
-                          addLog("Changement de mot de passe réussi");
-                        }
-                      } else {
-                        alert("Mot de passe actuel incorrect.");
-                      }
-                    }}
-                    className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-[12px] flex items-center justify-between transition-colors cursor-pointer"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Key size={14} className="text-amber-500" />
-                      <span>Changer le <u>m</u>ot de passe</span>
-                    </span>
-                  </button>
-                  <button
-                    onClick={() => { setFichierDropdownOpen(false); launchWindow('user_management'); }}
-                    className="w-full text-left px-4 py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl text-[12px] flex items-center justify-between font-extrabold text-red-650 dark:text-red-400 transition-colors cursor-pointer"
-                  >
-                    <span className="flex items-center gap-2">
-                      <Users size={14} className="text-rose-500" />
-                      <span><u>G</u>estion des utilisateurs</span>
-                    </span>
-                  </button>
-                  
-                  <hr className="my-1 border-slate-100 dark:border-slate-800/65" />
-                  
-                  <button
-                    onClick={() => { setFichierDropdownOpen(false); handleLockSession(); }}
-                    className="w-full text-left px-4 py-2 hover:bg-rose-50 dark:hover:bg-rose-950/20 text-rose-650 dark:text-rose-400 rounded-xl text-[12px] flex items-center justify-between font-bold transition-colors cursor-pointer"
-                  >
-                    <span className="flex items-center gap-2">
-                      <LogOut size={14} className="text-rose-500" />
-                      <span><u>Q</u>uitter</span>
-                    </span>
-                  </button>
-                </div>
-              )}
-            </div>
-            <button onClick={() => launchWindow('products')} className="hover:bg-slate-300 dark:hover:bg-slate-800 hover:text-slate-950 dark:hover:text-white px-2 py-1 rounded transition-colors cursor-default text-slate-650 dark:text-slate-300">Produits</button>
-            <button onClick={() => launchWindow('purchases')} className="hover:bg-slate-300 dark:hover:bg-slate-800 hover:text-slate-950 dark:hover:text-white px-2 py-1 rounded transition-colors cursor-default text-slate-650 dark:text-slate-300">Achats</button>
-            <button onClick={() => launchWindow('sales')} className="hover:bg-slate-300 dark:hover:bg-slate-800 hover:text-slate-950 dark:hover:text-white px-2 py-1 rounded transition-colors cursor-default text-slate-650 dark:text-slate-300">Ventes</button>
-            <button onClick={() => launchWindow('situation_clients')} className="hover:bg-slate-300 dark:hover:bg-slate-800 hover:text-slate-950 dark:hover:text-white px-2 py-1 rounded transition-colors cursor-default font-semibold text-slate-650 dark:text-slate-300">Situation F7</button>
-            <button onClick={() => launchWindow('clients')} className="hover:bg-slate-300 dark:hover:bg-slate-800 hover:text-slate-950 dark:hover:text-white px-2 py-1 rounded transition-colors cursor-default text-slate-655 dark:text-slate-300">Clients</button>
-            <button onClick={() => launchWindow('suppliers')} className="hover:bg-slate-300 dark:hover:bg-slate-800 hover:text-slate-950 dark:hover:text-white px-2 py-1 rounded transition-colors cursor-default text-slate-650 dark:text-slate-300">Fournisseurs</button>
-            <button onClick={() => launchWindow('situation')} className="hover:bg-slate-300 dark:hover:bg-slate-800 hover:text-slate-950 dark:hover:text-white px-2 py-1 rounded transition-colors cursor-default font-semibold text-slate-650 dark:text-slate-300">Situation F6</button>
-            {/* ARCHIVED for potential future use:
-            <button onClick={() => launchWindow('caisse')} className="hover:bg-slate-300 dark:hover:bg-slate-800 hover:text-slate-950 dark:hover:text-white px-2 py-1 rounded transition-colors cursor-default text-slate-650 dark:text-slate-300">Charges</button>
-            */}
-            <button onClick={() => launchWindow('stats')} className="hover:bg-slate-300 dark:hover:bg-slate-800 hover:text-slate-950 dark:hover:text-white px-2 py-1 rounded transition-colors cursor-default text-slate-650 dark:text-slate-300">Outils</button>
-            <button onClick={() => launchWindow('caisse')} className="hover:bg-slate-300 dark:hover:bg-slate-800 hover:text-slate-950 dark:hover:text-white px-2 py-1 rounded transition-colors cursor-default text-slate-650 dark:text-slate-300">Trésorerie</button>
-            {/* ARCHIVED for potential future use:
-            <button onClick={() => launchWindow('welcome')} className="hover:bg-sky-100 dark:hover:bg-sky-500/20 text-sky-600 dark:text-sky-400 px-2.5 py-1 rounded transition-colors cursor-default font-bold">Aide ?</button>
-            */}
-          </div>
-        </div>
- 
-        {/* Company and DB Mode Status info badge */}
-        <div className="hidden md:flex items-center gap-2 font-bold font-mono text-[10px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 px-2.5 py-1 rounded shadow-inner">
-          <span>ENTREPRISE:</span>
-          <span className="text-sky-600 dark:text-sky-450 tracking-wider font-extrabold uppercase">{config.company || '---'}</span>
-        </div>
-      </div>
-
       {/* 2. OS Quick Toolbar with Icons (Tactile Mode) */}
       {!isCompactMode && (
         <div className="bg-gradient-to-r from-sky-100 via-sky-50 to-white dark:from-sky-950 dark:via-slate-900 dark:to-slate-950 border-b border-sky-200/80 dark:border-sky-900/50 py-1.5 px-2 flex items-center gap-2 flex-nowrap overflow-visible shrink-0 z-30 select-none shadow-md transition-colors duration-300">
@@ -1750,19 +1596,6 @@ export default function App() {
                   </span>
                 </div>
 
-                {/* 6. Utilisateur Connecté */}
-                <div className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px]">
-                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
-                    <div className="p-1 rounded-lg bg-purple-100 dark:bg-purple-950/80 text-purple-600 dark:text-purple-400 shrink-0">
-                      <UserCheck size={13} />
-                    </div>
-                    <span>Utilisateur</span>
-                  </div>
-                  <span className="font-black text-[10.5px] text-purple-700 dark:text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded-lg border border-purple-500/20">
-                    {currentUser ? currentUser.username.toUpperCase() : 'NON CONNECTÉ'}
-                  </span>
-                </div>
-
                 {/* 7. Licence Software */}
                 <div className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px]">
                   <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
@@ -1779,9 +1612,6 @@ export default function App() {
                     {config.isActivated ? 'ORIGINALE' : 'DÉMO ACTIVE'}
                   </span>
                 </div>
-
-                {/* 8. Memory Usage Indicator Component */}
-                <MemoryUsageIndicator />
 
                 {/* 9. Sauvegarde Base */}
                 <div className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px]">
@@ -1833,25 +1663,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Quick Vertical action buttons */}
-                <div className="flex flex-col gap-1.5 mt-2">
-                  <button
-                    onClick={handleLockSession}
-                    className="py-2 px-3 flex items-center justify-center gap-2 text-xs font-bold text-slate-800 dark:text-amber-100 bg-amber-50 dark:bg-slate-950/80 rounded-xl border border-amber-200 dark:border-amber-800/60 hover:bg-amber-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
-                  >
-                    <ShieldCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                    <span>Verrouiller la PME</span>
-                  </button>
-
-                  <button
-                    onClick={() => alert("Sauvegarde complète des tables locales exportée dans l'iframe sandbox.")}
-                    className="py-2 px-3 flex items-center justify-center gap-2 text-xs font-bold text-sky-900 dark:text-sky-100 bg-sky-50 dark:bg-slate-950/80 rounded-xl border border-sky-200 dark:border-sky-800/60 hover:bg-sky-100 dark:hover:bg-slate-800 transition-all cursor-pointer"
-                  >
-                    <Database className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
-                    <span>Sauvegarde Directe</span>
-                  </button>
-                </div>
-
               </div>
             </div>
           ) : (
@@ -1889,13 +1700,13 @@ export default function App() {
                 {/* Tableau de bord button */}
                 <div
                   onClick={() => setShowCompactDashboard(true)}
-                  className={`p-2.5 rounded-xl border flex items-center justify-between transition-all cursor-pointer bg-white dark:bg-slate-950/60 border-slate-200/80 dark:border-slate-800/80 hover:bg-amber-50/80 hover:border-amber-300/80 dark:hover:bg-slate-850 group`}
+                  className="p-2.5 rounded-xl border flex items-center justify-between transition-all cursor-pointer bg-gradient-to-r from-amber-500/15 via-amber-500/10 to-amber-500/5 dark:from-amber-500/20 dark:via-amber-500/10 dark:to-transparent border-amber-300/80 dark:border-amber-500/40 hover:from-amber-500/25 hover:to-amber-500/10 shadow-sm group"
                 >
-                  <div className="flex items-center gap-2.5 font-bold text-[12.5px] text-slate-800 dark:text-slate-100">
-                    <LayoutGrid size={18} className="text-amber-500 dark:text-amber-400 shrink-0 group-hover:scale-110 transition-transform" />
+                  <div className="flex items-center gap-2.5 font-bold text-[12.5px] text-amber-900 dark:text-amber-300">
+                    <LayoutGrid size={18} className="text-amber-600 dark:text-amber-400 shrink-0 group-hover:scale-110 transition-transform" />
                     <span>Tableau de bord</span>
                   </div>
-                  <span className="text-[9px] font-black px-2 py-0.5 rounded-md border tracking-wider bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300 border-sky-200/80 dark:border-sky-800 group-hover:bg-amber-500 group-hover:text-slate-950 transition-colors">
+                  <span className="text-[9px] font-black px-2 py-0.5 rounded-md border tracking-wider bg-amber-500 text-slate-950 border-amber-400 shadow-2xs group-hover:bg-amber-400 transition-colors">
                     AFFICHER
                   </span>
                 </div>
@@ -1974,6 +1785,9 @@ export default function App() {
                     <span className="text-[9.5px] font-mono font-extrabold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">F5</span>
                   </button>
                 )}
+
+                {/* Subtle separation between first 5 buttons and last 5 buttons */}
+                <div className="my-1.5 h-[1px] bg-slate-200/90 dark:bg-slate-800 shrink-0" />
 
                 {/* Situation Fournisseurs [F6] */}
                 {config?.affichage?.visibleButtons?.situation !== false && (
@@ -2057,11 +1871,29 @@ export default function App() {
 
               {/* Bottom Footer */}
               <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800 flex items-center justify-between mt-auto shrink-0">
-                <div className="flex items-center gap-2 font-black text-xs text-purple-700 dark:text-purple-300">
-                  <UserCheck size={16} className="text-purple-600 dark:text-purple-400" />
-                  <span>{currentUser ? currentUser.username.toUpperCase() : 'ADMIN'}</span>
+                <div className="flex items-center gap-1.5">
+                  <div className="flex items-center gap-1.5 font-black text-xs text-purple-700 dark:text-purple-300">
+                    <UserCheck size={16} className="text-purple-600 dark:text-purple-400 shrink-0" />
+                    <span className="truncate max-w-[80px]">{currentUser ? currentUser.username.toUpperCase() : 'ADMIN'}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleLockSession}
+                    className="p-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 transition-colors cursor-pointer"
+                    title="Verrouiller la PME"
+                  >
+                    <LogOut size={14} />
+                  </button>
                 </div>
                 <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => alert("Sauvegarde complète des tables locales exportée dans l'iframe sandbox.")}
+                    className="p-1.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 hover:bg-sky-50 dark:hover:bg-sky-950/60 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                    title="Sauvegarde Directe"
+                  >
+                    <Database size={15} className="text-sky-500" />
+                  </button>
                   <button
                     type="button"
                     onClick={() => toggleDisplayMode('tactile')}
@@ -2084,8 +1916,8 @@ export default function App() {
           )
         ) : (
           /* SIDEBAR METRICS PANEL - Tactile Mode */
-          <div className={`h-full shrink-0 border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl flex flex-col justify-between select-none text-slate-800 dark:text-white overflow-y-auto font-sans z-20 shadow-xl transition-all duration-300 ${isSidebarOpen ? 'w-[260px] p-3.5 border-r' : 'w-0 p-0 overflow-hidden border-r-0 shadow-none'}`}>
-            <div className="flex flex-col gap-3 min-w-[232px]">
+          <div className={`h-full shrink-0 border-slate-200/80 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl flex flex-col justify-between select-none text-slate-800 dark:text-white font-sans z-20 shadow-xl transition-all duration-300 ${isSidebarOpen ? 'w-[260px] p-3.5 border-r' : 'w-0 p-0 overflow-hidden border-r-0 shadow-none'}`}>
+            <div className="flex flex-col min-w-[226px] flex-1 overflow-y-auto pr-0.5">
               {/* Header */}
               <div className="flex items-center justify-between pb-2.5 border-b border-slate-200/80 dark:border-slate-800">
                 <div className="flex items-center gap-2">
@@ -2103,8 +1935,16 @@ export default function App() {
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
+                    onClick={() => launchWindow('configuration')}
+                    className="p-1.5 rounded-xl bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-sky-600 dark:hover:text-sky-400 transition-colors cursor-pointer shadow-2xs"
+                    title="Paramètres & Configuration"
+                  >
+                    <Settings size={16} />
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setIsSidebarOpen(false)}
-                    className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
+                    className="p-1.5 rounded-xl bg-white dark:bg-slate-950/80 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white transition-colors cursor-pointer shadow-2xs"
                     title="Masquer le panneau d'informations"
                   >
                     <PanelLeftClose size={16} />
@@ -2113,7 +1953,7 @@ export default function App() {
               </div>
 
               {/* Metrics List in Clean Elegant Cards */}
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-2 mt-2.5">
 
                 {/* 1. Nombre de Produits */}
                 <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
@@ -2147,13 +1987,13 @@ export default function App() {
 
                 {/* 3. Produits Périmés */}
                 <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
-                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold min-w-0">
                     <div className="p-1 rounded-lg bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 shrink-0">
                       <Clock size={13} />
                     </div>
-                    <span>Produits périmés</span>
+                    <span className="truncate">Produits périmés</span>
                   </div>
-                  <span className="font-bold text-[10px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-lg border border-emerald-500/20">
+                  <span className="font-bold text-[9px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded-lg border border-emerald-500/20 shrink-0 whitespace-nowrap">
                     OK (SANS ALERTE)
                   </span>
                 </div>
@@ -2187,19 +2027,6 @@ export default function App() {
                   </span>
                 </div>
 
-                {/* 6. Utilisateur Connecté */}
-                <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
-                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
-                    <div className="p-1 rounded-lg bg-purple-100 dark:bg-purple-950/80 text-purple-600 dark:text-purple-400 shrink-0">
-                      <UserCheck size={13} />
-                    </div>
-                    <span>Utilisateur</span>
-                  </div>
-                  <span className="font-black text-[10.5px] text-purple-700 dark:text-purple-300 bg-purple-500/10 px-2 py-0.5 rounded-lg border border-purple-500/20">
-                    {currentUser ? currentUser.username.toUpperCase() : 'NON CONNECTÉ'}
-                  </span>
-                </div>
-
                 {/* 7. Licence Software */}
                 <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
                   <div className="flex items-center gap-2 text-slate-700 dark:text-slate-200 font-bold">
@@ -2216,9 +2043,6 @@ export default function App() {
                     {config.isActivated ? 'ORIGINALE' : 'DÉMO ACTIVE'}
                   </span>
                 </div>
-
-                {/* 8. Memory Usage Indicator Component */}
-                <MemoryUsageIndicator />
 
                 {/* 9. Sauvegarde Base */}
                 <div className="flex items-center justify-between p-2 rounded-xl bg-slate-50/80 dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 text-[11px] hover:border-slate-300 dark:hover:border-slate-700 transition-colors">
@@ -2243,7 +2067,7 @@ export default function App() {
                     <select
                       value={zoomMode}
                       onChange={(e) => setZoomMode(e.target.value as any)}
-                      className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[10.5px] font-bold text-slate-800 dark:text-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer"
+                      className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[10.5px] font-bold text-slate-800 dark:text-slate-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer"
                     >
                       <option value="auto">Auto-Fit (Adaptatif)</option>
                       <option value="100">100% (Normal)</option>
@@ -2251,59 +2075,54 @@ export default function App() {
                       <option value="80">80% (Compact)</option>
                       <option value="75">75% (Petit)</option>
                     </select>
-                    <button
-                      type="button"
-                      onClick={toggleTheme}
-                      className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
-                      title={theme === 'dark' ? "Passer en Mode Clair" : "Passer en Mode Sombre"}
-                    >
-                      {theme === 'dark' ? <Sun size={14} className="text-amber-400" /> : <Moon size={14} className="text-slate-600" />}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => toggleDisplayMode('compact')}
-                      className="p-1.5 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer shrink-0"
-                      title="Passer en Mode Compact"
-                    >
-                      <Smartphone size={14} className="text-sky-500" />
-                    </button>
                   </div>
                 </div>
 
               </div>
             </div>
 
-            {/* Quick Vertical actions buttons */}
-            <div className="flex flex-col gap-2 mt-4 select-none min-w-[226px]">
-              <button
-                onClick={() => launchWindow('configuration')}
-                className="group relative overflow-hidden py-2 px-3.5 flex items-center justify-start gap-2.5 text-xs font-bold text-slate-800 dark:text-sky-100 bg-gradient-to-r from-sky-100/90 via-white/80 to-sky-50/80 dark:from-slate-900/90 dark:via-sky-950/70 dark:to-slate-900/90 backdrop-blur-md rounded-xl border border-white/90 dark:border-sky-800/60 shadow-[inset_0_1px_1px_rgba(255,255,255,0.9),0_2px_8px_rgba(14,165,233,0.12)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_4px_16px_rgba(14,165,233,0.25)] hover:border-sky-300 dark:hover:border-sky-500 transition-all duration-200 cursor-pointer active:scale-[0.98]"
-              >
-                <div className="w-6 h-6 rounded-lg bg-sky-500/10 dark:bg-sky-400/20 flex items-center justify-center shrink-0 border border-sky-300/40 dark:border-sky-500/30">
-                  <Settings className="w-3.5 h-3.5 text-sky-600 dark:text-sky-300 group-hover:rotate-90 transition-transform duration-500" />
+            {/* Bottom Footer - Identical to Compact Mode */}
+            <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800 flex items-center justify-between mt-auto shrink-0">
+              <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 font-black text-xs text-purple-700 dark:text-purple-300">
+                  <UserCheck size={16} className="text-purple-600 dark:text-purple-400 shrink-0" />
+                  <span className="truncate max-w-[80px]">{currentUser ? currentUser.username.toUpperCase() : 'ADMIN'}</span>
                 </div>
-                <span className="truncate tracking-wide">Configuration</span>
-              </button>
-
-              <button
-                onClick={handleLockSession}
-                className="group relative overflow-hidden py-2 px-3.5 flex items-center justify-start gap-2.5 text-xs font-bold text-slate-800 dark:text-amber-100 bg-gradient-to-r from-amber-100/80 via-white/80 to-amber-50/70 dark:from-amber-950/60 dark:via-slate-900/90 dark:to-slate-950/90 backdrop-blur-md rounded-xl border border-white/90 dark:border-amber-800/50 shadow-[inset_0_1px_1px_rgba(255,255,255,0.9),0_2px_8px_rgba(217,119,6,0.12)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_4px_16px_rgba(217,119,6,0.25)] hover:border-amber-300 dark:hover:border-amber-500 transition-all duration-200 cursor-pointer active:scale-[0.98]"
-              >
-                <div className="w-6 h-6 rounded-lg bg-amber-500/10 dark:bg-amber-400/20 flex items-center justify-center shrink-0 border border-amber-300/40 dark:border-amber-500/30">
-                  <ShieldCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 group-hover:scale-110 transition-transform duration-300" />
-                </div>
-                <span className="truncate tracking-wide">Verrouiller la PME</span>
-              </button>
-
-              <button
-                onClick={() => alert("Sauvegarde complète des tables locales exportée dans l'iframe sandbox.")}
-                className="group relative overflow-hidden py-2 px-3.5 flex items-center justify-start gap-2.5 text-xs font-bold text-sky-950 dark:text-sky-100 bg-gradient-to-r from-sky-200/90 via-sky-100/80 to-blue-50/80 dark:from-sky-950/80 dark:via-blue-950/80 dark:to-slate-900/90 backdrop-blur-md rounded-xl border border-white/90 dark:border-sky-700/60 shadow-[inset_0_1px_1px_rgba(255,255,255,0.95),0_2px_10px_rgba(2,132,199,0.2)] hover:shadow-[inset_0_1px_1px_rgba(255,255,255,1),0_4px_18px_rgba(2,132,199,0.35)] hover:border-sky-400 dark:hover:border-sky-400 transition-all duration-200 cursor-pointer active:scale-[0.98]"
-              >
-                <div className="w-6 h-6 rounded-lg bg-sky-600/15 dark:bg-sky-400/20 flex items-center justify-center shrink-0 border border-sky-400/40 dark:border-sky-400/30">
-                  <Database className="w-3.5 h-3.5 text-sky-600 dark:text-sky-300 group-hover:scale-110 transition-transform duration-300" />
-                </div>
-                <span className="truncate tracking-wide">Sauvegarde Directe</span>
-              </button>
+                <button
+                  type="button"
+                  onClick={handleLockSession}
+                  className="p-1.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800/60 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-600 dark:text-rose-400 transition-colors cursor-pointer"
+                  title="Verrouiller la PME"
+                >
+                  <LogOut size={14} />
+                </button>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => alert("Sauvegarde complète des tables locales exportée dans l'iframe sandbox.")}
+                  className="p-1.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 hover:bg-sky-50 dark:hover:bg-sky-950/60 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                  title="Sauvegarde Directe"
+                >
+                  <Database size={15} className="text-sky-500" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toggleDisplayMode('compact')}
+                  className="p-1.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                  title="Passer en Mode Compact"
+                >
+                  <Smartphone size={15} className="text-sky-500" />
+                </button>
+                <button
+                  type="button"
+                  onClick={toggleTheme}
+                  className="p-1.5 rounded-xl bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
+                  title={theme === 'dark' ? "Passer en Mode Clair" : "Passer en Mode Sombre"}
+                >
+                  {theme === 'dark' ? <Sun size={15} className="text-amber-400" /> : <Moon size={15} className="text-slate-600" />}
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -2701,6 +2520,8 @@ export default function App() {
               onUpdateConfig={handleUpdateConfig}
               onClose={() => closeWindow('configuration')}
               onResetDemo={handleClearCache}
+              onOpenUserManagement={() => launchWindow('user_management')}
+              onChangePassword={handleChangePassword}
             />
           </WindowFrame>
 
