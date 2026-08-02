@@ -54,7 +54,7 @@ const performanceDiagnostics = createPerformanceDiagnostics({
 app.commandLine.appendSwitch('enable-gpu-rasterization');
 app.commandLine.appendSwitch('enable-oop-rasterization');
 app.commandLine.appendSwitch('enable-zero-copy');
-app.commandLine.appendSwitch('ignore-gpu-blocklist');
+// Respect Chromium's GPU driver blocklist and compatibility workarounds.
 app.commandLine.appendSwitch('disable-background-timer-throttled-processes');
 
 let mainWindow;
@@ -284,7 +284,9 @@ function createWindow() {
   }
   if (isDev) {
     mainWindow.loadURL('http://localhost:3000');
-    mainWindow.webContents.openDevTools();
+    if (!performanceDiagnostics.enabled) {
+      mainWindow.webContents.openDevTools();
+    }
   } else {
     mainWindow.loadFile(path.join(app.getAppPath(), 'dist', 'index.html'));
   }
