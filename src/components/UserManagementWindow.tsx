@@ -611,7 +611,7 @@ export const UserManagementWindow: React.FC<UserManagementWindowProps> = ({
             </div>
             <div className="p-5 flex gap-3 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-sans text-sm items-start">
               <span className="text-2xl select-none leading-none shrink-0 bg-amber-50 dark:bg-amber-950/45 w-8 h-8 rounded-lg flex items-center justify-center text-amber-600">⚠️</span>
-              <div className="flex-1 leading-relaxed whitespace-pre-line text-xs font-medium text-slate-600 dark:text-slate-350">
+              <div className="flex-1 min-w-0 leading-relaxed whitespace-pre-line break-words text-xs font-medium text-slate-600 dark:text-slate-350">
                 {customAlert.message}
               </div>
             </div>
@@ -644,7 +644,7 @@ export const UserManagementWindow: React.FC<UserManagementWindowProps> = ({
             </div>
             <div className="p-5 flex gap-3 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-200 font-sans text-sm items-start">
               <span className="text-2xl select-none leading-none shrink-0 bg-indigo-50 dark:bg-indigo-950/45 w-8 h-8 rounded-lg flex items-center justify-center text-indigo-600">❓</span>
-              <div className="flex-1 leading-relaxed whitespace-pre-line text-xs font-medium text-slate-600 dark:text-slate-350">
+              <div className="flex-1 min-w-0 leading-relaxed whitespace-pre-line break-words text-xs font-medium text-slate-600 dark:text-slate-350">
                 {customConfirm.message}
               </div>
             </div>

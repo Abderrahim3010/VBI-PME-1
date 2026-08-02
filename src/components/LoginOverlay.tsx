@@ -121,7 +121,7 @@ export const LoginOverlay: React.FC<LoginOverlayProps> = ({ users, onLoginSucces
 
           {/* Error Message */}
           {errorMsg && (
-            <div className="text-rose-600 dark:text-rose-400 font-semibold text-xs mt-1 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 p-2 rounded-xl text-center select-text animate-in fade-in duration-100">
+            <div className="text-rose-600 dark:text-rose-400 font-semibold text-xs mt-1 bg-rose-50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 p-2 rounded-xl text-center select-text animate-in fade-in duration-100 whitespace-normal break-words">
               ⚠️ {errorMsg}
             </div>
           )}

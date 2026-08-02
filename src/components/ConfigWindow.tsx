@@ -12,7 +12,8 @@ interface ConfigWindowProps {
   onClose: () => void;
   onResetDemo?: () => void;
   onOpenUserManagement?: () => void;
-  onChangePassword?: () => void;
+  onChangePassword?: (oldPass?: string, newPass?: string) => { success: boolean; message: string } | void;
+  currentUser?: any;
 }
 
 function ConfigWindow({
@@ -21,13 +22,21 @@ function ConfigWindow({
   onClose,
   onResetDemo,
   onOpenUserManagement,
-  onChangePassword
+  onChangePassword,
+  currentUser
 }: ConfigWindowProps) {
   window.__vbiPerfRecorder?.render('ConfigWindow');
 
   const [activeTab, setActiveTab] = useState<'delivery' | 'invoice' | 'affichage' | 'securite'>('delivery');
   const [saveSuccess, setSaveSuccess] = useState(false);
   const saveSuccessTimeoutRef = useRef<number | null>(null);
+
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
+  const [pwdCurrent, setPwdCurrent] = useState('');
+  const [pwdNew, setPwdNew] = useState('');
+  const [pwdConfirm, setPwdConfirm] = useState('');
+  const [pwdError, setPwdError] = useState('');
+  const [pwdSuccess, setPwdSuccess] = useState('');
 
   useEffect(() => {
     return () => {
@@ -74,7 +83,6 @@ function ConfigWindow({
   // Tab 3: Affichage & Company Settings
   const [companyName, setCompanyName] = useState(config?.company || '');
   const [bgImage, setBgImage] = useState(config?.affichage?.backgroundImage || '');
-  const [customUrl, setCustomUrl] = useState(config?.affichage?.backgroundImage || '');
   const [displayMode, setDisplayMode] = useState<'tactile' | 'compact'>(config?.affichage?.displayMode || 'tactile');
 
   useEffect(() => {
@@ -1066,50 +1074,10 @@ function ConfigWindow({
                       ))}
                     </div>
 
-                    {/* Custom Image URL */}
-                    <div className="flex flex-col gap-1 mt-1 select-text">
-                      <span className="font-extrabold text-[9px] uppercase text-slate-500 tracking-wider">URL de votre image personnalisée</span>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          value={customUrl}
-                          onChange={(e) => setCustomUrl(e.target.value)}
-                          placeholder="Entrez ou collez l'adresse d'une image (https://...)"
-                          className="flex-1 h-8 rounded-xl bg-slate-50/60 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 outline-none text-[11px] text-slate-700 dark:text-slate-200 font-mono"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (customUrl) {
-                              setBgImage(customUrl);
-                              alert("URL importée avec succès ! Cliquez sur Enregistrer pour l'appliquer.");
-                            } else {
-                              alert("Veuillez saisir une URL valide.");
-                            }
-                          }}
-                          className="px-4 h-8 bg-indigo-650 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer"
-                        >
-                          Importer URL
-                        </button>
-                        {(bgImage || customUrl) && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setBgImage('');
-                              setCustomUrl('');
-                            }}
-                            className="px-3.5 h-8 bg-rose-50 hover:bg-rose-100 text-rose-750 dark:bg-rose-950/40 dark:text-rose-400 font-bold rounded-xl text-xs border border-rose-200/50 dark:border-rose-900 transition-colors"
-                          >
-                            Réinitialiser
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
                     {/* Local Wallpaper Upload */}
                     <div className="flex flex-col gap-1 mt-2">
-                      <span className="font-extrabold text-[9px] uppercase text-slate-500 tracking-wider">Télécharger une image depuis votre appareil</span>
-                      <div className="flex gap-2">
+                      <span className="font-extrabold text-[9px] uppercase text-slate-500 tracking-wider">Télécharger une image depuis votre appareil (remplit le panneau principal)</span>
+                      <div className="flex items-center gap-2">
                         <button
                           type="button"
                           onClick={() => fileInputWallpaperRef.current?.click()}
@@ -1117,6 +1085,15 @@ function ConfigWindow({
                         >
                           <Upload size={12} /> Choisir une image locale...
                         </button>
+                        {bgImage && (
+                          <button
+                            type="button"
+                            onClick={() => setBgImage('')}
+                            className="px-3.5 h-8 bg-rose-50 hover:bg-rose-100 text-rose-750 dark:bg-rose-950/40 dark:text-rose-400 font-bold rounded-xl text-xs border border-rose-200/50 dark:border-rose-900 transition-colors cursor-pointer"
+                          >
+                            Réinitialiser le fond
+                          </button>
+                        )}
                         {bgImage && bgImage.startsWith('data:image/') && (
                           <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
                             ✔ Image locale chargée
@@ -1233,7 +1210,12 @@ function ConfigWindow({
                       <button
                         type="button"
                         onClick={() => {
-                          onChangePassword?.();
+                          setPwdCurrent('');
+                          setPwdNew('');
+                          setPwdConfirm('');
+                          setPwdError('');
+                          setPwdSuccess('');
+                          setIsChangePasswordOpen(true);
                         }}
                         className="w-full py-2.5 px-3 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer"
                       >
@@ -1246,6 +1228,127 @@ function ConfigWindow({
             )}
 
           </div>
+
+          {/* Change Password Modal */}
+          {isChangePasswordOpen && (
+            <div className="absolute inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-150">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-5 w-full max-w-sm flex flex-col gap-4">
+                <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400">
+                      <Key size={18} />
+                    </div>
+                    <div>
+                      <h3 className="font-extrabold text-sm text-slate-800 dark:text-slate-100">Changer le mot de passe</h3>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400">Pour le compte : {currentUser?.name || currentUser?.username || 'Utilisateur actuel'}</p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsChangePasswordOpen(false)}
+                    className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                {pwdError && (
+                  <div className="p-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-rose-600 dark:text-rose-400 text-xs font-semibold flex items-center gap-2">
+                    <AlertTriangle size={15} className="shrink-0" />
+                    <span>{pwdError}</span>
+                  </div>
+                )}
+
+                {pwdSuccess && (
+                  <div className="p-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900/50 text-emerald-600 dark:text-emerald-400 text-xs font-semibold flex items-center gap-2">
+                    <Check size={15} className="shrink-0" />
+                    <span>{pwdSuccess}</span>
+                  </div>
+                )}
+
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Mot de passe actuel</label>
+                    <input
+                      type="password"
+                      value={pwdCurrent}
+                      onChange={(e) => setPwdCurrent(e.target.value)}
+                      placeholder="••••••••"
+                      className="h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Nouveau mot de passe</label>
+                    <input
+                      type="password"
+                      value={pwdNew}
+                      onChange={(e) => setPwdNew(e.target.value)}
+                      placeholder="••••••••"
+                      className="h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-indigo-500"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[11px] font-bold text-slate-600 dark:text-slate-400">Confirmer le nouveau mot de passe</label>
+                    <input
+                      type="password"
+                      value={pwdConfirm}
+                      onChange={(e) => setPwdConfirm(e.target.value)}
+                      placeholder="••••••••"
+                      className="h-9 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 text-xs text-slate-800 dark:text-slate-100 outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setIsChangePasswordOpen(false)}
+                    className="px-4 h-8 rounded-xl border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-bold text-xs hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPwdError('');
+                      setPwdSuccess('');
+                      if (!pwdCurrent || !pwdNew || !pwdConfirm) {
+                        setPwdError('Veuillez remplir tous les champs.');
+                        return;
+                      }
+                      if (pwdNew !== pwdConfirm) {
+                        setPwdError('Les nouveaux mots de passe ne correspondent pas.');
+                        return;
+                      }
+                      if (onChangePassword) {
+                        const res = onChangePassword(pwdCurrent, pwdNew);
+                        if (res && typeof res === 'object') {
+                          if (res.success) {
+                            setPwdSuccess(res.message);
+                            setTimeout(() => {
+                              setIsChangePasswordOpen(false);
+                            }, 1500);
+                          } else {
+                            setPwdError(res.message);
+                          }
+                        } else {
+                          setPwdSuccess('Mot de passe modifié avec succès !');
+                          setTimeout(() => {
+                            setIsChangePasswordOpen(false);
+                          }, 1500);
+                        }
+                      }
+                    }}
+                    className="px-4 h-8 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                  >
+                    <Key size={13} /> Enregistrer
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Bottom actions footer matching image */}
           <div className="bg-[#f0f4f9] dark:bg-slate-950 p-3 px-5 border-t border-slate-300 dark:border-slate-800 flex justify-center gap-2.5 shrink-0 select-none">

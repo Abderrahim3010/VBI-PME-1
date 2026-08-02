@@ -564,32 +564,14 @@ html.dark tbody td[colspan] {
 }
 
 /* ==========================================================================
-   UNIVERSAL NON-STACKING AND NON-WRAPPING POLICIES
-   Ensures that no elements or text blocks wrap or stack upon window resizing.
-   All flex layouts remain row/column single-line and overflow-x scrollable if needed.
+   TABLE NON-WRAPPING POLICIES
+   Ensures that table headers and data cells do not wrap awkwardly unless allow-wrap is specified.
    ========================================================================== */
 
-/* Force all flex containers to never wrap */
-.flex, [class*="flex-"] {
-  flex-wrap: nowrap !important;
-}
-
-/* Ensure no text wraps or stacks on top of itself across all native text containers */
-span:not(.allow-wrap),
-label:not(.allow-wrap),
-button:not(.allow-wrap),
-h1:not(.allow-wrap),
-h2:not(.allow-wrap),
-h3:not(.allow-wrap),
-h4:not(.allow-wrap),
-h5:not(.allow-wrap),
-h6:not(.allow-wrap),
+/* Prevent table headers and data cells from wrapping unless explicitly allowed */
 th:not(.allow-wrap),
-td:not(.allow-wrap),
-option:not(.allow-wrap),
-p:not(.whitespace-pre-wrap):not(.allow-wrap),
-li:not(.allow-wrap) {
-  white-space: nowrap !important;
+td:not(.allow-wrap) {
+  white-space: nowrap;
 }
 
 /* Enable smooth scrolling for overflowed rows to keep user navigation flawless */

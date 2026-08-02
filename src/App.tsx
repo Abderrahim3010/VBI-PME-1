@@ -1190,19 +1190,17 @@ export default function App() {
     setWindows(prev => prev.map(w => ({ ...w, isOpen: false, isMinimized: false, isMaximized: false })));
   };
 
-  const handleChangePassword = () => {
-    const curPass = prompt("Entrez votre mot de passe actuel :");
-    if (curPass === currentUser?.password) {
-      const newPass = prompt("Entrez votre NOUVEAU mot de passe :");
-      if (newPass) {
-        setUsers(prev => prev.map(u => u.id === currentUser?.id ? { ...u, password: newPass } : u));
-        setCurrentUser(prev => prev ? { ...prev, password: newPass } : null);
-        alert("Mot de passe modifié avec succès !");
-        addLog("Changement de mot de passe réussi");
-      }
-    } else {
-      alert("Mot de passe actuel incorrect.");
+  const handleChangePassword = (oldPass?: string, newPass?: string): { success: boolean; message: string } => {
+    if (!oldPass || !newPass) {
+      return { success: false, message: "Veuillez remplir tous les champs requis." };
     }
+    if (oldPass !== currentUser?.password) {
+      return { success: false, message: "Mot de passe actuel incorrect." };
+    }
+    setUsers(prev => prev.map(u => u.id === currentUser?.id ? { ...u, password: newPass } : u));
+    setCurrentUser(prev => prev ? { ...prev, password: newPass } : null);
+    addLog("Changement de mot de passe réussi");
+    return { success: true, message: "Mot de passe modifié avec succès !" };
   };
 
   const handleClearCache = () => {
@@ -1444,9 +1442,10 @@ export default function App() {
       <div 
         className="flex-1 min-h-0 flex relative bg-sky-900 select-none overflow-hidden transition-all duration-300 animate-fade-in" 
         style={config?.affichage?.backgroundImage ? {
-          backgroundImage: `url(${config.affichage.backgroundImage})`,
-          backgroundSize: 'cover',
+          backgroundImage: `url("${config.affichage.backgroundImage}")`,
+          backgroundSize: '100% 100%',
           backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
           boxShadow: 'inset 0 0 150px rgba(0,0,0,0.25)'
         } : (theme === 'dark' ? { 
           background: 'radial-gradient(ellipse at 80% 10%, rgba(56,189,248,0.7) 0%, rgba(14,165,233,0.5) 30%, rgba(2,132,199,0.9) 70%, rgba(3,73,124,1) 100%)',
@@ -2522,6 +2521,7 @@ export default function App() {
               onResetDemo={handleClearCache}
               onOpenUserManagement={() => launchWindow('user_management')}
               onChangePassword={handleChangePassword}
+              currentUser={currentUser}
             />
           </WindowFrame>
 
@@ -2716,17 +2716,17 @@ export default function App() {
               <div className="text-3xl shrink-0 select-none">
                 🚫
               </div>
-              <div className="flex-1 flex flex-col gap-1.5 leading-relaxed">
-                <p className="font-extrabold text-[13px] text-red-700 dark:text-red-400 uppercase tracking-wide">
+              <div className="flex-1 min-w-0 flex flex-col gap-2 leading-relaxed">
+                <p className="font-extrabold text-[13px] text-red-700 dark:text-red-400 uppercase tracking-wide whitespace-normal break-words">
                   Autorisation insuffisante !
                 </p>
-                <p>
+                <p className="whitespace-normal break-words">
                   Votre compte utilisateur <strong>👤 {currentUser?.username}</strong> ne dispose pas des privilèges requis pour accéder au module :
                 </p>
-                <p className="bg-slate-50 dark:bg-slate-950 p-2.5 rounded-xl border border-slate-150/10 font-bold text-slate-800 dark:text-sky-300 font-mono">
+                <p className="bg-slate-50 dark:bg-slate-950 p-2.5 rounded-xl border border-slate-150/10 font-bold text-slate-800 dark:text-sky-300 font-mono text-xs whitespace-normal break-words">
                   📁 {unauthorizedModal.moduleName} (Code: {unauthorizedModal.code})
                 </p>
-                <p className="text-slate-400 dark:text-slate-500 text-[10.5px]">
+                <p className="text-slate-400 dark:text-slate-500 text-[10.5px] whitespace-normal break-words">
                   Veuillez contacter l'administrateur principal ('admin') pour modifier vos habilitations.
                 </p>
               </div>
