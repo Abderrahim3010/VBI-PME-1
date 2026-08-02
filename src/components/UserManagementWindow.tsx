@@ -61,7 +61,7 @@ export const UserManagementWindow: React.FC<UserManagementWindowProps> = ({
   onDeleteUser,
   transactionLogs,
   onAddLog,
-  onClose
+  onClose: _onClose
 }) => {
   const [selectedUserIndex, setSelectedUserIndex] = useState<number>(0);
   const [searchLogQuery, setSearchLogQuery] = useState<string>('');
@@ -89,12 +89,6 @@ export const UserManagementWindow: React.FC<UserManagementWindowProps> = ({
   const [checkedPermissions, setCheckedPermissions] = useState<string[]>([]);
 
   const selectedUser = users[selectedUserIndex] || users[0];
-
-  // Navigation functions
-  const handleGoFirst = () => setSelectedUserIndex(0);
-  const handleGoPrev = () => setSelectedUserIndex(prev => Math.max(0, prev - 1));
-  const handleGoNext = () => setSelectedUserIndex(prev => Math.min(users.length - 1, prev + 1));
-  const handleGoLast = () => setSelectedUserIndex(users.length - 1);
 
   const openInsertModal = () => {
     setModalMode('insert');
@@ -237,38 +231,6 @@ export const UserManagementWindow: React.FC<UserManagementWindowProps> = ({
 
           {/* Modern Toolbar Ribbon */}
           <div className="flex flex-nowrap overflow-x-auto scrollbar-none items-center gap-1.5 bg-slate-100/55 dark:bg-slate-950/40 p-2 border border-slate-200/60 dark:border-slate-800/60 rounded-xl shrink-0">
-            {/* Pager Buttons */}
-            <button
-              onClick={handleGoFirst}
-              disabled={selectedUserIndex <= 0}
-              className="px-2.5 py-1.5 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850 font-bold text-[10px] uppercase border border-slate-200 dark:border-slate-800/80 rounded-lg text-slate-700 dark:text-slate-300 disabled:opacity-45 transition-all cursor-pointer whitespace-nowrap shrink-0"
-            >
-              ⏮ Début
-            </button>
-            <button
-              onClick={handleGoPrev}
-              disabled={selectedUserIndex <= 0}
-              className="px-2.5 py-1.5 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850 font-bold text-[10px] uppercase border border-slate-200 dark:border-slate-800/80 rounded-lg text-slate-700 dark:text-slate-300 disabled:opacity-45 transition-all cursor-pointer whitespace-nowrap shrink-0"
-            >
-              ◀ Préc.
-            </button>
-             <button
-              onClick={handleGoNext}
-              disabled={selectedUserIndex >= users.length - 1}
-              className="px-2.5 py-1.5 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850 font-bold text-[10px] uppercase border border-slate-200 dark:border-slate-800/80 rounded-lg text-slate-700 dark:text-slate-300 disabled:opacity-45 transition-all cursor-pointer whitespace-nowrap shrink-0"
-            >
-              Suivant ▶
-            </button>
-            <button
-              onClick={handleGoLast}
-              disabled={selectedUserIndex >= users.length - 1}
-              className="px-2.5 py-1.5 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-850 font-bold text-[10px] uppercase border border-slate-200 dark:border-slate-800/80 rounded-lg text-slate-700 dark:text-slate-300 disabled:opacity-45 transition-all cursor-pointer whitespace-nowrap shrink-0"
-            >
-              Fin ⏭
-            </button>
-
-             <div className="h-4 w-[1px] bg-slate-250 dark:bg-slate-800 mx-1 shrink-0" />
-
             {/* Insert, Modify, Delete */}
             <button
               onClick={openInsertModal}
@@ -323,24 +285,9 @@ export const UserManagementWindow: React.FC<UserManagementWindowProps> = ({
 
         </div>
 
-        {/* Right Side: Informative illustration panel with lock */}
+        {/* Right Side: Informative illustration panel */}
         <div className="flex-[2] bg-slate-50 dark:bg-slate-950/30 border border-slate-200/85 dark:border-slate-800/80 p-5 rounded-2xl flex flex-col justify-start items-center text-center overflow-y-auto shrink-0 w-full md:w-80 shadow-sm">
           
-          {/* Padlock visual graphics */}
-          <div className="relative mb-3.5 flex flex-col items-center">
-            <div className="w-20 h-20 text-[#a0a090] flex items-center justify-center">
-              <svg className="w-16 h-16 drop-shadow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <rect x="5" y="11" width="14" height="11" rx="2" strokeWidth="2" />
-                <path d="M12 2a5 5 0 0 0-5 5v4h10V7a5 5 0 0 0-5-5z" strokeWidth="2" />
-              </svg>
-            </div>
-            {/* Faces decoration representing users */}
-            <div className="flex gap-1.5 mt-1">
-              <span className="text-xl">👨‍💼</span>
-              <span className="text-xl">🧑‍🔧</span>
-            </div>
-          </div>
-
           <div className="w-full text-left space-y-3 font-sans leading-relaxed text-slate-800">
             <div>
               <h4 className="font-extrabold text-red-800 text-[12.5px] uppercase">Utilisateurs de type "1"</h4>
@@ -373,7 +320,7 @@ export const UserManagementWindow: React.FC<UserManagementWindowProps> = ({
       </div>
 
       {/* Bottom Half: JOURNAL DE TRANSACTIONS */}
-      <div className="h-[210px] p-3 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/20 flex flex-col overflow-hidden shrink-0">
+      <div className="h-[250px] p-3 border-t border-slate-200 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-950/20 flex flex-col overflow-hidden shrink-0">
         
         <div className="flex items-center justify-between mb-2 shrink-0">
           <div className="flex items-center gap-3">
@@ -431,16 +378,6 @@ export const UserManagementWindow: React.FC<UserManagementWindowProps> = ({
           </table>
         </div>
 
-      </div>
-
-      {/* Footer Area with Quitter Button */}
-      <div className="p-3 bg-slate-50 dark:bg-slate-950/40 border-t border-slate-100 dark:border-slate-800/60 flex justify-end shrink-0">
-        <button
-          onClick={onClose}
-          className="px-5 h-9 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs rounded-xl transition-all focus:outline-none cursor-pointer flex items-center gap-1.5 shadow-sm"
-        >
-          🚪 Quitter
-        </button>
       </div>
 
       {/* --- M.A.J UTILISATEUR DIALOG MODAL --- */}
