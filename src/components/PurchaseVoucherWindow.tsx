@@ -102,15 +102,15 @@ function PurchaseVoucherWindow({
 
   // Column widths state for Purchase Items table
   const { columnWidths: purchaseItemColWidths, startResizing: startResizingPurchaseItem } = useResizableColumns({
-    num: 45,
-    code: 120,
-    designation: 280,
-    colis: 65,
-    colisage: 65,
-    qte: 65,
-    punit: 100,
-    montant: 110,
-    action: 50
+    num: 35,
+    code: 100,
+    designation: 250,
+    colis: 55,
+    colisage: 55,
+    qte: 55,
+    punit: 90,
+    montant: 95,
+    action: 45
   }, 30, 'purchase_items');
 
   // Voucher editing state tracker

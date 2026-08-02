@@ -2247,7 +2247,7 @@ export default function App() {
             zIndex={windows.find(w => w.id === 'purchases')?.zIndex || 10}
             initialX={windows.find(w => w.id === 'purchases')?.x || 140}
             initialY={windows.find(w => w.id === 'purchases')?.y || 30}
-            width="w-[1180px]"
+            width="w-[1240px]"
             height="h-[730px]"
             onClose={() => closeWindow('purchases')}
             onMinimize={() => minimizeWindow('purchases')}
@@ -2284,7 +2284,7 @@ export default function App() {
             zIndex={windows.find(w => w.id === 'sales')?.zIndex || 10}
             initialX={windows.find(w => w.id === 'sales')?.x || 160}
             initialY={windows.find(w => w.id === 'sales')?.y || 35}
-            width="w-[1180px]"
+            width="w-[1240px]"
             height="h-[730px]"
             onClose={() => closeWindow('sales')}
             onMinimize={() => minimizeWindow('sales')}

@@ -467,17 +467,17 @@ function SalesVoucherWindow({
 
   // Table column widths for active sales voucher items
   const { columnWidths: salesItemColWidths, startResizing: startResizingSalesItem } = useResizableColumns({
-    num: 45,
-    code: 120,
-    designation: 280,
-    colis: 60,
-    colisage: 65,
-    pieces: 65,
-    qte: 65,
-    punit: 100,
-    prixAchat: 105,
-    prixRevient: 105,
-    montant: 110
+    num: 35,
+    code: 95,
+    designation: 235,
+    colis: 50,
+    colisage: 55,
+    pieces: 50,
+    qte: 55,
+    punit: 85,
+    prixAchat: 85,
+    prixRevient: 85,
+    montant: 95
   }, 20, 'sales_items');
 
   // Toggle for showing Prix d'Achat and Prix de Revient columns in sold items table (Ctrl + A)
