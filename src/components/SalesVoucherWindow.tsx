@@ -2038,50 +2038,8 @@ function SalesVoucherWindow({
           )}
         </div>
 
-        {/* Rightmost Commerciaux / Transaction box */}
-        <div className="w-[140px] shrink-0 flex flex-col gap-1.5">
-          <div className="flex flex-col gap-0.5">
-            {mode === 'create' ? (
-              <select
-                value={vendeurName}
-                onChange={(e) => setVendeurName(e.target.value)}
-                className="h-7 px-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg focus:outline-none text-[10.5px] font-bold text-slate-800 dark:text-slate-200"
-              >
-                <option value="<Aucun>">&lt;Aucun&gt;</option>
-                <option value="HICHEM">HICHEM</option>
-                <option value="AGENCE ALGER">AGENCE ALGER</option>
-              </select>
-            ) : (
-              <input
-                type="text"
-                readOnly
-                value={selectedSale?.vendeur || vendeurName}
-                className="h-7 px-2 bg-slate-50 dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/80 rounded-lg focus:outline-none font-bold text-[10.5px]"
-              />
-            )}
-          </div>
-
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[9px] font-extrabold text-slate-500 dark:text-slate-400 leading-none uppercase tracking-wide">Transaction</span>
-            {mode === 'create' ? (
-              <select
-                value={newType}
-                onChange={(e) => setNewType(e.target.value as 'VENTE' | 'RETOUR')}
-                className="h-7 px-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg font-bold text-blue-900 dark:text-sky-400 focus:outline-none text-[10.5px]"
-              >
-                <option value="VENTE">VENTE</option>
-                <option value="RETOUR">RETOUR</option>
-              </select>
-            ) : (
-              <input
-                type="text"
-                readOnly
-                value={selectedSale?.type || 'VENTE'}
-                className="h-7 px-2 bg-blue-50 text-blue-950 text-center font-bold border border-blue-300 focus:outline-none text-[10.5px] rounded-lg"
-              />
-            )}
-          </div>
-
+        {/* Rightmost buttons box */}
+        <div className="w-[140px] shrink-0 flex flex-col justify-center gap-1.5">
           {/* TVA, 0-9 & A-Z side-by-side next to each other right under */}
           <div className="flex items-center gap-1 mt-0.5 w-full">
             <button 
