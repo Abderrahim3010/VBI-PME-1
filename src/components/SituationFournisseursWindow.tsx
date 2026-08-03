@@ -530,8 +530,8 @@ function SituationFournisseursWindow({
                   }}
                   className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 focus:border-sky-500 rounded p-1.5 font-bold text-xs text-slate-800 dark:text-slate-100"
                 >
-                  {suppliers.map(s => (
-                    <option key={s.id} value={s.id}>
+                  {suppliers.map((s, idx) => (
+                    <option key={`sit-sup-opt-${s.id || 'sup'}-${idx}`} value={s.id}>
                       {s.name} ({s.code})
                     </option>
                   ))}
@@ -985,7 +985,7 @@ function SituationFournisseursWindow({
                 <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-mono text-[10.5px] font-bold">
                   {selectedVoucherDetails ? (
                     selectedVoucherDetails.items.map((item, idx) => (
-                      <tr key={item.id || idx} className="hover:bg-sky-50/50 dark:hover:bg-slate-800/40 text-slate-800 dark:text-slate-200">
+                      <tr key={`sit-item-${item.id || item.code || 'item'}-${idx}`} className="hover:bg-sky-50/50 dark:hover:bg-slate-800/40 text-slate-800 dark:text-slate-200">
                         {/* Code à barre */}
                         <td className="py-1 px-2.5 border-r border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold">
                           {item.code}
@@ -1282,11 +1282,11 @@ function SituationFournisseursWindow({
 
               {/* List Container */}
               <div className="flex-1 max-h-[350px] overflow-y-auto pr-1 flex flex-col gap-1.5 min-h-0">
-                {filteredChooserSuppliers.map(s => {
+                {filteredChooserSuppliers.map((s, idx) => {
                     const isSelected = s.id === selectedSupplierId;
                     return (
                       <div
-                        key={s.id}
+                        key={`sit-sup-chooser-${s.id || 'sup'}-${idx}`}
                         onDoubleClick={() => {
                           setSelectedSupplierId(s.id);
                           setSelectedRowId(null);

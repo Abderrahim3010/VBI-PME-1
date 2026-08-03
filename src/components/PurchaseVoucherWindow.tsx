@@ -1886,7 +1886,7 @@ function PurchaseVoucherWindow({
                 </tr>
               </thead>
               <tbody className="font-sans text-[11.5px]">
-                {navigableVouchers.map((nav) => {
+                {navigableVouchers.map((nav, idx) => {
                   const isDraft = nav.type === 'draft';
                   const v = nav.data;
                   const isEditing = editingVoucherId === v.id;
@@ -1912,7 +1912,7 @@ function PurchaseVoucherWindow({
 
                   return (
                     <tr
-                      key={`${nav.type}-${v.id}`}
+                      key={`${nav.type}-${v.id || 'void'}-${idx}`}
                       data-selected={isSelected}
                       onClick={(e) => {
                         e.stopPropagation();
@@ -2260,7 +2260,7 @@ function PurchaseVoucherWindow({
                     const isSelected = actualIndex === selectedDraftIdx;
                     return (
                       <tr 
-                        key={item.id} 
+                        key={`pur-item-${item.id || item.code || 'row'}-${index}`} 
                         data-selected={isSelected}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -2461,11 +2461,11 @@ function PurchaseVoucherWindow({
 
                     return (
                       <>
-                        {filteredProductsToInsert.map((p) => {
+                        {filteredProductsToInsert.map((p, idx) => {
                           const isActive = activeItem && activeItem.code === p.code;
                           return (
                             <div 
-                              key={p.code}
+                              key={`prod-insert-${p.code}-${idx}`}
                               onClick={() => setSelectedSearchProduct(p)}
                               onDoubleClick={() => handleSelectCatalogProduct(p)}
                               className={`grid grid-cols-12 gap-1 py-2.5 px-4 cursor-pointer items-center leading-tight select-none transition-all duration-75 ${
@@ -2717,8 +2717,8 @@ function PurchaseVoucherWindow({
                             {familles.length === 0 ? (
                               <option value="">(Aucune famille)</option>
                             ) : (
-                              familles.map(f => (
-                                <option key={f} value={f}>{f}</option>
+                              familles.map((f, idx) => (
+                                <option key={`pur-fam-${f}-${idx}`} value={f}>{f}</option>
                               ))
                             )}
                           </select>
@@ -3094,8 +3094,8 @@ function PurchaseVoucherWindow({
                         onChange={(e) => setExistingSupplierSelected(e.target.value)}
                         className="w-full h-9 px-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs outline-none font-bold text-slate-800 dark:text-slate-100"
                       >
-                        {suppliers.map(s => (
-                          <option key={s.id} value={s.name}>
+                        {suppliers.map((s, idx) => (
+                          <option key={`pur-sup-${s.id || 'sup'}-${idx}`} value={s.name}>
                             {s.code} — {s.name} (Solde: {(s.balance ?? 0).toLocaleString('fr-FR')} DA)
                           </option>
                         ))}
@@ -3447,11 +3447,11 @@ function PurchaseVoucherWindow({
                     <div className="p-6 text-center text-slate-400 dark:text-slate-500 italic">Aucune famille enregistrée.</div>
                   ) : (
                     <div className="flex flex-col gap-1.5">
-                      {familles.map((fam) => {
+                      {familles.map((fam, idx) => {
                         const isEditingThis = editingFamilyName === fam;
                         return (
                           <div 
-                            key={fam}
+                            key={`fam-${fam}-${idx}`}
                             className="flex items-center justify-between py-1.5 px-2 bg-slate-50/50 dark:bg-slate-950/20 hover:bg-slate-50 dark:hover:bg-slate-950/40 rounded-lg transition-colors border border-slate-100/50 dark:border-slate-850/45"
                           >
                             {isEditingThis ? (
@@ -3745,7 +3745,7 @@ function PurchaseVoucherWindow({
                         const itemTva = itemHt * (calculatedItemTvaRate / 100);
                         const itemTtc = itemHt + itemTva;
                         return (
-                          <tr key={item.id || idx} className="border-b border-black h-7 text-center font-mono select-text">
+                          <tr key={`pur-prev-${item.id || 'item'}-${idx}`} className="border-b border-black h-7 text-center font-mono select-text">
                             <td className="border-r border-black p-1 text-[9.5px] font-sans font-bold">{idx + 1}</td>
                             <td className="border-r border-black p-1 text-[9px] text-left leading-none font-mono font-medium">{item.code}</td>
                             <td className="border-r border-black p-1 text-[9.5px] text-left font-sans font-semibold uppercase leading-tight select-text pl-2">{item.designation}</td>

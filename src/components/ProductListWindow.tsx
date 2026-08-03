@@ -1101,11 +1101,11 @@ function ProductListWindow({
                   <div className="px-2.5 py-1 text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest border-t border-slate-50 dark:border-slate-800/40 mt-1 pt-1.5">
                     📂 Par Famille ({familles.length})
                   </div>
-                  {familles.map((fam) => {
+                  {familles.map((fam, idx) => {
                     const isSelected = selectedFamilies.includes(fam);
                     return (
                       <button
-                        key={fam}
+                        key={`fam-filter-${fam}-${idx}`}
                         type="button"
                         onClick={() => {
                           setSelectedFamilies(prev => 
@@ -1133,11 +1133,11 @@ function ProductListWindow({
                       Aucun fournisseur enregistré
                     </div>
                   ) : (
-                    suppliers.map((sup) => {
+                    suppliers.map((sup, idx) => {
                       const isSelected = selectedSuppliers.includes(sup);
                       return (
                         <button
-                          key={sup}
+                          key={`sup-filter-${sup}-${idx}`}
                           type="button"
                           onClick={() => {
                             setSelectedSuppliers(prev => 
@@ -1370,7 +1370,7 @@ function ProductListWindow({
             </tr>
           </thead>
           <tbody className="text-xs font-mono text-slate-700 dark:text-slate-200 divide-y divide-slate-100 dark:divide-slate-800">
-            {visibleProducts.map((p) => {
+            {visibleProducts.map((p, idx) => {
               const reqSelected = p.originalIndex === selectedIndex;
               
               // Map pricing properties dynamically
@@ -1380,7 +1380,7 @@ function ProductListWindow({
 
               return (
                 <tr
-                  key={p.code}
+                  key={`prod-${p.code || 'nocode'}-${p.originalIndex || 0}-${idx}`}
                   data-selected={reqSelected}
                   onClick={(e) => {
                     e.stopPropagation();
@@ -1822,8 +1822,8 @@ function ProductListWindow({
                           onChange={(e) => setFormCategory(e.target.value)}
                           className="flex-1 h-9 bg-slate-50 dark:bg-slate-950 border border-slate-205 dark:border-slate-800 rounded-xl px-3 text-xs font-sans font-bold outline-none focus:border-m3-primary"
                         >
-                          {familles.map((fam) => (
-                            <option key={fam} value={fam}>{fam}</option>
+                          {familles.map((fam, idx) => (
+                            <option key={`opt-fam-${fam}-${idx}`} value={fam}>{fam}</option>
                           ))}
                         </select>
                         <button
@@ -2332,11 +2332,11 @@ function ProductListWindow({
                   </div>
                 ) : (
                   <div className="flex flex-col gap-1.5 max-h-[180px] overflow-y-auto pr-1 border border-slate-200 dark:border-slate-800 rounded-2xl p-2 bg-slate-50 dark:bg-slate-955/20">
-                    {familles.map((fam) => {
+                    {familles.map((fam, idx) => {
                       const isEditingThis = editingFamilyName === fam;
                       return (
                         <div
-                          key={fam}
+                          key={`edit-fam-${fam}-${idx}`}
                           className="flex items-center justify-between p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-150 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-all"
                         >
                           {isEditingThis ? (
@@ -2640,11 +2640,11 @@ function ProductListWindow({
                   </div>
                   
                   <div className="space-y-3 max-h-[220px] overflow-y-auto pr-1 scrollbar-thin">
-                    {stats.sortedCategories.slice(0, 8).map((cat) => {
+                    {stats.sortedCategories.slice(0, 8).map((cat, idx) => {
                       const maxCount = Math.max(...stats.sortedCategories.map(c => c.count), 1);
                       const pctWidth = (cat.count / maxCount) * 100;
                       return (
-                        <div key={cat.name} className="space-y-1">
+                        <div key={`stat-cat-${cat.name || 'cat'}-${idx}`} className="space-y-1">
                           <div className="flex items-center justify-between text-xs font-bold">
                             <span className="uppercase text-slate-700 dark:text-slate-350 truncate max-w-[180px]">
                               {cat.name}
@@ -2678,7 +2678,7 @@ function ProductListWindow({
                         <div className="text-[10px] text-slate-400 italic py-2 text-center">Aucune valorisation active</div>
                       ) : (
                         stats.topProductsByStockValue.map((p, idx) => (
-                          <div key={p.code} className="flex items-center justify-between text-xs py-1 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg px-1 transition-colors">
+                          <div key={`top-val-${p.code || 'item'}-${idx}`} className="flex items-center justify-between text-xs py-1 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg px-1 transition-colors">
                             <div className="flex items-center gap-2 truncate max-w-[200px]">
                               <span className="w-4 h-4 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center font-bold text-[9px] text-slate-500">
                                 {idx + 1}
@@ -2708,7 +2708,7 @@ function ProductListWindow({
                         <div className="text-[10px] text-slate-400 italic py-2 text-center">Renseignez des prix d'achat pour voir les marges</div>
                       ) : (
                         stats.topMarginProducts.map((p, idx) => (
-                          <div key={p.code} className="flex items-center justify-between text-xs py-1 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg px-1 transition-colors">
+                          <div key={`top-marg-${p.code || 'item'}-${idx}`} className="flex items-center justify-between text-xs py-1 hover:bg-slate-50 dark:hover:bg-slate-900 rounded-lg px-1 transition-colors">
                             <div className="flex items-center gap-2 truncate max-w-[200px]">
                               <span className="w-4 h-4 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center font-bold text-[9px] text-slate-500">
                                 {idx + 1}

@@ -1817,8 +1817,8 @@ function SalesVoucherWindow({
                     className="h-7 px-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] font-sans font-extrabold text-blue-900 dark:text-sky-400 focus:outline-none w-full"
                   >
                     <option value="Anonyme">ANONYME</option>
-                    {clients.filter(c => c.name.toLowerCase() !== 'anonyme').map(c => (
-                      <option key={c.id} value={c.name}>{c.name}</option>
+                    {clients.filter(c => c.name.toLowerCase() !== 'anonyme').map((c, idx) => (
+                      <option key={`sale-cli-opt-${c.id || 'cli'}-${idx}`} value={c.name}>{c.name}</option>
                     ))}
                   </select>
                 ) : (
@@ -2280,7 +2280,7 @@ function SalesVoucherWindow({
                     </td>
                   </tr>
                 ) : (
-                  displayedItems.map((item) => {
+                  displayedItems.map((item, idx) => {
                     const isSelected = selectedItemIndex === item.originalIndex;
                     const isHighlighted = item.id === highlightedItemId;
                     const matchingProduct = products.find(p => p.code === item.code);
@@ -2289,7 +2289,7 @@ function SalesVoucherWindow({
                     const itemRevient = item.costPrice ?? matchingProduct?.prixDeRevient ?? matchingProduct?.prixAchat ?? 0;
                     return (
                       <tr
-                        key={item.id}
+                        key={`sale-item-${item.id || item.code || 'row'}-${item.originalIndex || 0}-${idx}`}
                         data-selected={isSelected}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -2629,12 +2629,12 @@ function SalesVoucherWindow({
                         </td>
                       </tr>
                     ) : (
-                      filteredChooserProducts.map((p) => {
+                      filteredChooserProducts.map((p, idx) => {
                         const isChosenTmp = selectedProductInChooser?.code === p.code;
                         const liveStock = effectiveStockMap.get(p.code) ?? p.stock;
                         return (
                           <tr
-                            key={p.code}
+                            key={`sale-prod-chooser-${p.code || 'nocode'}-${p.originalIndex || 0}-${idx}`}
                             onClick={(e) => {
                               e.stopPropagation();
                               if (p.blocked) {
@@ -3016,9 +3016,9 @@ function SalesVoucherWindow({
                   )}
 
                   {/* Filtered Clients list */}
-                  {filteredClients.map(c => (
+                  {filteredClients.map((c, idx) => (
                     <div
-                      key={c.id}
+                      key={`sale-cli-chooser-${c.id || 'cli'}-${idx}`}
                       onClick={() => handleSelectClient(c.name)}
                       className={`p-3 flex items-center justify-between cursor-pointer transition-colors ${
                         newClientName === c.name
@@ -3891,7 +3891,7 @@ function SalesVoucherWindow({
                         const itemTva = itemHt * (previewData.tvaRate / 100);
                         const itemTtc = itemHt + itemTva;
                         return (
-                          <tr key={item.id || idx} className="border-b border-black h-7 text-center font-mono select-text">
+                          <tr key={`sale-prev-${item.id || 'item'}-${idx}`} className="border-b border-black h-7 text-center font-mono select-text">
                             <td className="border-r border-black p-1 text-[9.5px] font-sans font-bold">{idx + 1}</td>
                             <td className="border-r border-black p-1 text-[9px] text-left leading-none font-mono font-medium">{item.code}</td>
                             <td className="border-r border-black p-1 text-[9.5px] text-left font-sans font-semibold uppercase leading-tight select-text pl-2">{item.designation}</td>
@@ -4031,9 +4031,9 @@ function SalesVoucherWindow({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
-                      {sales.map((sale) => (
+                      {sales.map((sale, idx) => (
                         <tr 
-                          key={sale.id}
+                          key={`sale-row-${sale.id}-${idx}`}
                           onClick={() => {
                             setSelectedSaleId(sale.id);
                             setFactureType('normal');
@@ -4116,11 +4116,11 @@ function SalesVoucherWindow({
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
-                      {openVouchers.map((v) => {
+                      {openVouchers.map((v, idx) => {
                         const sumDraft = v.draftItems.reduce((sum, i) => sum + i.total, 0);
                         return (
                           <tr 
-                            key={v.draftId}
+                            key={`open-draft-${v.draftId}-${idx}`}
                             onClick={() => {
                               setActiveDraftId(v.draftId);
                               setMode('create');
@@ -4356,7 +4356,7 @@ function SalesVoucherWindow({
                   </thead>
                   <tbody className="divide-y divide-dotted divide-black/40">
                     {previewData.items.map((item, idx) => (
-                      <tr key={idx} className="py-1">
+                      <tr key={`ticket-item-${item.code || 'row'}-${idx}`} className="py-1">
                         <td className="py-1 font-sans text-[9px] leading-tight break-all pr-1">
                           {item.designation}
                         </td>
@@ -4511,8 +4511,8 @@ function SalesVoucherWindow({
                       </thead>
                       <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
                         {productHistoryList.length > 0 ? (
-                          productHistoryList.map((rec) => (
-                            <tr key={rec.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-900/50 transition-colors">
+                          productHistoryList.map((rec, idx) => (
+                            <tr key={`sale-hist-${rec.id || 'rec'}-${idx}`} className="hover:bg-slate-50/70 dark:hover:bg-slate-900/50 transition-colors">
                               <td className="px-3 py-2 font-mono text-[11px] text-slate-600 dark:text-slate-400 whitespace-nowrap">
                                 {rec.date} <span className="text-[9.5px] text-slate-400">{rec.time}</span>
                               </td>
@@ -4677,7 +4677,7 @@ function SalesVoucherWindow({
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
                     {filteredBrowseVouchers.length > 0 ? (
-                      filteredBrowseVouchers.map((item) => {
+                      filteredBrowseVouchers.map((item, idx) => {
                         const isClosed = item.type === 'closed';
                         const isSelected = item.id === (mode === 'create' ? newSaleId : selectedSaleId);
                         const clientName = isClosed ? item.data.client : item.data.clientName;
@@ -4692,7 +4692,7 @@ function SalesVoucherWindow({
 
                         return (
                           <tr
-                            key={item.id}
+                            key={`${item.type}-${item.id}-${idx}`}
                             onClick={() => {
                               selectVoucherById(item.id);
                               setIsBrowseBonsModalOpen(false);

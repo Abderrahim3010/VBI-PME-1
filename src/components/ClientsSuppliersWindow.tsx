@@ -257,7 +257,7 @@ function ClientsSuppliersWindow({
             </thead>
             <tbody className="font-mono text-slate-700 dark:text-slate-200 divide-y divide-slate-100 dark:divide-slate-800">
               {visibleRecords.length > 0 ? (
-                visibleRecords.map(item => {
+                visibleRecords.map((item, idx) => {
                   const isClient = mode === 'clients';
                   const balanceVal = item.balance ?? 0;
                   const isPositive = balanceVal > 0;
@@ -266,7 +266,7 @@ function ClientsSuppliersWindow({
                     : (balanceVal < 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400');
                   
                   return (
-                    <tr key={item.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-850/60 transition-colors">
+                    <tr key={`record-${item.id || item.code || 'item'}-${idx}`} className="hover:bg-slate-50/70 dark:hover:bg-slate-850/60 transition-colors">
                       <td className="px-4 py-2.5 font-bold text-m3-primary dark:text-sky-400 font-sans">{item.code}</td>
                       <td className="px-4 py-2.5 font-sans font-bold text-slate-900 dark:text-slate-100 select-none">{item.name}</td>
                       <td className="px-4 py-2.5 font-sans text-slate-500 dark:text-slate-400">

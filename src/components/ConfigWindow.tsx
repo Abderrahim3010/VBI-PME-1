@@ -1055,9 +1055,9 @@ function ConfigWindow({
 
                     {/* Presets Grid */}
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mt-1">
-                      {presetsWallpapers.map((preset) => (
+                      {presetsWallpapers.map((preset, idx) => (
                         <button
-                          key={preset.name}
+                          key={`preset-${preset.name}-${idx}`}
                           type="button"
                           onClick={() => setBgImage(preset.value)}
                           className={`p-2 rounded-xl border text-center transition-all cursor-pointer ${bgImage === preset.value ? 'bg-indigo-50 border-indigo-500 text-indigo-950 dark:bg-indigo-950/45 dark:border-indigo-400 dark:text-sky-300 font-bold' : 'bg-slate-50 border-slate-200 dark:bg-slate-900 dark:border-slate-800 text-slate-650 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
@@ -1134,11 +1134,11 @@ function ConfigWindow({
                     {/* Checkbox scrollbox container matching Image 2 exactly */}
                     <div className="max-h-[220px] overflow-y-auto border border-slate-200 dark:border-slate-800 rounded-xl bg-[#fcfdfe] dark:bg-slate-950 p-3 flex flex-col gap-2 select-none shadow-inner">
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                        {menuButtonsList.map((button) => {
+                        {menuButtonsList.map((button, idx) => {
                           const isChecked = visibleButtons[button.id] !== false;
                           return (
                             <button
-                              key={button.id}
+                              key={`btn-${button.id}-${idx}`}
                               type="button"
                               onClick={() => toggleButtonVisibility(button.id)}
                               className="flex items-center gap-2 text-[11px] text-slate-700 dark:text-slate-300 hover:bg-slate-100/50 dark:hover:bg-slate-900 p-1 rounded-md text-left transition-colors cursor-pointer"
@@ -1411,9 +1411,9 @@ function ConfigWindow({
                   💡 Codes de Test Disponibles :
                 </span>
                 <div className="flex flex-nowrap overflow-x-auto scrollbar-none gap-1.5 mt-0.5 shrink-0">
-                  {['VBI-PME-2026', '123456', '777'].map(code => (
+                  {['VBI-PME-2026', '123456', '777'].map((code, idx) => (
                     <button
-                      key={code}
+                      key={`testcode-${code}-${idx}`}
                       type="button"
                       onClick={() => {
                         setActivationCodeInput(code);

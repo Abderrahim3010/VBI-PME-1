@@ -266,7 +266,7 @@ export const UserManagementWindow: React.FC<UserManagementWindowProps> = ({
                   const isActive = idx === selectedUserIndex;
                   return (
                     <tr
-                      key={user.id}
+                      key={`user-${user.id || user.username || 'row'}-${idx}`}
                       onClick={() => setSelectedUserIndex(idx)}
                       className={`cursor-default transition-colors ${
                         isActive 
@@ -359,8 +359,8 @@ export const UserManagementWindow: React.FC<UserManagementWindowProps> = ({
               </tr>
             </thead>
             <tbody>
-              {filteredLogs.slice().reverse().map((log) => (
-                <tr key={log.id} className="hover:bg-slate-50 dark:hover:bg-slate-850/40 border-b border-slate-100 dark:border-slate-850/40 font-mono text-[11px] text-slate-800 dark:text-slate-250">
+              {filteredLogs.slice().reverse().map((log, idx) => (
+                <tr key={`log-${log.id || 'entry'}-${idx}`} className="hover:bg-slate-50 dark:hover:bg-slate-850/40 border-b border-slate-100 dark:border-slate-850/40 font-mono text-[11px] text-slate-800 dark:text-slate-250">
                   <td className="px-3 py-1.5 border-r border-slate-100 dark:border-slate-800/40 font-extrabold text-indigo-650 dark:text-indigo-400 uppercase">{log.user}</td>
                   <td className="px-3 py-1.5 border-r border-slate-100 dark:border-slate-800/40 text-slate-500 dark:text-slate-400">{log.date}</td>
                   <td className="px-3 py-1.5 border-r border-slate-100 dark:border-slate-800/40 text-slate-500 dark:text-slate-400">{log.time}</td>
@@ -482,13 +482,13 @@ export const UserManagementWindow: React.FC<UserManagementWindowProps> = ({
               {/* Permissions Grid Panel */}
               <div className="flex-1 min-h-[220px] bg-white dark:bg-slate-950/25 border border-slate-200 dark:border-slate-800/80 rounded-2xl p-3 overflow-y-auto">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-x-4 gap-y-1.5 text-[11px]">
-                  {PERMISSIONS_LIST.map((perm) => {
+                  {PERMISSIONS_LIST.map((perm, idx) => {
                     const isChecked = checkedPermissions.includes(perm.code);
                     const isUserAdmin = userType === '1';
 
                     return (
                       <label 
-                        key={perm.code} 
+                        key={`perm-${perm.code}-${idx}`} 
                         className={`flex items-center gap-2 px-2.5 py-1.5 rounded-xl cursor-pointer border transition-all ${
                           isChecked 
                             ? 'bg-indigo-50/70 dark:bg-indigo-950/20 border-indigo-200/60 dark:border-indigo-900/30 text-indigo-950 dark:text-indigo-200 font-semibold' 

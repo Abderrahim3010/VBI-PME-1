@@ -529,8 +529,8 @@ function SituationClientsWindow({
                   }}
                   className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-800 focus:border-emerald-500 rounded p-1.5 font-bold text-xs text-slate-800 dark:text-slate-100"
                 >
-                  {activeClients.map(c => (
-                    <option key={c.id} value={c.id}>
+                  {activeClients.map((c, idx) => (
+                    <option key={`sit-cli-opt-${c.id || 'cli'}-${idx}`} value={c.id}>
                       {c.name} ({c.code})
                     </option>
                   ))}
@@ -984,7 +984,7 @@ function SituationClientsWindow({
               <tbody className="divide-y divide-slate-200 dark:divide-slate-800 font-mono text-[10.5px] font-bold">
                 {selectedVoucherDetails ? (
                   selectedVoucherDetails.items.map((item, idx) => (
-                    <tr key={item.id || idx} className="hover:bg-emerald-50/55 dark:hover:bg-slate-800/40 text-slate-850 dark:text-slate-200">
+                    <tr key={`sit-item-${item.id || item.code || 'item'}-${idx}`} className="hover:bg-emerald-50/55 dark:hover:bg-slate-800/40 text-slate-850 dark:text-slate-200">
                       {/* Code à barre */}
                       <td className="py-1 px-2.5 border-r border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 font-semibold">
                         {item.code}
@@ -1280,11 +1280,11 @@ function SituationClientsWindow({
 
               {/* List Container */}
               <div className="flex-1 max-h-[350px] overflow-y-auto pr-1 flex flex-col gap-1.5 min-h-0">
-                {filteredChooserClients.map(c => {
+                {filteredChooserClients.map((c, idx) => {
                     const isSelected = c.id === selectedClientId;
                     return (
                       <div
-                        key={c.id}
+                        key={`sit-cli-chooser-${c.id || 'cli'}-${idx}`}
                         onDoubleClick={() => {
                           setSelectedClientId(c.id);
                           setSelectedRowId(null);

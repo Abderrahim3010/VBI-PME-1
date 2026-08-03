@@ -1354,6 +1354,7 @@ export default function App() {
             <AnimatePresence>
               {statsMenuOpen && (
                 <motion.div
+                  key="stats-dropdown-menu"
                   initial={{ opacity: 0, y: 6, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 6, scale: 0.95 }}
@@ -1880,6 +1881,7 @@ export default function App() {
                       >
                         <AnimatePresence>
                           <motion.div
+                            key="stats-portal-dropdown"
                             initial={{ opacity: 0, x: -6, scale: 0.95 }}
                             animate={{ opacity: 1, x: 0, scale: 1 }}
                             exit={{ opacity: 0, x: -6, scale: 0.95 }}

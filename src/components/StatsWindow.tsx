@@ -462,8 +462,8 @@ function StatsWindow({
                     onChange={(e) => setSelectedYearInput(e.target.value)}
                     className="bg-white dark:bg-slate-900 border border-slate-250 dark:border-slate-800 rounded-lg px-2.5 py-1 text-xs font-mono font-bold text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-1 focus:ring-m3-primary focus:border-m3-primary"
                   >
-                    {availableYears.map(yr => (
-                      <option key={yr} value={yr}>{yr}</option>
+                    {availableYears.map((yr, idx) => (
+                      <option key={`year-${yr}-${idx}`} value={yr}>{yr}</option>
                     ))}
                   </select>
                 </div>
@@ -607,7 +607,7 @@ function StatsWindow({
                 ) : (
                   <ol className="flex flex-col gap-1.5 divide-y divide-slate-100 dark:divide-slate-800">
                     {topProducts.map((p, index) => (
-                      <li key={p.code} className="flex justify-between items-center py-2.5 text-xs first:pt-1">
+                      <li key={`top-prod-${p.code}-${index}`} className="flex justify-between items-center py-2.5 text-xs first:pt-1">
                         <div className="flex gap-2.5 truncate items-center">
                           <span className="font-extrabold text-m3-primary dark:text-sky-400 text-xs">{index + 1}.</span>
                           <span className="truncate font-sans font-semibold text-slate-800 dark:text-slate-200" style={{ maxWidth: '140px' }} title={p.name}>
@@ -638,11 +638,11 @@ function StatsWindow({
               </span>
               
               <div className="flex-1 flex flex-col gap-2 overflow-y-auto pr-0.5">
-                {auditLogs.map((log) => {
+                {auditLogs.map((log, index) => {
                   const isSelected = selectedLogId === log.id;
                   return (
                     <button
-                      key={log.id}
+                      key={`audit-log-${log.id}-${index}`}
                       onClick={() => setSelectedLogId(log.id)}
                       className={`
                         w-full p-3 text-left rounded-xl border transition-all text-xs flex flex-col gap-1.5 select-none outline-none cursor-pointer

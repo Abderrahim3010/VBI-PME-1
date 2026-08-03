@@ -1,5 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import { motion } from 'motion/react';
 import { SalesVoucher, PurchaseVoucher, Client, Supplier, User as UserType } from '../types';
+import { getStorageJson } from '../services/localDb';
 import {
   Printer,
   Search,
@@ -14,7 +17,8 @@ import {
   RotateCcw,
   CheckSquare,
   Square,
-  ChevronDown
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 
 interface ConsultationBonsViewProps {
@@ -254,24 +258,117 @@ export default function ConsultationBonsView({
     }
   };
 
-  // Export to Excel / CSV
-  const handleExportExcel = () => {
-    if (filteredVouchers.length === 0) return;
-    const title = type === 'ventes' ? 'Consultation_Ventes' : 'Consultation_Achats';
-    let csvContent = `data:text/csv;charset=utf-8,N°;Date;Heure;${type === 'ventes' ? 'Client' : 'Fournisseur'};Nbre P;Montant;Remise;HT;TTC;Versement\n`;
-    
-    filteredVouchers.forEach(v => {
-      const party = type === 'ventes' ? (v as SalesVoucher).client : (v as PurchaseVoucher).supplier;
-      csvContent += `"${v.id}";"${v.date}";"${v.time}";"${party}";${v.itemsCount || 0};${v.amount || 0};${v.remise || 0};${v.totalHT || 0};${v.ttc || 0};${v.versement || 0}\n`;
+  // Dropdown states for Export Excel
+  const [excelMenuOpen, setExcelMenuOpen] = useState(false);
+  const [excelMenuPos, setExcelMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const exportExcelBtnRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setExcelMenuOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const handleToggleExcelMenu = () => {
+    if (excelMenuOpen) {
+      setExcelMenuOpen(false);
+      return;
+    }
+    const rect = exportExcelBtnRef.current?.getBoundingClientRect();
+    if (rect) {
+      setExcelMenuPos({
+        top: rect.top,
+        left: rect.right + 8,
+      });
+      setExcelMenuOpen(true);
+    }
+  };
+
+  // Export to Excel / CSV (all vouchers or selected voucher only)
+  const handleExportExcel = (mode: 'all' | 'selected') => {
+    const vouchersToExport = mode === 'selected'
+      ? (selectedVoucher ? [selectedVoucher] : [])
+      : filteredVouchers;
+
+    if (vouchersToExport.length === 0) return;
+
+    const title = mode === 'selected' && selectedVoucher
+      ? `Bon_${type === 'ventes' ? 'Vente' : 'Achat'}_${selectedVoucher.id}`
+      : `Consultation_${type === 'ventes' ? 'Ventes' : 'Achats'}`;
+
+    // Load product map to compute item purchase prices / cost
+    const rawProducts = getStorageJson<any[]>('compos_products', []);
+    const productMap = new Map<string, any>();
+    rawProducts.forEach(p => {
+      if (p.code) productMap.set(String(p.code), p);
+      if (p.id) productMap.set(String(p.id), p);
     });
 
-    const encodedUri = encodeURI(csvContent);
+    // Headers matching the attached Excel image exactly (25 columns)
+    let csvContent = '\uFEFF'; // BOM for proper UTF-8 Excel French accents
+    csvContent += `N° BL;N° Facture;Date;Heure;${
+      type === 'ventes' ? 'Client' : 'Fournisseur'
+    };Montant;Remise;Montant HT;TVA;Timbre;TTC;Verser;Montant achat;Nbre produits;Nbre colis;Utilisateur;Vendeur;Type;Reglement;Observations;Code banque;Libellé de la banque;Date chèque ou du vir;Montant Ach;Benefice\n`;
+
+    vouchersToExport.forEach(v => {
+      const party =
+        type === 'ventes'
+          ? (v as SalesVoucher).client || ''
+          : (v as PurchaseVoucher).supplier || '';
+      const facture = (v as any).facture || '';
+      const dt = v.date || '';
+      const tm = v.time || '';
+      const montant = Number(v.amount || v.totalHT || 0);
+      const remise = Number(v.remise || 0);
+      const totalHT = Number(v.totalHT || v.amount || 0);
+      const tva = Number(v.tva || 0);
+      const timbre = Number(v.timbre || 0);
+      const ttc = Number(v.ttc || v.amount || 0);
+      const versement = Number(v.versement || v.ttc || 0);
+
+      // Compute total achat for this voucher
+      let montantAchat = 0;
+      if (v.items && Array.isArray(v.items)) {
+        v.items.forEach(item => {
+          const prod = productMap.get(String(item.code)) || productMap.get(String(item.id));
+          const itemAchat =
+            (item as any).purchasePrice ??
+            (item as any).costPrice ??
+            prod?.prixAchat ??
+            prod?.prixDeRevient ??
+            0;
+          montantAchat += (Number(item.qty) || 0) * Number(itemAchat);
+        });
+      }
+      const nbreProduits = Number(v.itemsCount || v.items?.length || 0);
+      const nbreColis = Number(v.colisCount || 0);
+      const utilisateur = (v as any).utilisateur || 'admin';
+      const vendeur = (v as SalesVoucher).vendeur || '<Aucun>';
+      const typeVoucher = v.type || (type === 'ventes' ? 'VENTE' : 'ACHAT');
+      const reglement = v.paymentMode || 'ESPECE';
+      const observations = (v.observations || '').replace(/"/g, '""');
+      const codeBanque = (v as any).codeBanque || '';
+      const libelleBanque = ((v as any).libelleBanque || '').replace(/"/g, '""');
+      const dateCheque = (v as any).dateCheque || '';
+      const montantAch = '';
+      const benefice = Math.round(ttc - montantAchat);
+
+      csvContent += `"${v.id}";"${facture}";"${dt}";"${tm}";"${party.replace(/"/g, '""')}";${montant};${remise};${totalHT};${tva};${timbre};${ttc};${versement};${Math.round(montantAchat)};${nbreProduits};${nbreColis};"${utilisateur}";"${vendeur}";"${typeVoucher}";"${reglement}";"${observations}";"${codeBanque}";"${libelleBanque}";"${dateCheque}";"${montantAch}";${benefice}\n`;
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
+    link.setAttribute('href', url);
     link.setAttribute('download', `${title}_${Date.now()}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   // Print Report
@@ -395,11 +492,11 @@ export default function ConsultationBonsView({
                     Aucun résultat
                   </div>
                 ) : (
-                  filteredPartiesList.map(p => {
+                  filteredPartiesList.map((p, idx) => {
                     const isChecked = selectedParties.includes(p.name);
                     return (
                       <div
-                        key={p.id || p.name}
+                        key={`party-${p.id || ''}-${p.name}-${idx}`}
                         onClick={() => handleToggleParty(p.name)}
                         className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none text-xs transition-colors"
                       >
@@ -478,11 +575,11 @@ export default function ConsultationBonsView({
                     Aucun résultat
                   </div>
                 ) : (
-                  filteredUsersList.map(u => {
+                  filteredUsersList.map((u, idx) => {
                     const isChecked = selectedUsers.includes(u);
                     return (
                       <div
-                        key={u}
+                        key={`user-${u}-${idx}`}
                         onClick={() => handleToggleUser(u)}
                         className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none text-xs transition-colors"
                       >
@@ -548,11 +645,11 @@ export default function ConsultationBonsView({
               </div>
 
               <div className="space-y-1">
-                {availablePaymentModes.map(mode => {
+                {availablePaymentModes.map((mode, idx) => {
                   const isChecked = selectedPaymentModes.includes(mode);
                   return (
                     <div
-                      key={mode}
+                      key={`mode-${mode}-${idx}`}
                       onClick={() => handleTogglePaymentMode(mode)}
                       className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer select-none text-xs transition-colors"
                     >
@@ -601,12 +698,16 @@ export default function ConsultationBonsView({
           </button>
 
           <button
+            ref={exportExcelBtnRef}
             type="button"
-            onClick={handleExportExcel}
-            className="w-full h-8 px-3 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-2xs transition-all cursor-pointer border border-emerald-700"
+            onClick={handleToggleExcelMenu}
+            className="w-full h-8 px-3 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white font-bold rounded-xl text-xs flex items-center justify-between gap-2 shadow-2xs transition-all cursor-pointer border border-emerald-700 group"
           >
-            <FileSpreadsheet size={15} />
-            <span>Export EXCEL</span>
+            <div className="flex items-center gap-1.5">
+              <FileSpreadsheet size={15} />
+              <span>Export EXCEL</span>
+            </div>
+            <ChevronRight size={14} className="opacity-80 group-hover:translate-x-0.5 transition-transform" />
           </button>
 
           <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-950 p-1.5 rounded-xl border border-slate-200 dark:border-slate-800">
@@ -652,7 +753,7 @@ export default function ConsultationBonsView({
                   const partyName = type === 'ventes' ? (v as SalesVoucher).client : (v as PurchaseVoucher).supplier;
                   return (
                     <tr
-                      key={v.id || idx}
+                      key={`voucher-${v.id || 'void'}-${idx}`}
                       data-selected={isSelected}
                       onClick={() => {
                         setSelectedVoucherIndex(idx);
@@ -738,7 +839,7 @@ export default function ConsultationBonsView({
                     const isSelected = selectedItemIndex === idx;
                     return (
                       <tr
-                        key={item.id || idx}
+                        key={`item-${item.id || item.code || 'item'}-${idx}`}
                         onClick={() => setSelectedItemIndex(idx)}
                         className={`cursor-pointer transition-colors border-b border-slate-200 dark:border-slate-800/60 font-mono text-[11px] ${
                           isSelected
@@ -818,6 +919,91 @@ export default function ConsultationBonsView({
             </div>
           </div>
         </div>
+
+        {/* Floating Export EXCEL Options Menu (F8-style to the right) */}
+        {excelMenuOpen && excelMenuPos && createPortal(
+          <>
+            <div
+              className="fixed inset-0 z-[99998]"
+              onClick={() => setExcelMenuOpen(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, x: -6, scale: 0.95 }}
+              animate={{ opacity: 1, x: 0, scale: 1 }}
+              transition={{ duration: 0.15 }}
+              style={{
+                position: 'fixed',
+                top: `${excelMenuPos.top}px`,
+                left: `${excelMenuPos.left}px`,
+                zIndex: 99999,
+              }}
+              className="w-72 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border-2 border-emerald-300 dark:border-emerald-800 p-2 flex flex-col gap-1.5 select-none divide-y divide-slate-100 dark:divide-slate-800/80"
+            >
+              <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-black text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
+                <span>Choix d'export EXCEL</span>
+                <span className="text-[9px] font-mono text-slate-400">2 options</span>
+              </div>
+
+              <div className="pt-1.5 flex flex-col gap-1">
+                {/* Option 1: Exporter tous les bons */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setExcelMenuOpen(false);
+                    handleExportExcel('all');
+                  }}
+                  className="w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-slate-200 dark:border-slate-800 hover:border-emerald-300 dark:hover:border-emerald-700 flex items-center gap-3 text-left transition-all cursor-pointer group"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 group-hover:scale-105 transition-transform">
+                    <FileSpreadsheet size={16} />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                      Exporter tous les bons ({filteredVouchers.length})
+                    </span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
+                      Générer le fichier Excel pour toute la liste filtrée
+                    </span>
+                  </div>
+                </button>
+
+                {/* Option 2: Exporter le bon sélectionné */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setExcelMenuOpen(false);
+                    handleExportExcel('selected');
+                  }}
+                  disabled={!selectedVoucher}
+                  className={`w-full p-2.5 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 flex items-center gap-3 text-left transition-all group ${
+                    selectedVoucher
+                      ? 'hover:bg-emerald-50 dark:hover:bg-emerald-950/40 hover:border-emerald-300 dark:hover:border-emerald-700 cursor-pointer'
+                      : 'opacity-50 cursor-not-allowed'
+                  }`}
+                >
+                  <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400 shrink-0 group-hover:scale-105 transition-transform">
+                    <CheckSquare size={16} />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-100">
+                      Exporter le bon sélectionné
+                    </span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">
+                      {selectedVoucher
+                        ? `Bon N° ${selectedVoucher.id} (${
+                            type === 'ventes'
+                              ? (selectedVoucher as SalesVoucher).client
+                              : (selectedVoucher as PurchaseVoucher).supplier
+                          })`
+                        : 'Aucun bon sélectionné'}
+                    </span>
+                  </div>
+                </button>
+              </div>
+            </motion.div>
+          </>,
+          document.body
+        ) }
 
       </div>
     </div>

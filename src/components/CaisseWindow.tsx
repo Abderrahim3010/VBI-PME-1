@@ -254,8 +254,8 @@ function CaisseWindow({
                     </td>
                   </tr>
                 ) : (
-                  combinedLogs.map(log => (
-                    <tr key={log.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-850/60 transition-colors group h-10">
+                  combinedLogs.map((log, idx) => (
+                    <tr key={`caisse-${log.id}-${idx}`} className="hover:bg-slate-50/70 dark:hover:bg-slate-850/60 transition-colors group h-10">
                       <td className="px-4 py-2 text-slate-500 dark:text-slate-400 font-sans">{log.date}</td>
                       <td className="px-4 py-2 text-center">
                         {log.type === 'RECEIPT' ? (

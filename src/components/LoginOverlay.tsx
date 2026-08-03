@@ -85,8 +85,8 @@ export const LoginOverlay: React.FC<LoginOverlayProps> = ({ users, onLoginSucces
                   }}
                   className="w-full h-9 px-3 text-sm bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white border border-slate-200 dark:border-slate-850 rounded-xl focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none cursor-pointer font-sans"
                 >
-                  {users.map(u => (
-                    <option key={u.id} value={u.username}>{u.username}</option>
+                  {users.map((u, idx) => (
+                    <option key={`login-user-${u.id || u.username}-${idx}`} value={u.username}>{u.username}</option>
                   ))}
                 </select>
               </div>
