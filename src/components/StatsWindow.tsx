@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { Product, SalesVoucher, PurchaseVoucher, Client, Supplier } from '../types';
-import { TrendingUp, TrendingDown, Layers, AlertCircle, Sparkles, Terminal, Trophy, Calendar, ShoppingBag, FileText, BarChart3 } from 'lucide-react';
+import { Product, SalesVoucher, PurchaseVoucher, Client, Supplier, User } from '../types';
+import { TrendingUp, TrendingDown, Layers, AlertCircle, Sparkles, Terminal, Trophy, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import ConsultationBonsView from './ConsultationBonsView';
 
@@ -10,6 +10,7 @@ interface StatsWindowProps {
   purchases: PurchaseVoucher[];
   clients?: Client[];
   suppliers?: Supplier[];
+  users?: User[];
   initialMode?: 'general' | 'achats' | 'ventes';
   onClose: () => void;
 }
@@ -20,6 +21,7 @@ function StatsWindow({
   purchases,
   clients = [],
   suppliers = [],
+  users = [],
   initialMode = 'general',
   onClose
 }: StatsWindowProps) {
@@ -348,83 +350,6 @@ function StatsWindow({
 
   return (
     <div className="flex-1 flex flex-col gap-3 font-sans text-xs select-none bg-white dark:bg-slate-900 h-full overflow-hidden p-3">
-      
-      {/* Primary 3-Option Top Mode Header Navigation Bar */}
-      <div className="flex flex-wrap items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2.5 select-none shrink-0 bg-slate-50 dark:bg-slate-950 p-2 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-2xs">
-        <div className="flex items-center bg-slate-200/70 dark:bg-slate-900 p-1 rounded-xl border border-slate-300/80 dark:border-slate-800 relative">
-          
-          {/* Button 1: Statistiques Générales */}
-          <button
-            type="button"
-            onClick={() => setMainMode('general')}
-            className={`relative z-10 px-4 py-2 rounded-lg font-extrabold text-xs transition-colors duration-200 flex items-center gap-2 cursor-pointer outline-none ${
-              mainMode === 'general'
-                ? 'text-white'
-                : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            {mainMode === 'general' && (
-              <motion.div
-                layoutId="mainModePill"
-                className="absolute inset-0 bg-m3-primary rounded-lg -z-10 shadow-sm"
-                transition={{ type: 'spring', stiffness: 450, damping: 32 }}
-              />
-            )}
-            <BarChart3 size={15} />
-            <span>Statistiques Générales</span>
-          </button>
-
-          {/* Button 2: Consultation des Achats */}
-          <button
-            type="button"
-            onClick={() => setMainMode('achats')}
-            className={`relative z-10 px-4 py-2 rounded-lg font-extrabold text-xs transition-colors duration-200 flex items-center gap-2 cursor-pointer outline-none ${
-              mainMode === 'achats'
-                ? 'text-white'
-                : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            {mainMode === 'achats' && (
-              <motion.div
-                layoutId="mainModePill"
-                className="absolute inset-0 bg-m3-primary rounded-lg -z-10 shadow-sm"
-                transition={{ type: 'spring', stiffness: 450, damping: 32 }}
-              />
-            )}
-            <ShoppingBag size={15} />
-            <span>Consultation des Achats</span>
-          </button>
-
-          {/* Button 3: Consultation des Ventes */}
-          <button
-            type="button"
-            onClick={() => setMainMode('ventes')}
-            className={`relative z-10 px-4 py-2 rounded-lg font-extrabold text-xs transition-colors duration-200 flex items-center gap-2 cursor-pointer outline-none ${
-              mainMode === 'ventes'
-                ? 'text-white'
-                : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            {mainMode === 'ventes' && (
-              <motion.div
-                layoutId="mainModePill"
-                className="absolute inset-0 bg-m3-primary rounded-lg -z-10 shadow-sm"
-                transition={{ type: 'spring', stiffness: 450, damping: 32 }}
-              />
-            )}
-            <FileText size={15} />
-            <span>Consultation des Ventes</span>
-          </button>
-
-        </div>
-
-        <div className="flex items-center gap-2.5">
-          <span className="text-[11px] font-mono font-bold tracking-wider uppercase text-m3-primary dark:text-sky-400 bg-m3-primary/10 px-3 py-1 rounded-lg border border-m3-primary/20 select-none">
-            {mainMode === 'general' ? 'M3 Analytique' : mainMode === 'achats' ? 'Consultation Achats' : 'Consultation Ventes'}
-          </span>
-        </div>
-      </div>
-
       <AnimatePresence mode="wait">
         {mainMode === 'general' && (
           <motion.div
@@ -826,6 +751,7 @@ function StatsWindow({
               purchases={purchases}
               clients={clients}
               suppliers={suppliers}
+              users={users}
               onClose={onClose}
             />
           </motion.div>
@@ -846,6 +772,7 @@ function StatsWindow({
               purchases={purchases}
               clients={clients}
               suppliers={suppliers}
+              users={users}
               onClose={onClose}
             />
           </motion.div>

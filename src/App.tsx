@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ShoppingBag,
@@ -36,6 +37,7 @@ import {
   X,
   ArrowLeft,
   ChevronLeft,
+  ChevronRight,
   Tablet
 } from 'lucide-react';
 import {
@@ -545,13 +547,20 @@ export default function App() {
   // States for F8 Statistiques multi-option button
   const [statsInitialMode, setStatsInitialMode] = useState<'general' | 'achats' | 'ventes'>('general');
   const [statsMenuOpen, setStatsMenuOpen] = useState(false);
+  const [statsMenuPos, setStatsMenuPos] = useState<{ top: number; left: number } | null>(null);
   const statsDropdownRef = useRef<HTMLDivElement>(null);
+  const compactStatsButtonRef = useRef<HTMLButtonElement>(null);
+  const statsPortalRef = useRef<HTMLDivElement>(null);
   const startMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       const target = e.target as Node;
-      if (statsDropdownRef.current && !statsDropdownRef.current.contains(target)) {
+      const clickedOutsideDropdown = !statsDropdownRef.current || !statsDropdownRef.current.contains(target);
+      const clickedOutsideCompact = !compactStatsButtonRef.current || !compactStatsButtonRef.current.contains(target);
+      const clickedOutsidePortal = !statsPortalRef.current || !statsPortalRef.current.contains(target);
+
+      if (clickedOutsideDropdown && clickedOutsideCompact && clickedOutsidePortal) {
         setStatsMenuOpen(false);
       }
       if (startMenuRef.current && !startMenuRef.current.contains(target)) {
@@ -561,9 +570,18 @@ export default function App() {
         }
       }
     };
+    const handleScrollOrResize = () => {
+      if (statsMenuOpen) setStatsMenuOpen(false);
+    };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    window.addEventListener('resize', handleScrollOrResize);
+    window.addEventListener('scroll', handleScrollOrResize, true);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      window.removeEventListener('resize', handleScrollOrResize);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+    };
+  }, [statsMenuOpen]);
 
   const [zoomMode, setZoomMode] = useState<'auto' | '100' | '90' | '80' | '75'>(() => {
     try {
@@ -1820,20 +1838,123 @@ export default function App() {
 
                 {/* Statistiques [F8] */}
                 {config?.affichage?.visibleButtons?.stats !== false && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setStatsInitialMode('general');
-                      launchWindow('stats');
-                    }}
-                    className="p-2.5 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 hover:bg-purple-50/80 hover:border-purple-300/80 dark:hover:bg-purple-950/30 dark:hover:border-purple-800 flex items-center justify-between text-left transition-all cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-2.5 font-bold text-[12.5px] text-slate-800 dark:text-slate-100">
-                      <BarChart3 size={18} className="text-purple-500 dark:text-purple-400 shrink-0 group-hover:scale-110 transition-transform" />
-                      <span>Statistiques</span>
-                    </div>
-                    <span className="text-[9.5px] font-mono font-extrabold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">F8</span>
-                  </button>
+                  <div className="relative">
+                    <button
+                      ref={compactStatsButtonRef}
+                      type="button"
+                      onClick={() => {
+                        if (!statsMenuOpen) {
+                          if (compactStatsButtonRef.current) {
+                            const rect = compactStatsButtonRef.current.getBoundingClientRect();
+                            const viewportHeight = window.innerHeight;
+                            const menuHeight = 260;
+                            let top = rect.top;
+                            if (top + menuHeight > viewportHeight - 16) {
+                              top = Math.max(16, viewportHeight - menuHeight - 16);
+                            }
+                            setStatsMenuPos({ top, left: rect.right + 8 });
+                          }
+                          setStatsMenuOpen(true);
+                        } else {
+                          setStatsMenuOpen(false);
+                        }
+                      }}
+                      className="w-full p-2.5 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 hover:bg-purple-50/80 hover:border-purple-300/80 dark:hover:bg-purple-950/30 dark:hover:border-purple-800 flex items-center justify-between text-left transition-all cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-2.5 font-bold text-[12.5px] text-slate-800 dark:text-slate-100">
+                        <BarChart3 size={18} className="text-purple-500 dark:text-purple-400 shrink-0 group-hover:scale-110 transition-transform" />
+                        <span>Statistiques</span>
+                      </div>
+                      <span className="text-[9.5px] font-mono font-extrabold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">F8</span>
+                    </button>
+
+                    {statsMenuOpen && statsMenuPos && createPortal(
+                      <div
+                        ref={statsPortalRef}
+                        style={{
+                          position: 'fixed',
+                          top: `${statsMenuPos.top}px`,
+                          left: `${statsMenuPos.left}px`,
+                          zIndex: 99999,
+                        }}
+                      >
+                        <AnimatePresence>
+                          <motion.div
+                            initial={{ opacity: 0, x: -6, scale: 0.95 }}
+                            animate={{ opacity: 1, x: 0, scale: 1 }}
+                            exit={{ opacity: 0, x: -6, scale: 0.95 }}
+                            transition={{ duration: 0.15 }}
+                            className="w-72 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border-2 border-purple-200 dark:border-purple-900/60 p-2 flex flex-col gap-1.5 select-none divide-y divide-slate-100 dark:divide-slate-800/80"
+                          >
+                            <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-black text-purple-700 dark:text-purple-300 uppercase tracking-wider">
+                              <span>Choix du Mode [F8]</span>
+                              <span className="text-[9px] font-mono text-slate-400">3 options</span>
+                            </div>
+
+                            <div className="pt-1.5 flex flex-col gap-1">
+                              {/* Option 1: Statistiques Générales */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setStatsInitialMode('general');
+                                  launchWindow('stats');
+                                  setStatsMenuOpen(false);
+                                }}
+                                className="w-full px-3 py-2.5 rounded-xl flex items-center gap-3 hover:bg-purple-50 dark:hover:bg-purple-950/50 text-slate-800 dark:text-slate-100 font-bold text-xs transition-all text-left cursor-pointer group border border-transparent hover:border-purple-300 dark:hover:border-purple-800 shadow-2xs"
+                              >
+                                <div className="p-2.5 rounded-xl bg-purple-100 dark:bg-purple-900/60 text-purple-600 dark:text-purple-300 group-hover:scale-110 transition-transform shrink-0 shadow-xs">
+                                  <BarChart3 size={18} />
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="font-black text-purple-950 dark:text-purple-100 text-[13px]">Statistiques Générales</span>
+                                  <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">Graphiques, Chiffre d'affaires & Audit</span>
+                                </div>
+                              </button>
+
+                              {/* Option 2: Consultation des Achats */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setStatsInitialMode('achats');
+                                  launchWindow('stats');
+                                  setStatsMenuOpen(false);
+                                }}
+                                className="w-full px-3 py-2.5 rounded-xl flex items-center gap-3 hover:bg-blue-50 dark:hover:bg-blue-950/50 text-slate-800 dark:text-slate-100 font-bold text-xs transition-all text-left cursor-pointer group border border-transparent hover:border-blue-300 dark:hover:border-blue-800 shadow-2xs"
+                              >
+                                <div className="p-2.5 rounded-xl bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-300 group-hover:scale-110 transition-transform shrink-0 shadow-xs">
+                                  <ShoppingBag size={18} />
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="font-black text-blue-950 dark:text-blue-100 text-[13px]">Consultation des Achats</span>
+                                  <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">Bons & Factures d'Achat (Fournisseurs)</span>
+                                </div>
+                              </button>
+
+                              {/* Option 3: Consultation des Ventes */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setStatsInitialMode('ventes');
+                                  launchWindow('stats');
+                                  setStatsMenuOpen(false);
+                                }}
+                                className="w-full px-3 py-2.5 rounded-xl flex items-center gap-3 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 text-slate-800 dark:text-slate-100 font-bold text-xs transition-all text-left cursor-pointer group border border-transparent hover:border-emerald-300 dark:hover:border-emerald-800 shadow-2xs"
+                              >
+                                <div className="p-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-300 group-hover:scale-110 transition-transform shrink-0 shadow-xs">
+                                  <ShoppingCart size={18} />
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="font-black text-emerald-950 dark:text-emerald-100 text-[13px]">Consultation des Ventes</span>
+                                  <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">Bons & Factures de Vente (Clients)</span>
+                                </div>
+                              </button>
+                            </div>
+                          </motion.div>
+                        </AnimatePresence>
+                      </div>,
+                      document.body
+                    )}
+                  </div>
                 )}
 
                 {/* Inventaire Stock [F9] */}
@@ -2463,6 +2584,7 @@ export default function App() {
                 purchases={purchases}
                 clients={clients}
                 suppliers={suppliers}
+                users={users}
                 initialMode={statsInitialMode}
                 onClose={() => closeWindow('stats')}
               />
