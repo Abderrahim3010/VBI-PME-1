@@ -21,6 +21,26 @@ import {
   ChevronRight
 } from 'lucide-react';
 
+// Helper to format bon/facture number with 4 digits (e.g. 1 -> 0001, 100 -> 0100, 1000 -> 1000)
+const formatBonNumber = (val: any): string => {
+  if (val === undefined || val === null || val === '') return '';
+  const str = String(val).trim();
+  if (/^\d+$/.test(str)) {
+    return str.padStart(4, '0');
+  }
+  return str;
+};
+
+// Helper to escape HTML characters for Excel spreadsheet export
+const escapeHtml = (str: any): string => {
+  if (str === undefined || str === null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+};
+
 interface ConsultationBonsViewProps {
   type: 'ventes' | 'achats';
   sales: SalesVoucher[];
@@ -82,9 +102,9 @@ export default function ConsultationBonsView({
   // Parties list (Clients or Suppliers)
   const partiesList = useMemo(() => {
     if (type === 'ventes') {
-      return clients.map(c => ({ id: c.id, name: c.name }));
+      return clients.map(c => ({ id: c.id, name: (c.name || '').toUpperCase() }));
     } else {
-      return suppliers.map(s => ({ id: s.id, name: s.name }));
+      return suppliers.map(s => ({ id: s.id, name: (s.name || '').toUpperCase() }));
     }
   }, [type, clients, suppliers]);
 
@@ -297,7 +317,7 @@ export default function ConsultationBonsView({
     if (vouchersToExport.length === 0) return;
 
     const title = mode === 'selected' && selectedVoucher
-      ? `Bon_${type === 'ventes' ? 'Vente' : 'Achat'}_${selectedVoucher.id}`
+      ? `Bon_${type === 'ventes' ? 'Vente' : 'Achat'}_${formatBonNumber(selectedVoucher.id)}`
       : `Consultation_${type === 'ventes' ? 'Ventes' : 'Achats'}`;
 
     // Load product map to compute item purchase prices / cost
@@ -308,11 +328,99 @@ export default function ConsultationBonsView({
       if (p.id) productMap.set(String(p.id), p);
     });
 
-    // Headers matching the attached Excel image exactly (25 columns)
-    let csvContent = '\uFEFF'; // BOM for proper UTF-8 Excel French accents
-    csvContent += `N° BL;N° Facture;Date;Heure;${
-      type === 'ventes' ? 'Client' : 'Fournisseur'
-    };Montant;Remise;Montant HT;TVA;Timbre;TTC;Verser;Montant achat;Nbre produits;Nbre colis;Utilisateur;Vendeur;Type;Reglement;Observations;Code banque;Libellé de la banque;Date chèque ou du vir;Montant Ach;Benefice\n`;
+    let excelHtml = `<html xmlns:o="urn:schemas-microsoft-com:office:office"
+xmlns:x="urn:schemas-microsoft-com:office:excel"
+xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<!--[if gte mso 9]><xml>
+ <x:ExcelWorkbook>
+  <x:ExcelWorksheets>
+   <x:ExcelWorksheet>
+    <x:Name>Consultation</x:Name>
+    <x:WorksheetOptions>
+     <x:DisplayGridlines/>
+    </x:WorksheetOptions>
+   </x:ExcelWorksheet>
+  </x:ExcelWorksheets>
+ </x:ExcelWorkbook>
+</xml><![endif]-->
+<style>
+  table {
+    border-collapse: collapse;
+    font-family: Calibri, Arial, sans-serif;
+  }
+  th {
+    background-color: #E2EFDA;
+    font-weight: bold;
+    border: 1px solid #000000;
+    padding: 6px;
+    text-align: center;
+    font-size: 11pt;
+    color: #000000;
+  }
+  td {
+    border: 1px solid #000000;
+    padding: 6px;
+    font-weight: bold;
+    font-size: 11pt;
+    color: #000000;
+  }
+  .text-cell {
+    mso-number-format:"\\@";
+    font-weight: bold;
+    text-align: center;
+  }
+  .left-cell {
+    mso-number-format:"\\@";
+    font-weight: bold;
+    text-align: left;
+  }
+  .number-cell {
+    mso-number-format:"0.00";
+    font-weight: bold;
+    text-align: right;
+  }
+  .int-cell {
+    mso-number-format:"0";
+    font-weight: bold;
+    text-align: right;
+  }
+</style>
+</head>
+<body>
+  <table>
+    <thead>
+      <tr>
+        <th>N° BL</th>
+        <th>N° Facture</th>
+        <th>Date</th>
+        <th>Heure</th>
+        <th>${type === 'ventes' ? 'CLIENT' : 'FOURNISSEUR'}</th>
+        <th>Montant</th>
+        <th>Remise</th>
+        <th>Montant HT</th>
+        <th>TVA</th>
+        <th>Timbre</th>
+        <th>TTC</th>
+        <th>Verser</th>
+        <th>Montant achat</th>
+        <th>Nbre produits</th>
+        <th>Nbre colis</th>
+        <th>Utilisateur</th>
+        <th>Vendeur</th>
+        <th>Type</th>
+        <th>Reglement</th>
+        <th>Observations</th>
+        <th>Code banque</th>
+        <th>Libellé de la banque</th>
+        <th>Date chèque ou du vir</th>
+        <th>Montant Ach</th>
+        <th>Benefice</th>
+      </tr>
+    </thead>
+    <tbody>
+`;
 
     vouchersToExport.forEach(v => {
       const party =
@@ -330,7 +438,6 @@ export default function ConsultationBonsView({
       const ttc = Number(v.ttc || v.amount || 0);
       const versement = Number(v.versement || v.ttc || 0);
 
-      // Compute total achat for this voucher
       let montantAchat = 0;
       if (v.items && Array.isArray(v.items)) {
         v.items.forEach(item => {
@@ -350,21 +457,57 @@ export default function ConsultationBonsView({
       const vendeur = (v as SalesVoucher).vendeur || '<Aucun>';
       const typeVoucher = v.type || (type === 'ventes' ? 'VENTE' : 'ACHAT');
       const reglement = v.paymentMode || 'ESPECE';
-      const observations = (v.observations || '').replace(/"/g, '""');
+      const observations = v.observations || '';
       const codeBanque = (v as any).codeBanque || '';
-      const libelleBanque = ((v as any).libelleBanque || '').replace(/"/g, '""');
+      const libelleBanque = (v as any).libelleBanque || '';
       const dateCheque = (v as any).dateCheque || '';
       const montantAch = '';
       const benefice = Math.round(ttc - montantAchat);
 
-      csvContent += `"${v.id}";"${facture}";"${dt}";"${tm}";"${party.replace(/"/g, '""')}";${montant};${remise};${totalHT};${tva};${timbre};${ttc};${versement};${Math.round(montantAchat)};${nbreProduits};${nbreColis};"${utilisateur}";"${vendeur}";"${typeVoucher}";"${reglement}";"${observations}";"${codeBanque}";"${libelleBanque}";"${dateCheque}";"${montantAch}";${benefice}\n`;
+      const bonNumber = escapeHtml(formatBonNumber(v.id));
+      const factureNumber = escapeHtml(formatBonNumber(facture));
+      const partyName = escapeHtml(String(party || '').toUpperCase());
+
+      excelHtml += `      <tr>
+        <td class="text-cell">${bonNumber}</td>
+        <td class="text-cell">${factureNumber}</td>
+        <td class="text-cell">${escapeHtml(dt)}</td>
+        <td class="text-cell">${escapeHtml(tm)}</td>
+        <td class="left-cell">${partyName}</td>
+        <td class="number-cell">${montant.toFixed(2)}</td>
+        <td class="number-cell">${remise.toFixed(2)}</td>
+        <td class="number-cell">${totalHT.toFixed(2)}</td>
+        <td class="number-cell">${tva.toFixed(2)}</td>
+        <td class="number-cell">${timbre.toFixed(2)}</td>
+        <td class="number-cell">${ttc.toFixed(2)}</td>
+        <td class="number-cell">${versement.toFixed(2)}</td>
+        <td class="number-cell">${Math.round(montantAchat)}</td>
+        <td class="int-cell">${nbreProduits}</td>
+        <td class="int-cell">${nbreColis}</td>
+        <td class="left-cell">${escapeHtml(String(utilisateur).toUpperCase())}</td>
+        <td class="left-cell">${escapeHtml(String(vendeur).toUpperCase())}</td>
+        <td class="text-cell">${escapeHtml(String(typeVoucher).toUpperCase())}</td>
+        <td class="text-cell">${escapeHtml(String(reglement).toUpperCase())}</td>
+        <td class="left-cell">${escapeHtml(observations)}</td>
+        <td class="text-cell">${escapeHtml(codeBanque)}</td>
+        <td class="left-cell">${escapeHtml(String(libelleBanque).toUpperCase())}</td>
+        <td class="text-cell">${escapeHtml(dateCheque)}</td>
+        <td class="text-cell">${escapeHtml(montantAch)}</td>
+        <td class="number-cell">${benefice.toFixed(2)}</td>
+      </tr>
+`;
     });
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    excelHtml += `    </tbody>
+  </table>
+</body>
+</html>`;
+
+    const blob = new Blob(['\uFEFF' + excelHtml], { type: 'application/vnd.ms-excel;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `${title}_${Date.now()}.csv`);
+    link.setAttribute('download', `${title}_${Date.now()}.xls`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -765,10 +908,10 @@ export default function ConsultationBonsView({
                           : 'hover:bg-blue-50 dark:hover:bg-slate-800/80 text-slate-800 dark:text-slate-200 even:bg-slate-50/50 dark:even:bg-slate-900/40'
                       }`}
                     >
-                      <td className="p-1.5 text-center font-bold border-r border-slate-200/60 dark:border-slate-800">{v.id}</td>
+                      <td className="p-1.5 text-center font-bold border-r border-slate-200/60 dark:border-slate-800">{formatBonNumber(v.id)}</td>
                       <td className="p-1.5 border-r border-slate-200/60 dark:border-slate-800">{v.date}</td>
                       <td className="p-1.5 border-r border-slate-200/60 dark:border-slate-800">{v.time}</td>
-                      <td className="p-1.5 border-r border-slate-200/60 dark:border-slate-800 font-sans font-medium truncate">{partyName}</td>
+                      <td className="p-1.5 border-r border-slate-200/60 dark:border-slate-800 font-sans font-medium truncate">{String(partyName || '').toUpperCase()}</td>
                       <td className="p-1.5 text-center border-r border-slate-200/60 dark:border-slate-800">{v.itemsCount || v.items?.length || 0}</td>
                       <td className="p-1.5 text-center border-r border-slate-200/60 dark:border-slate-800">{v.colisCount || 0}</td>
                       <td className="p-1.5 text-right border-r border-slate-200/60 dark:border-slate-800">{formatMoney(v.amount)}</td>
@@ -787,7 +930,7 @@ export default function ConsultationBonsView({
           <div className="flex items-center gap-2 font-bold text-slate-700 dark:text-slate-300">
             <span>Détail du Bon :</span>
             <span className="font-mono text-blue-600 dark:text-blue-400 font-black text-sm">
-              {selectedVoucher ? selectedVoucher.id : '---'}
+              {selectedVoucher ? formatBonNumber(selectedVoucher.id) : '---'}
             </span>
           </div>
 

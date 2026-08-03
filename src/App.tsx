@@ -82,18 +82,10 @@ import {
 } from './services/localDb';
 import { readPersistedSalesDrafts } from './services/salesDraftReservations';
 
-const ProductListWindow = React.lazy(() => import('./components/ProductListWindow'));
-const PurchaseVoucherWindow = React.lazy(() => import('./components/PurchaseVoucherWindow'));
-const SalesVoucherWindow = React.lazy(() => import('./components/SalesVoucherWindow'));
-const StatsWindow = React.lazy(() => import('./components/StatsWindow'));
-
-function WindowLoadingFallback() {
-  return (
-    <div className="flex-1 flex items-center justify-center text-xs font-bold text-slate-500 dark:text-slate-400">
-      Chargement…
-    </div>
-  );
-}
+import ProductListWindow from './components/ProductListWindow';
+import PurchaseVoucherWindow from './components/PurchaseVoucherWindow';
+import SalesVoucherWindow from './components/SalesVoucherWindow';
+import StatsWindow from './components/StatsWindow';
 
 export default function App() {
   window.__vbiPerfRecorder?.render('App');
@@ -2345,19 +2337,17 @@ export default function App() {
             onFocus={() => focusWindow('products')}
             scale={scale}
           >
-            <React.Suspense fallback={<WindowLoadingFallback />}>
-              <ProductListWindow
-                products={products}
-                onAddProduct={(p) => setProducts([...products, p])}
-                onEditProduct={(p) => setProducts(products.map(o => o.code === p.code ? p : o))}
-                onProductsUpdate={setProducts}
-                onDeleteProduct={(code) => setProducts(products.filter(p => p.code !== code))}
-                onClose={() => closeWindow('products')}
-                createdFamilles={createdFamilles}
-                onCreatedFamillesChange={setCreatedFamilles}
-                config={config}
-              />
-            </React.Suspense>
+            <ProductListWindow
+              products={products}
+              onAddProduct={(p) => setProducts([...products, p])}
+              onEditProduct={(p) => setProducts(products.map(o => o.code === p.code ? p : o))}
+              onProductsUpdate={setProducts}
+              onDeleteProduct={(code) => setProducts(products.filter(p => p.code !== code))}
+              onClose={() => closeWindow('products')}
+              createdFamilles={createdFamilles}
+              onCreatedFamillesChange={setCreatedFamilles}
+              config={config}
+            />
           </WindowFrame>
  
           {/* 3. Purchases Bill (Bon d'Achat) Window */}
@@ -2378,23 +2368,21 @@ export default function App() {
             onFocus={() => focusWindow('purchases')}
             scale={scale}
           >
-            <React.Suspense fallback={<WindowLoadingFallback />}>
-              <PurchaseVoucherWindow
-                isOpen={windows.find(w => w.id === 'purchases')?.isOpen || false}
-                products={products}
-                suppliers={suppliers}
-                purchases={purchases}
-                onAddPurchase={handleAddPurchaseVoucher}
-                onUpdatePurchase={handleUpdatePurchaseVoucher}
-                onDeletePurchase={handleDeletePurchaseVoucher}
-                onClose={() => closeWindow('purchases')}
-                onProductsUpdate={setProducts}
-                onAddSupplier={handleAddSupplier}
-                createdFamilles={createdFamilles}
-                onCreatedFamillesChange={setCreatedFamilles}
-                config={config}
-              />
-            </React.Suspense>
+            <PurchaseVoucherWindow
+              isOpen={windows.find(w => w.id === 'purchases')?.isOpen || false}
+              products={products}
+              suppliers={suppliers}
+              purchases={purchases}
+              onAddPurchase={handleAddPurchaseVoucher}
+              onUpdatePurchase={handleUpdatePurchaseVoucher}
+              onDeletePurchase={handleDeletePurchaseVoucher}
+              onClose={() => closeWindow('purchases')}
+              onProductsUpdate={setProducts}
+              onAddSupplier={handleAddSupplier}
+              createdFamilles={createdFamilles}
+              onCreatedFamillesChange={setCreatedFamilles}
+              config={config}
+            />
           </WindowFrame>
 
           {/* 4. Sales Delivery (Bon de Livraison/Vente) Window */}
@@ -2416,25 +2404,23 @@ export default function App() {
             scale={scale}
             overflowVisible={true}
           >
-            <React.Suspense fallback={<WindowLoadingFallback />}>
-              <SalesVoucherWindow
-                isOpen={windows.find(w => w.id === 'sales')?.isOpen || false}
-                products={products}
-                clients={clients}
-                sales={sales}
-                purchases={purchases}
-                onAddSale={handleAddSalesVoucher}
-                onUpdateSale={handleUpdateSalesVoucher}
-                onDeleteSale={handleDeleteSalesVoucher}
-                onProductsUpdate={setProducts}
-                onClientsUpdate={setClients}
-                onClose={() => closeWindow('sales')}
-                config={config}
-                currentUser={currentUser}
-                storageReady={persistentStorageReady}
-                onBeforeReservationPersist={cancelPendingSalesReservationSaves}
-              />
-            </React.Suspense>
+            <SalesVoucherWindow
+              isOpen={windows.find(w => w.id === 'sales')?.isOpen || false}
+              products={products}
+              clients={clients}
+              sales={sales}
+              purchases={purchases}
+              onAddSale={handleAddSalesVoucher}
+              onUpdateSale={handleUpdateSalesVoucher}
+              onDeleteSale={handleDeleteSalesVoucher}
+              onProductsUpdate={setProducts}
+              onClientsUpdate={setClients}
+              onClose={() => closeWindow('sales')}
+              config={config}
+              currentUser={currentUser}
+              storageReady={persistentStorageReady}
+              onBeforeReservationPersist={cancelPendingSalesReservationSaves}
+            />
           </WindowFrame>
 
           {/* 5. Clients Manager Window */}
@@ -2579,18 +2565,16 @@ export default function App() {
             onFocus={() => focusWindow('stats')}
             scale={scale}
           >
-            <React.Suspense fallback={<WindowLoadingFallback />}>
-              <StatsWindow
-                products={products}
-                sales={sales}
-                purchases={purchases}
-                clients={clients}
-                suppliers={suppliers}
-                users={users}
-                initialMode={statsInitialMode}
-                onClose={() => closeWindow('stats')}
-              />
-            </React.Suspense>
+            <StatsWindow
+              products={products}
+              sales={sales}
+              purchases={purchases}
+              clients={clients}
+              suppliers={suppliers}
+              users={users}
+              initialMode={statsInitialMode}
+              onClose={() => closeWindow('stats')}
+            />
           </WindowFrame>
 
           {/* 7. Cash Register & safe window */}
