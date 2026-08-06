@@ -143,6 +143,11 @@ function PurchaseVoucherWindow({
     setShowBarcodeModal(true);
   };
 
+  // Scanner Douchette mode state
+  const [isScannerMode, setIsScannerMode] = useState(false);
+  const scannerBufferRef = useRef('');
+  const lastKeyTimeRef = useRef(0);
+
   // List of currently open drafts/bons (can have multiple active drafts open at once)
   const [openDrafts, setOpenDrafts] = useState<any[]>(() => {
     return getStorageJson('purchase_open_drafts', []);
@@ -1024,7 +1029,8 @@ function PurchaseVoucherWindow({
       oldBalance: oldBal,
       newBalance: finalNewBalance,
       items: draftItems,
-      paymentMode: paymentMode
+      paymentMode: paymentMode,
+      paymentSource: paymentSource
     };
 
     // Update the on-screen versement field to align with the dialog choice
@@ -1218,6 +1224,92 @@ function PurchaseVoucherWindow({
     setIsCatalogSearchOpen(false);
     setIsProductDialogOpen(true);
   };
+
+  // Handle scanned barcode lookup and open Configuration du Produit dialog modal
+  const handleBarcodeScanned = (rawCode: string) => {
+    const code = rawCode.trim();
+    if (!code) return;
+
+    // Search exact match in products/localProducts list (by code or destockBarcode)
+    const allProds = products.length > 0 ? products : localProducts;
+    const match = allProds.find(p => 
+      p.code.trim().toLowerCase() === code.toLowerCase() ||
+      (p.destockBarcode && p.destockBarcode.trim().toLowerCase() === code.toLowerCase())
+    ) || localProducts.find(p => 
+      p.code.trim().toLowerCase() === code.toLowerCase() ||
+      (p.destockBarcode && p.destockBarcode.trim().toLowerCase() === code.toLowerCase())
+    );
+
+    if (match) {
+      if (match.blocked) {
+        showRetroAlert(`⚠️ Impossible d'insérer l'article : Le produit "${match.designation}" est BLOQUÉ !`, "Article Bloqué");
+        return;
+      }
+      handleSelectCatalogProduct(match);
+    } else {
+      showRetroAlert(`❌ Aucun article trouvé avec le code-barres : "${code}"`, "Code-barres Inconnu");
+    }
+  };
+
+  // Sync Caps Lock keyboard state with Scanner Douchette mode
+  useEffect(() => {
+    const checkCapsAndSync = (e: KeyboardEvent) => {
+      if (typeof e.getModifierState === 'function') {
+        const caps = e.getModifierState('CapsLock');
+        if (e.key === 'CapsLock') {
+          setIsScannerMode(caps);
+        } else if (caps) {
+          setIsScannerMode(true);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', checkCapsAndSync);
+    window.addEventListener('keyup', checkCapsAndSync);
+    return () => {
+      window.removeEventListener('keydown', checkCapsAndSync);
+      window.removeEventListener('keyup', checkCapsAndSync);
+    };
+  }, []);
+
+  // Global scanner keystroke buffering when scanner mode is active
+  useEffect(() => {
+    if (!isScannerMode) return;
+
+    const handleGlobalScannerKey = (e: KeyboardEvent) => {
+      if (['Control', 'Shift', 'Alt', 'Meta', 'CapsLock', 'Tab'].includes(e.key)) return;
+
+      const activeEl = document.activeElement;
+      const isTypingInOtherInput = activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.tagName === 'SELECT');
+      
+      const now = Date.now();
+      const timeDiff = now - lastKeyTimeRef.current;
+      lastKeyTimeRef.current = now;
+
+      if (e.key === 'Enter') {
+        if (scannerBufferRef.current.trim().length > 0) {
+          e.preventDefault();
+          const scanned = scannerBufferRef.current.trim();
+          scannerBufferRef.current = '';
+          handleBarcodeScanned(scanned);
+        }
+        return;
+      }
+
+      if (e.key.length === 1) {
+        if (timeDiff < 80 || scannerBufferRef.current.length > 0) {
+          scannerBufferRef.current += e.key;
+        } else if (!isTypingInOtherInput) {
+          scannerBufferRef.current = e.key;
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleGlobalScannerKey);
+    return () => {
+      window.removeEventListener('keydown', handleGlobalScannerKey);
+    };
+  }, [isScannerMode, products, localProducts]);
 
   // Trigger when catalog item changes in dropdown of insert modal
   const handleCatalogProductChange = (code: string) => {
@@ -2193,6 +2285,28 @@ function PurchaseVoucherWindow({
           >
             <span>🖨️ Étiquettes</span>
             <span className="text-[7.5px] opacity-80 font-mono">[F10]</span>
+          </button>
+
+          {/* Mode Scanner Douchette button */}
+          <button
+            onClick={() => {
+              setIsScannerMode(prev => !prev);
+            }}
+            type="button"
+            title={`Mode Scanner Douchette ${isScannerMode ? '(ACTIF - Verr Maj ON)' : '(INACTIF - Appuyez sur Verr Maj)'}`}
+            className={`h-7.5 w-7.5 flex items-center justify-center rounded-lg text-[10px] shadow-xs hover:scale-105 active:scale-95 transition-all duration-100 cursor-pointer border shrink-0 relative ${
+              isScannerMode 
+                ? 'bg-cyan-600 text-white border-cyan-500 dark:bg-cyan-600 dark:border-cyan-400 font-bold shadow-cyan-500/30 shadow-md ring-2 ring-cyan-400/40' 
+                : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50 dark:bg-slate-900 dark:text-slate-300 dark:border-slate-800 dark:hover:bg-slate-800'
+            }`}
+          >
+            <Barcode size={13} />
+            {isScannerMode && (
+              <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500"></span>
+              </span>
+            )}
           </button>
         </div>
       </div>

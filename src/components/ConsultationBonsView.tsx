@@ -115,14 +115,34 @@ export default function ConsultationBonsView({
     return partiesList.filter(p => p.name.toLowerCase().includes(q));
   }, [partiesList, partySearch]);
 
-  // Available Payment Modes
-  const availablePaymentModes = useMemo(() => [
-    'Espèces',
-    'A terme',
-    'Chèque',
-    'Virement',
-    'Versement'
-  ], []);
+  // Payment mode helpers matching Saisie Ventes (F2) & Saisie Achats (F1)
+  const getNormalizedPaymentModeKey = (rawMode?: string): 'ESPECE' | 'A_TERME' | 'CHEQUE' => {
+    if (!rawMode) return 'ESPECE';
+    const norm = rawMode.trim().toUpperCase();
+    if (norm.includes('TERME') || norm.includes('CREDIT') || norm.includes('CRÉDIT') || norm === 'A_TERME') {
+      return 'A_TERME';
+    }
+    if (norm.includes('CHEQUE') || norm.includes('CHÈQUE') || norm.includes('VIREMENT') || norm === 'CHEQUE') {
+      return 'CHEQUE';
+    }
+    return 'ESPECE';
+  };
+
+  const formatPaymentModeLabel = (rawMode?: string): string => {
+    const key = getNormalizedPaymentModeKey(rawMode);
+    if (key === 'A_TERME') return 'A terme';
+    if (key === 'CHEQUE') return 'Chèque / Virement';
+    return 'Espèces';
+  };
+
+  // Available Payment Modes based on mode (Saisie Ventes F2 vs Saisie Achats F1)
+  const availablePaymentModes = useMemo(() => {
+    if (type === 'ventes') {
+      return ['Espèces', 'A terme'];
+    } else {
+      return ['Espèces', 'A terme', 'Chèque / Virement'];
+    }
+  }, [type]);
 
   // Helper date parsing (DD/MM/YYYY)
   const parseVoucherDateToObj = (dateStr: string) => {
@@ -161,12 +181,10 @@ export default function ConsultationBonsView({
 
       // Payment modes filter (if any checked)
       if (selectedPaymentModes.length > 0) {
-        let vMode = v.paymentMode || 'Espèces';
-        if (vMode === 'À terme') vMode = 'A terme';
+        const vKey = getNormalizedPaymentModeKey(v.paymentMode);
         const isMatched = selectedPaymentModes.some(m => {
-          if (m.toLowerCase() === vMode.toLowerCase()) return true;
-          if (m === 'A terme' && vMode === 'À terme') return true;
-          return false;
+          const selKey = getNormalizedPaymentModeKey(m);
+          return selKey === vKey;
         });
         if (!isMatched) return false;
       }
@@ -456,7 +474,7 @@ xmlns="http://www.w3.org/TR/REC-html40">
       const utilisateur = (v as any).utilisateur || 'admin';
       const vendeur = (v as SalesVoucher).vendeur || '<Aucun>';
       const typeVoucher = v.type || (type === 'ventes' ? 'VENTE' : 'ACHAT');
-      const reglement = v.paymentMode || 'ESPECE';
+      const reglement = formatPaymentModeLabel(v.paymentMode);
       const observations = v.observations || '';
       const codeBanque = (v as any).codeBanque || '';
       const libelleBanque = (v as any).libelleBanque || '';
@@ -880,13 +898,14 @@ xmlns="http://www.w3.org/TR/REC-html40">
                 <th className="p-2 border-r border-slate-300 dark:border-slate-700 text-center w-16">Nbre C</th>
                 <th className="p-2 border-r border-slate-300 dark:border-slate-700 text-right w-28">Montant</th>
                 <th className="p-2 border-r border-slate-300 dark:border-slate-700 text-right w-24">REMISE</th>
+                <th className="p-2 border-r border-slate-300 dark:border-slate-700 text-center w-28">Règlement</th>
                 <th className="p-2 text-right w-28">HT</th>
               </tr>
             </thead>
             <tbody>
               {filteredVouchers.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="text-center py-10 text-slate-400 dark:text-slate-600 italic">
+                  <td colSpan={10} className="text-center py-10 text-slate-400 dark:text-slate-600 italic">
                     Aucun bon trouvé correspondant aux filtres sélectionnés
                   </td>
                 </tr>
@@ -916,6 +935,19 @@ xmlns="http://www.w3.org/TR/REC-html40">
                       <td className="p-1.5 text-center border-r border-slate-200/60 dark:border-slate-800">{v.colisCount || 0}</td>
                       <td className="p-1.5 text-right border-r border-slate-200/60 dark:border-slate-800">{formatMoney(v.amount)}</td>
                       <td className="p-1.5 text-right border-r border-slate-200/60 dark:border-slate-800">{formatMoney(v.remise)}</td>
+                      <td className="p-1.5 text-center border-r border-slate-200/60 dark:border-slate-800 font-sans font-bold text-[10px]">
+                        <span className={`px-2 py-0.5 rounded-full inline-block ${
+                          isSelected
+                            ? 'bg-white/20 text-white'
+                            : getNormalizedPaymentModeKey(v.paymentMode) === 'A_TERME'
+                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
+                            : getNormalizedPaymentModeKey(v.paymentMode) === 'CHEQUE'
+                            ? 'bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300'
+                            : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
+                        }`}>
+                          {formatPaymentModeLabel(v.paymentMode)}
+                        </span>
+                      </td>
                       <td className="p-1.5 text-right">{formatMoney(v.totalHT)}</td>
                     </tr>
                   );

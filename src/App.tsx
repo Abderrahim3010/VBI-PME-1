@@ -11,6 +11,7 @@ import {
   BarChart3,
   Search,
   Coins,
+  Wallet,
   Folder,
   RotateCw,
   Save,
@@ -83,6 +84,7 @@ import {
 import { readPersistedSalesDrafts } from './services/salesDraftReservations';
 
 import ProductListWindow from './components/ProductListWindow';
+import InventaireWindow from './components/InventaireWindow';
 import PurchaseVoucherWindow from './components/PurchaseVoucherWindow';
 import SalesVoucherWindow from './components/SalesVoucherWindow';
 import StatsWindow from './components/StatsWindow';
@@ -512,6 +514,7 @@ export default function App() {
   const [windows, setWindows] = useState<WindowInstance[]>([
     { id: 'welcome', title: "VBI PME - Assistant d'Évaluation", isOpen: true, isMinimized: false, isMaximized: false, zIndex: 30, x: 280, y: 70 },
     { id: 'products', title: 'LISTE DES PRODUITS [ CATALOGUE ACTIF ]', isOpen: false, isMinimized: false, isMaximized: false, zIndex: 10, x: 280, y: 50 },
+    { id: 'inventaire', title: 'SAISIE D\'INVENTAIRE PHYSIQUE & AJUSTEMENT (F9)', isOpen: false, isMinimized: false, isMaximized: false, zIndex: 10, x: 260, y: 40 },
     { id: 'purchases', title: "Bon d'Achat (Registre Fournisseurs)", isOpen: false, isMinimized: false, isMaximized: false, zIndex: 10, x: 290, y: 40 },
     { id: 'sales', title: "Bon de Livraison (Facturation Client)", isOpen: false, isMinimized: false, isMaximized: false, zIndex: 10, x: 300, y: 45 },
     { id: 'clients', title: 'Fichier des Clients (F5)', isOpen: false, isMinimized: false, isMaximized: false, zIndex: 10, x: 310, y: 60 },
@@ -543,6 +546,15 @@ export default function App() {
   const statsDropdownRef = useRef<HTMLDivElement>(null);
   const compactStatsButtonRef = useRef<HTMLButtonElement>(null);
   const statsPortalRef = useRef<HTMLDivElement>(null);
+
+  // States for F10 Coffre & Trésorerie multi-option button
+  const [coffreInitialMode, setCoffreInitialMode] = useState<'coffre1' | 'coffre2'>('coffre1');
+  const [coffreMenuOpen, setCoffreMenuOpen] = useState(false);
+  const [coffreMenuPos, setCoffreMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const coffreDropdownRef = useRef<HTMLDivElement>(null);
+  const compactCoffreButtonRef = useRef<HTMLButtonElement>(null);
+  const coffrePortalRef = useRef<HTMLDivElement>(null);
+
   const startMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -555,6 +567,15 @@ export default function App() {
       if (clickedOutsideDropdown && clickedOutsideCompact && clickedOutsidePortal) {
         setStatsMenuOpen(false);
       }
+
+      const clickedOutsideCoffreDropdown = !coffreDropdownRef.current || !coffreDropdownRef.current.contains(target);
+      const clickedOutsideCoffreCompact = !compactCoffreButtonRef.current || !compactCoffreButtonRef.current.contains(target);
+      const clickedOutsideCoffrePortal = !coffrePortalRef.current || !coffrePortalRef.current.contains(target);
+
+      if (clickedOutsideCoffreDropdown && clickedOutsideCoffreCompact && clickedOutsideCoffrePortal) {
+        setCoffreMenuOpen(false);
+      }
+
       if (startMenuRef.current && !startMenuRef.current.contains(target)) {
         const startBtn = document.getElementById('start-menu-button');
         if (!startBtn || !startBtn.contains(target)) {
@@ -564,6 +585,7 @@ export default function App() {
     };
     const handleScrollOrResize = () => {
       if (statsMenuOpen) setStatsMenuOpen(false);
+      if (coffreMenuOpen) setCoffreMenuOpen(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     window.addEventListener('resize', handleScrollOrResize);
@@ -573,7 +595,7 @@ export default function App() {
       window.removeEventListener('resize', handleScrollOrResize);
       window.removeEventListener('scroll', handleScrollOrResize, true);
     };
-  }, [statsMenuOpen]);
+  }, [statsMenuOpen, coffreMenuOpen]);
 
   const [zoomMode, setZoomMode] = useState<'auto' | '100' | '90' | '80' | '75'>(() => {
     try {
@@ -715,6 +737,7 @@ export default function App() {
       situation: '6',
       situation_clients: '7',
       stats: '10',
+      inventaire: '11',
       configuration: '13',
       user_management: '14',
       caisse: '15', // Coffres or charges
@@ -736,6 +759,7 @@ export default function App() {
         situation: 'Situation Fournisseurs (F6)',
         situation_clients: 'Situation Clients (F7)',
         stats: 'Analyses de Performance & Stat',
+        inventaire: 'Saisie d\'Inventaire Stock (F9)',
         configuration: 'Paramètres du Logiciel',
         user_management: 'Gestion des Utilisateurs & Sécurité',
         caisse: 'Registre de Caisse & Coffre',
@@ -840,7 +864,7 @@ export default function App() {
         setStatsMenuOpen(prev => !prev);
       } else if (e.key === 'F9') {
         e.preventDefault();
-        launchWindow('products');
+        launchWindow('inventaire');
       } else if (e.key === 'F10') {
         e.preventDefault();
         launchWindow('caisse');
@@ -1424,7 +1448,7 @@ export default function App() {
   
         {config?.affichage?.visibleButtons?.inventaire !== false && (
           <button
-            onClick={() => launchWindow('products')}
+            onClick={() => launchWindow('inventaire')}
             className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/70 dark:bg-slate-950/60 hover:bg-white dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-sky-200/80 dark:border-slate-800 hover:border-sky-400 dark:hover:border-slate-700 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
           >
             <Search className="text-cyan-500 dark:text-cyan-400 shrink-0" size={26} />
@@ -1434,14 +1458,79 @@ export default function App() {
         )}
   
         {config?.affichage?.visibleButtons?.coffre !== false && (
-          <button
-            onClick={() => launchWindow('caisse')}
-            className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/70 dark:bg-slate-950/60 hover:bg-white dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-sky-200/80 dark:border-slate-800 hover:border-sky-400 dark:hover:border-slate-700 rounded-xl shadow-md transition-all duration-200 cursor-pointer"
-          >
-            <Coins className="text-emerald-600 dark:text-emerald-400 shrink-0" size={26} />
-            <span style={{ fontSize: '14px', fontStyle: 'normal', textDecorationLine: 'none', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-2 whitespace-nowrap">Coffre Caisse</span>
-            <span className="text-[8px] text-slate-500 font-bold tracking-tight mt-1">F10</span>
-          </button>
+          <div className="relative" ref={coffreDropdownRef}>
+            <button
+              type="button"
+              onClick={() => setCoffreMenuOpen(prev => !prev)}
+              className="px-3 py-1.5 flex flex-col items-center min-w-[95px] h-[72px] justify-center text-center bg-white/70 dark:bg-slate-950/60 hover:bg-white dark:hover:bg-slate-800/80 active:scale-95 text-slate-800 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white border border-sky-200/80 dark:border-slate-800 hover:border-sky-400 dark:hover:border-slate-700 rounded-xl shadow-md transition-all duration-200 cursor-pointer relative"
+              title="Coffre & Trésorerie (F10)"
+            >
+              <div className="flex items-center gap-1">
+                <Coins className="text-emerald-600 dark:text-emerald-400 shrink-0" size={24} />
+                <ChevronDown size={12} className={`text-slate-400 transition-transform duration-200 ${coffreMenuOpen ? 'rotate-180 text-emerald-600' : ''}`} />
+              </div>
+              <span style={{ fontSize: '13px', fontFamily: 'Arial' }} className="text-[10px] font-sans font-bold leading-none mt-1 whitespace-nowrap">Coffre Caisse</span>
+              <span className="text-[8px] text-slate-500 font-bold tracking-tight mt-0.5">F10</span>
+            </button>
+
+            <AnimatePresence>
+              {coffreMenuOpen && (
+                <motion.div
+                  key="coffre-dropdown-menu"
+                  initial={{ opacity: 0, y: 6, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 6, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute top-full left-0 mt-2 w-72 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border-2 border-emerald-200 dark:border-emerald-900/60 p-2 z-[9999] flex flex-col gap-1.5 select-none divide-y divide-slate-100 dark:divide-slate-800/80"
+                >
+                  <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-black text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
+                    <span>Choix du Coffre [F10]</span>
+                    <span className="text-[9px] font-mono text-slate-400">2 options</span>
+                  </div>
+
+                  <div className="pt-1.5 flex flex-col gap-1">
+                    {/* Option 1: COFFRE 1 */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCoffreInitialMode('coffre1');
+                        launchWindow('caisse');
+                        setCoffreMenuOpen(false);
+                      }}
+                      className="w-full px-3 py-2.5 rounded-xl flex items-center gap-3 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 text-slate-800 dark:text-slate-100 font-bold text-xs transition-all text-left cursor-pointer group border border-transparent hover:border-emerald-300 dark:hover:border-emerald-800 shadow-2xs"
+                    >
+                      <div className="p-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-300 group-hover:scale-110 transition-transform shrink-0 shadow-xs">
+                        <Wallet size={18} />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-black text-emerald-950 dark:text-emerald-100 text-[13px]">COFFRE 1</span>
+                        <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">Trésorerie & Caisse Principale</span>
+                      </div>
+                    </button>
+
+                    {/* Option 2: COFFRE 2 */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCoffreInitialMode('coffre2');
+                        launchWindow('caisse');
+                        setCoffreMenuOpen(false);
+                      }}
+                      className="w-full px-3 py-2.5 rounded-xl flex items-center gap-3 hover:bg-amber-50 dark:hover:bg-amber-950/50 text-slate-800 dark:text-slate-100 font-bold text-xs transition-all text-left cursor-pointer group border border-transparent hover:border-amber-300 dark:hover:border-amber-800 shadow-2xs"
+                    >
+                      <div className="p-2.5 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-300 group-hover:scale-110 transition-transform shrink-0 shadow-xs">
+                        <Wallet size={18} />
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="font-black text-amber-950 dark:text-amber-100 text-[13px]">COFFRE 2</span>
+                        <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">Trésorerie & Caisse Secondaire</span>
+                      </div>
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         )}
 
         <div className="flex-1 flex justify-end gap-2 items-center px-3">
@@ -1955,7 +2044,7 @@ export default function App() {
                 {config?.affichage?.visibleButtons?.inventaire !== false && (
                   <button
                     type="button"
-                    onClick={() => launchWindow('products')}
+                    onClick={() => launchWindow('inventaire')}
                     className="p-2.5 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 hover:bg-cyan-50/80 hover:border-cyan-300/80 dark:hover:bg-cyan-950/30 dark:hover:border-cyan-800 flex items-center justify-between text-left transition-all cursor-pointer group"
                   >
                     <div className="flex items-center gap-2.5 font-bold text-[12.5px] text-slate-800 dark:text-slate-100">
@@ -1968,17 +2057,105 @@ export default function App() {
 
                 {/* Coffre & Trésorerie [F10] */}
                 {config?.affichage?.visibleButtons?.coffre !== false && (
-                  <button
-                    type="button"
-                    onClick={() => launchWindow('caisse')}
-                    className="p-2.5 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 hover:bg-emerald-50/80 hover:border-emerald-300/80 dark:hover:bg-emerald-950/30 dark:hover:border-emerald-800 flex items-center justify-between text-left transition-all cursor-pointer group"
-                  >
-                    <div className="flex items-center gap-2.5 font-bold text-[12.5px] text-slate-800 dark:text-slate-100">
-                      <Coins size={18} className="text-emerald-600 dark:text-emerald-400 shrink-0 group-hover:scale-110 transition-transform" />
-                      <span>Coffre & Trésorerie</span>
-                    </div>
-                    <span className="text-[9.5px] font-mono font-extrabold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">F10</span>
-                  </button>
+                  <div className="relative">
+                    <button
+                      ref={compactCoffreButtonRef}
+                      type="button"
+                      onClick={() => {
+                        if (!coffreMenuOpen) {
+                          if (compactCoffreButtonRef.current) {
+                            const rect = compactCoffreButtonRef.current.getBoundingClientRect();
+                            const viewportHeight = window.innerHeight;
+                            const menuHeight = 200;
+                            let top = rect.top;
+                            if (top + menuHeight > viewportHeight - 16) {
+                              top = Math.max(16, viewportHeight - menuHeight - 16);
+                            }
+                            setCoffreMenuPos({ top, left: rect.right + 8 });
+                          }
+                          setCoffreMenuOpen(true);
+                        } else {
+                          setCoffreMenuOpen(false);
+                        }
+                      }}
+                      className="w-full p-2.5 rounded-xl bg-white dark:bg-slate-950/60 border border-slate-200/80 dark:border-slate-800/80 hover:bg-emerald-50/80 hover:border-emerald-300/80 dark:hover:bg-emerald-950/30 dark:hover:border-emerald-800 flex items-center justify-between text-left transition-all cursor-pointer group"
+                    >
+                      <div className="flex items-center gap-2.5 font-bold text-[12.5px] text-slate-800 dark:text-slate-100">
+                        <Coins size={18} className="text-emerald-600 dark:text-emerald-400 shrink-0 group-hover:scale-110 transition-transform" />
+                        <span>Coffre & Trésorerie</span>
+                      </div>
+                      <span className="text-[9.5px] font-mono font-extrabold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-700">F10</span>
+                    </button>
+
+                    {coffreMenuOpen && coffreMenuPos && createPortal(
+                      <div
+                        ref={coffrePortalRef}
+                        style={{
+                          position: 'fixed',
+                          top: `${coffreMenuPos.top}px`,
+                          left: `${coffreMenuPos.left}px`,
+                          zIndex: 99999,
+                        }}
+                      >
+                        <AnimatePresence>
+                          <motion.div
+                            key="coffre-portal-dropdown"
+                            initial={{ opacity: 0, x: -6, scale: 0.95 }}
+                            animate={{ opacity: 1, x: 0, scale: 1 }}
+                            exit={{ opacity: 0, x: -6, scale: 0.95 }}
+                            transition={{ duration: 0.15 }}
+                            className="w-72 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border-2 border-emerald-200 dark:border-emerald-900/60 p-2 flex flex-col gap-1.5 select-none divide-y divide-slate-100 dark:divide-slate-800/80"
+                          >
+                            <div className="px-3 py-1.5 flex items-center justify-between text-[11px] font-black text-emerald-700 dark:text-emerald-300 uppercase tracking-wider">
+                              <span>Choix du Coffre [F10]</span>
+                              <span className="text-[9px] font-mono text-slate-400">2 options</span>
+                            </div>
+
+                            <div className="pt-1.5 flex flex-col gap-1">
+                              {/* Option 1: COFFRE 1 */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCoffreInitialMode('coffre1');
+                                  launchWindow('caisse');
+                                  setCoffreMenuOpen(false);
+                                }}
+                                className="w-full px-3 py-2.5 rounded-xl flex items-center gap-3 hover:bg-emerald-50 dark:hover:bg-emerald-950/50 text-slate-800 dark:text-slate-100 font-bold text-xs transition-all text-left cursor-pointer group border border-transparent hover:border-emerald-300 dark:hover:border-emerald-800 shadow-2xs"
+                              >
+                                <div className="p-2.5 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-300 group-hover:scale-110 transition-transform shrink-0 shadow-xs">
+                                  <Wallet size={18} />
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="font-black text-emerald-950 dark:text-emerald-100 text-[13px]">COFFRE 1</span>
+                                  <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">Trésorerie & Caisse Principale</span>
+                                </div>
+                              </button>
+
+                              {/* Option 2: COFFRE 2 */}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCoffreInitialMode('coffre2');
+                                  launchWindow('caisse');
+                                  setCoffreMenuOpen(false);
+                                }}
+                                className="w-full px-3 py-2.5 rounded-xl flex items-center gap-3 hover:bg-amber-50 dark:hover:bg-amber-950/50 text-slate-800 dark:text-slate-100 font-bold text-xs transition-all text-left cursor-pointer group border border-transparent hover:border-amber-300 dark:hover:border-amber-800 shadow-2xs"
+                              >
+                                <div className="p-2.5 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-600 dark:text-amber-300 group-hover:scale-110 transition-transform shrink-0 shadow-xs">
+                                  <Wallet size={18} />
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="font-black text-amber-950 dark:text-amber-100 text-[13px]">COFFRE 2</span>
+                                  <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400">Trésorerie & Caisse Secondaire</span>
+                                </div>
+                              </button>
+                            </div>
+                          </motion.div>
+                        </AnimatePresence>
+                      </div>,
+                      document.body
+                    )}
+                  </div>
                 )}
 
               </div>
@@ -2349,6 +2526,32 @@ export default function App() {
               config={config}
             />
           </WindowFrame>
+
+          {/* Inventaire Window (F9) */}
+          <WindowFrame
+            id="inventaire"
+            title="SAISIE D'INVENTAIRE PHYSIQUE & AJUSTEMENT (F9)"
+            isOpen={windows.find(w => w.id === 'inventaire')?.isOpen || false}
+            isMinimized={windows.find(w => w.id === 'inventaire')?.isMinimized || false}
+            isMaximized={windows.find(w => w.id === 'inventaire')?.isMaximized || false}
+            zIndex={windows.find(w => w.id === 'inventaire')?.zIndex || 10}
+            initialX={windows.find(w => w.id === 'inventaire')?.x || 260}
+            initialY={windows.find(w => w.id === 'inventaire')?.y || 40}
+            width="w-[1060px]"
+            height="h-[670px]"
+            onClose={() => closeWindow('inventaire')}
+            onMinimize={() => minimizeWindow('inventaire')}
+            onMaximize={() => toggleMaximizeWindow('inventaire')}
+            onFocus={() => focusWindow('inventaire')}
+            scale={scale}
+          >
+            <InventaireWindow
+              products={products}
+              onProductsUpdate={(updated) => setProducts(updated)}
+              onClose={() => closeWindow('inventaire')}
+              createdFamilles={createdFamilles}
+            />
+          </WindowFrame>
  
           {/* 3. Purchases Bill (Bon d'Achat) Window */}
           <WindowFrame
@@ -2580,7 +2783,7 @@ export default function App() {
           {/* 7. Cash Register & safe window */}
           <WindowFrame
             id="caisse"
-            title="Trésorerie - Livre de Caisse & Charges"
+            title={`Trésorerie - ${coffreInitialMode === 'coffre2' ? 'COFFRE 2 (Secondaire)' : 'COFFRE 1 (Principal)'}`}
             isOpen={windows.find(w => w.id === 'caisse')?.isOpen || false}
             isMinimized={windows.find(w => w.id === 'caisse')?.isMinimized || false}
             isMaximized={windows.find(w => w.id === 'caisse')?.isMaximized || false}
@@ -2600,6 +2803,7 @@ export default function App() {
               purchases={purchases}
               clientPayments={clientPayments}
               supplierPayments={supplierPayments}
+              initialCoffre={coffreInitialMode}
               onClose={() => closeWindow('caisse')}
             />
           </WindowFrame>

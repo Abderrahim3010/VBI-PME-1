@@ -76,6 +76,7 @@ export interface PurchaseVoucher {
   newBalance: number;
   items: VoucherItem[];
   paymentMode?: string;
+  paymentSource?: string;
 }
 
 export interface SalesVoucher {
@@ -99,6 +100,21 @@ export interface SalesVoucher {
   vendeur?: string;
   observations?: string;
   paymentMode?: string;
+  paymentSource?: string;
+}
+
+export interface CoffreTransaction {
+  id: string;
+  coffreId: 'coffre1' | 'coffre2';
+  type: 'ENTREE' | 'SORTIE';
+  category: 'VENTE' | 'ACHAT' | 'VERSEMENT_CLIENT' | 'REGLEMENT_FOURNISSEUR' | 'APPORT' | 'CHARGE' | 'AUTRE';
+  date: string;
+  time: string;
+  amount: number;
+  label: string;
+  reference?: string;
+  note?: string;
+  user?: string;
 }
 
 export type ActiveWindowId = 
@@ -109,12 +125,36 @@ export type ActiveWindowId =
   | 'suppliers' 
   | 'stats' 
   | 'caisse'
+  | 'inventaire'
   | 'configuration'
   | 'help'
   | 'welcome'
   | 'situation'
   | 'situation_clients'
   | 'user_management';
+
+export interface InventoryItem {
+  code: string;
+  designation: string;
+  category?: string;
+  prixAchat: number;
+  prixVente1: number;
+  stockTheorique: number;
+  stockPhysique: number;
+  ecart: number; // stockPhysique - stockTheorique
+  valeurEcart: number; // ecart * prixAchat
+}
+
+export interface InventoryHistoryRecord {
+  id: string;
+  date: string;
+  time: string;
+  note?: string;
+  totalArticlesCounted: number;
+  totalEcartQty: number;
+  totalEcartValue: number;
+  items: InventoryItem[];
+}
 
 export interface User {
   id: string;
