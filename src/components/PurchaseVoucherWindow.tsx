@@ -1421,12 +1421,37 @@ function PurchaseVoucherWindow({
   useEffect(() => {
     const handleGlobalKeydowns = (e: KeyboardEvent) => {
       if (!isOpen) return;
-      // Only process keys when current pane is active (i.e. focused / not writing inside key inputs)
-      // Check if user is typing on target elements inside some input
+      
       const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
-      if (tag === 'input' && !(e.target as HTMLInputElement).readOnly && !isProductDialogOpen && !isPaymentDialogOpen) {
+      const isInput = tag === 'input' || tag === 'textarea';
+
+      // Arrow keys navigation (Up/Down for items, Left/Right for vouchers)
+      if (!isProductDialogOpen && !isPaymentDialogOpen && !isCatalogSearchOpen) {
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          selectPrevPurchaseItem();
+          return;
+        }
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          selectNextPurchaseItem();
+          return;
+        }
+        if (e.key === 'ArrowLeft' && !isInput) {
+          e.preventDefault();
+          handlePrev();
+          return;
+        }
+        if (e.key === 'ArrowRight' && !isInput) {
+          e.preventDefault();
+          handleNext();
+          return;
+        }
+      }
+
+      if (isInput && !(e.target as HTMLInputElement).readOnly && !isProductDialogOpen && !isPaymentDialogOpen) {
         // Let standard input handle typing, except for Enter barcode
-        if (e.key === 'Enter' && (e.target as HTMLInputElement).placeholder.includes('Scanner')) {
+        if (e.key === 'Enter' && (e.target as HTMLInputElement).placeholder?.includes('Scanner')) {
           e.preventDefault();
         }
         return;
@@ -1544,6 +1569,21 @@ function PurchaseVoucherWindow({
   ]);
 
   const unfilteredItems = mode === 'create' ? draftItems : (selectedVoucher?.items || []);
+
+  const selectFirstPurchaseItem = () => {
+    if (unfilteredItems.length > 0) setSelectedDraftIdx(0);
+  };
+  const selectPrevPurchaseItem = () => {
+    if (unfilteredItems.length === 0) return;
+    setSelectedDraftIdx(prev => (prev <= 0 ? 0 : prev - 1));
+  };
+  const selectNextPurchaseItem = () => {
+    if (unfilteredItems.length === 0) return;
+    setSelectedDraftIdx(prev => (prev < 0 ? 0 : Math.min(unfilteredItems.length - 1, prev + 1)));
+  };
+  const selectLastPurchaseItem = () => {
+    if (unfilteredItems.length > 0) setSelectedDraftIdx(unfilteredItems.length - 1);
+  };
   const currentItems = unfilteredItems.filter(item => {
     if (!localSearchQuery.trim()) return true;
     const q = localSearchQuery.toLowerCase().trim();
@@ -2064,8 +2104,8 @@ function PurchaseVoucherWindow({
           <div className="flex bg-slate-100 dark:bg-slate-950 p-0.5 rounded-lg border border-slate-200/20 gap-0.5 shadow-inner shrink-0">
             <button
               type="button"
-              onClick={() => setSelectedDraftIdx(draftItems.length > 0 ? 0 : -1)}
-              disabled={mode === 'view' || draftItems.length === 0}
+              onClick={selectFirstPurchaseItem}
+              disabled={unfilteredItems.length === 0}
               title="Aller au début de la liste"
               className="w-7 h-7 flex items-center justify-center rounded-md bg-white dark:bg-slate-900 border border-slate-200/20 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer text-[10px]"
             >
@@ -2073,8 +2113,8 @@ function PurchaseVoucherWindow({
             </button>
             <button
               type="button"
-              onClick={() => setSelectedDraftIdx(prev => Math.max(0, prev - 1))}
-              disabled={mode === 'view' || selectedDraftIdx <= 0}
+              onClick={selectPrevPurchaseItem}
+              disabled={unfilteredItems.length === 0 || selectedDraftIdx <= 0}
               title="Article Précédent"
               className="w-7 h-7 flex items-center justify-center rounded-md bg-white dark:bg-slate-900 border border-slate-200/20 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer text-[10px]"
             >
@@ -2082,8 +2122,8 @@ function PurchaseVoucherWindow({
             </button>
             <button
               type="button"
-              onClick={() => setSelectedDraftIdx(prev => Math.min(draftItems.length - 1, prev + 1))}
-              disabled={mode === 'view' || selectedDraftIdx === -1 || selectedDraftIdx >= draftItems.length - 1}
+              onClick={selectNextPurchaseItem}
+              disabled={unfilteredItems.length === 0 || (selectedDraftIdx >= 0 && selectedDraftIdx >= unfilteredItems.length - 1)}
               title="Article Suivant"
               className="w-7 h-7 flex items-center justify-center rounded-md bg-white dark:bg-slate-900 border border-slate-200/20 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer text-[10px]"
             >
@@ -2091,8 +2131,8 @@ function PurchaseVoucherWindow({
             </button>
             <button
               type="button"
-              onClick={() => setSelectedDraftIdx(draftItems.length > 0 ? draftItems.length - 1 : -1)}
-              disabled={mode === 'view' || draftItems.length === 0}
+              onClick={selectLastPurchaseItem}
+              disabled={unfilteredItems.length === 0}
               title="Aller à la fin de la liste"
               className="w-7 h-7 flex items-center justify-center rounded-md bg-white dark:bg-slate-900 border border-slate-200/20 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-30 select-none cursor-pointer text-[10px]"
             >
@@ -2167,7 +2207,7 @@ function PurchaseVoucherWindow({
           style={{ width: `${bottomSplitWidth}%` }} 
           className={`flex flex-col rounded-2xl border border-slate-200/50 dark:border-slate-800/85 bg-white dark:bg-slate-950 h-full min-w-[250px] overflow-hidden shadow-xs transition-all duration-300 ${
             mode === 'view'
-              ? 'opacity-65 grayscale bg-slate-50/70 dark:bg-slate-900/40 border-slate-300 dark:border-slate-850/60'
+              ? 'grayscale opacity-75 bg-slate-100/80 dark:bg-slate-900/60 border-slate-300 dark:border-slate-850/60'
               : ''
           }`}
         >
@@ -2268,7 +2308,9 @@ function PurchaseVoucherWindow({
                         }}
                         className={`border-b border-slate-100 dark:border-slate-900/60 transition-colors cursor-pointer ${
                           isSelected 
-                            ? 'bg-indigo-600/10 text-indigo-600 dark:text-indigo-400 font-bold' 
+                            ? (mode === 'view'
+                                ? 'bg-slate-300/90 dark:bg-slate-700/90 text-slate-950 dark:text-slate-50 font-bold border-l-4 border-l-slate-600 dark:border-l-slate-300'
+                                : 'bg-indigo-600/20 dark:bg-indigo-500/25 text-indigo-800 dark:text-indigo-200 font-bold border-l-4 border-l-indigo-600 dark:border-l-indigo-400')
                             : 'hover:bg-slate-100/60 dark:hover:bg-slate-900/40 even:bg-slate-50/20 dark:even:bg-slate-900/10'
                         }`}
                       >

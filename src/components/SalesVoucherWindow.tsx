@@ -1372,9 +1372,33 @@ function SalesVoucherWindow({
         return;
       }
 
-      // If we are editing inside some text inputs, don't trigger global hotkeys unless barcode input
+      // If we are editing inside some text inputs, don't trigger global hotkeys unless arrow key navigation or barcode input
       const tag = (e.target as HTMLElement)?.tagName?.toLowerCase();
-      if (tag === 'input' && !(e.target as HTMLInputElement).readOnly && !isProductChooserOpen && !isPaymentDialogOpen) {
+      const isInput = tag === 'input' || tag === 'textarea';
+
+      // Arrow keys navigation (Up/Down for items, Left/Right for vouchers)
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        selectPrevItem();
+        return;
+      }
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        selectNextItem();
+        return;
+      }
+      if (e.key === 'ArrowLeft' && !isInput) {
+        e.preventDefault();
+        handlePrev();
+        return;
+      }
+      if (e.key === 'ArrowRight' && !isInput) {
+        e.preventDefault();
+        handleNext();
+        return;
+      }
+
+      if (isInput && !(e.target as HTMLInputElement).readOnly && !isProductChooserOpen && !isPaymentDialogOpen) {
         return;
       }
 
@@ -1619,10 +1643,41 @@ function SalesVoucherWindow({
   }, [localProducts, viewingItemCode]);
 
   // Navigation functions inside items of this invoice
-  const selectFirstItem = () => { if (currentItems.length > 0) { setSelectedItemIndex(0); setViewingItemCode(currentItems[0].code); } };
-  const selectPrevItem = () => { if (selectedItemIndex > 0) { setSelectedItemIndex(selectedItemIndex - 1); setViewingItemCode(currentItems[selectedItemIndex - 1].code); } };
-  const selectNextItem = () => { if (selectedItemIndex < currentItems.length - 1) { setSelectedItemIndex(selectedItemIndex + 1); setViewingItemCode(currentItems[selectedItemIndex + 1].code); } };
-  const selectLastItem = () => { if (currentItems.length > 0) { setSelectedItemIndex(currentItems.length - 1); setViewingItemCode(currentItems[currentItems.length - 1].code); } };
+  const selectFirstItem = () => {
+    if (currentItems.length > 0) {
+      setSelectedItemIndex(0);
+      setViewingItemCode(currentItems[0].code);
+    }
+  };
+  const selectPrevItem = () => {
+    if (currentItems.length === 0) return;
+    if (selectedItemIndex <= 0) {
+      setSelectedItemIndex(0);
+      setViewingItemCode(currentItems[0].code);
+    } else {
+      const prevIdx = selectedItemIndex - 1;
+      setSelectedItemIndex(prevIdx);
+      if (currentItems[prevIdx]) setViewingItemCode(currentItems[prevIdx].code);
+    }
+  };
+  const selectNextItem = () => {
+    if (currentItems.length === 0) return;
+    if (selectedItemIndex < 0) {
+      setSelectedItemIndex(0);
+      setViewingItemCode(currentItems[0].code);
+    } else if (selectedItemIndex < currentItems.length - 1) {
+      const nextIdx = selectedItemIndex + 1;
+      setSelectedItemIndex(nextIdx);
+      if (currentItems[nextIdx]) setViewingItemCode(currentItems[nextIdx].code);
+    }
+  };
+  const selectLastItem = () => {
+    if (currentItems.length > 0) {
+      const lastIdx = currentItems.length - 1;
+      setSelectedItemIndex(lastIdx);
+      setViewingItemCode(currentItems[lastIdx].code);
+    }
+  };
 
   // Set values when navigating between saved sales
   useEffect(() => {
@@ -1631,6 +1686,15 @@ function SalesVoucherWindow({
       setRemise(selectedSale.remise || 0);
       setObservations(selectedSale.observations || '');
       setVendeurName(selectedSale.vendeur || '<Aucun>');
+      if (selectedSale.items && selectedSale.items.length > 0) {
+        if (selectedItemIndex < 0 || selectedItemIndex >= selectedSale.items.length) {
+          setSelectedItemIndex(0);
+          setViewingItemCode(selectedSale.items[0].code);
+        }
+      } else {
+        setSelectedItemIndex(-1);
+        setViewingItemCode('');
+      }
     }
   }, [selectedSale, mode]);
 
@@ -1730,12 +1794,16 @@ function SalesVoucherWindow({
               type="button"
               disabled={mode === 'create'}
               onClick={() => setIsBonPreviewOpen(true)}
-              className="px-2.5 h-8 flex items-center justify-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-300/60 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-950 shadow-2xs cursor-pointer transition-transform duration-100 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap shrink-0"
+              className={`px-2.5 h-8 flex items-center justify-center gap-1.5 rounded-lg shadow-sm transition-transform duration-100 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap shrink-0 ${
+                mode !== 'create'
+                  ? 'bg-gradient-to-br from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white cursor-pointer shadow-md border border-blue-500/30'
+                  : 'bg-white dark:bg-slate-900 border border-slate-300/60 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-950'
+              }`}
             >
-              <Printer size={13} className="text-slate-500 dark:text-slate-400" />
+              <Printer size={13} className={mode !== 'create' ? 'text-white' : 'text-slate-500 dark:text-slate-400'} />
               <div className="flex flex-col text-left">
                 <span style={{ fontSize: '9.5px', fontFamily: 'Arial' }} className="font-extrabold uppercase tracking-wider leading-none">Imprimer le bon</span>
-                <span className="text-[7px] font-bold text-slate-400 tracking-wider">[ F3 ]</span>
+                <span className={`text-[7px] font-bold tracking-wider ${mode !== 'create' ? 'text-blue-100' : 'text-slate-400'}`}>[ F3 ]</span>
               </div>
             </button>
 
@@ -1744,12 +1812,16 @@ function SalesVoucherWindow({
             <button
               onClick={handleEditVoucher}
               disabled={mode === 'create' || !selectedSale}
-              className="px-2.5 h-8 flex items-center justify-center gap-1.5 bg-white dark:bg-slate-900 border border-slate-300/60 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-950 shadow-2xs cursor-pointer disabled:opacity-40 transition-transform duration-100 active:scale-95 whitespace-nowrap shrink-0"
+              className={`px-2.5 h-8 flex items-center justify-center gap-1.5 rounded-lg shadow-sm transition-transform duration-100 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap shrink-0 ${
+                mode !== 'create' && selectedSale
+                  ? 'bg-gradient-to-br from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white cursor-pointer shadow-md border border-amber-500/30'
+                  : 'bg-white dark:bg-slate-900 border border-slate-300/60 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-950'
+              }`}
             >
-              <Edit size={13} className="text-slate-500 dark:text-slate-400" />
+              <Edit size={13} className={mode !== 'create' && selectedSale ? 'text-white' : 'text-slate-500 dark:text-slate-400'} />
               <div className="flex flex-col text-left">
                 <span style={{ fontSize: '9.5px', fontFamily: 'Arial' }} className="font-extrabold uppercase tracking-wider leading-none">Modifier</span>
-                <span className="text-[7px] font-bold text-slate-400 tracking-wider">[ F4 ]</span>
+                <span className={`text-[7px] font-bold tracking-wider ${mode !== 'create' && selectedSale ? 'text-amber-100' : 'text-slate-400'}`}>[ F4 ]</span>
               </div>
             </button>
 
@@ -2206,7 +2278,7 @@ function SalesVoucherWindow({
         {/* Main Products Grid Table */}
         <div className={`col-span-8 flex flex-col border-2 border-solid shadow-inner rounded-2xl overflow-hidden transition-all duration-300 ${
           mode === 'view' 
-            ? 'grayscale opacity-50 dark:opacity-30 bg-slate-200/30 dark:bg-black/20 pointer-events-none border-slate-300 dark:border-slate-800' 
+            ? 'grayscale opacity-75 bg-slate-100/80 dark:bg-slate-950/70 border-slate-300 dark:border-slate-800' 
             : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-800'
         }`}>
           <div 
@@ -2300,8 +2372,10 @@ function SalesVoucherWindow({
                           isHighlighted
                             ? 'animate-row-highlight font-extrabold z-10'
                             : isSelected 
-                              ? 'bg-m3-primary/10 dark:bg-sky-500/10 text-m3-primary dark:text-sky-300 font-bold' 
-                              : 'hover:bg-slate-50 dark:hover:bg-slate-900/40 even:bg-slate-50/20 dark:even:bg-slate-950/20'
+                              ? (mode === 'view'
+                                  ? 'bg-slate-300/90 dark:bg-slate-700/90 text-slate-950 dark:text-slate-50 font-bold border-l-4 border-l-slate-600 dark:border-l-slate-300'
+                                  : 'bg-sky-500/20 dark:bg-sky-500/25 text-sky-800 dark:text-sky-200 font-bold border-l-4 border-l-sky-500 dark:border-l-sky-400')
+                              : 'hover:bg-slate-100/80 dark:hover:bg-slate-900/60 even:bg-slate-50/40 dark:even:bg-slate-950/40'
                         }`}
                       >
                         <td 
