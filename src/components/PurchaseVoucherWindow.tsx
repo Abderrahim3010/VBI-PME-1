@@ -445,11 +445,55 @@ function PurchaseVoucherWindow({
 
       // Also preserve any products that exist ONLY in the previous draft localProducts (draft-only products reconstructed on draft load)
       const catalogCodes = new Set(products.map(p => p.code));
-      const draftOnly = prev.filter(p => !catalogCodes.has(p.code));
+      const draftOnly = prev.filter(p => !catalogCodes.has(p.code) && !products.some(prod => prod.designation.trim().toUpperCase() === p.designation.trim().toUpperCase()));
 
       return [...updatedCatalog, ...draftOnly];
     });
   }, [products, mode]);
+
+  // Synchronize active draftItems and openDrafts when a product's code was modified in catalog
+  useEffect(() => {
+    const catalogCodes = new Set(products.map(p => p.code));
+
+    setDraftItems(prevItems => {
+      let changed = false;
+      const updated = prevItems.map(item => {
+        if (!catalogCodes.has(item.code)) {
+          const matchedProd = products.find(p => p.designation.trim().toUpperCase() === item.designation.trim().toUpperCase());
+          if (matchedProd && matchedProd.code !== item.code) {
+            changed = true;
+            return { ...item, code: matchedProd.code };
+          }
+        }
+        return item;
+      });
+      return changed ? updated : prevItems;
+    });
+
+    setOpenDrafts(prevDrafts => {
+      let changed = false;
+      const updated = prevDrafts.map(draft => {
+        if (!draft.draftItems || draft.draftItems.length === 0) return draft;
+        let draftChanged = false;
+        const nextItems = draft.draftItems.map((item: any) => {
+          if (!catalogCodes.has(item.code)) {
+            const matchedProd = products.find(p => p.designation.trim().toUpperCase() === String(item.designation || '').trim().toUpperCase());
+            if (matchedProd && matchedProd.code !== item.code) {
+              draftChanged = true;
+              return { ...item, code: matchedProd.code };
+            }
+          }
+          return item;
+        });
+        if (draftChanged) {
+          changed = true;
+          return { ...draft, draftItems: nextItems };
+        }
+        return draft;
+      });
+      return changed ? updated : prevDrafts;
+    });
+  }, [products]);
 
   // CUSTOM RETRO DIALOG BOX STATE (to completely bypass blocked iframe alert/confirm modals)
   const [retroDialog, setRetroDialog] = useState<{

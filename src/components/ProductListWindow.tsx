@@ -20,6 +20,7 @@ interface ProductListWindowProps {
   onSelectProduct?: (product: Product) => void;
   onClose: () => void;
   onProductsUpdate?: (updatedProducts: Product[]) => void;
+  onProductCodeChange?: (oldCode: string, newCode: string, updatedProduct: Product) => void;
   createdFamilles?: string[];
   onCreatedFamillesChange?: (familles: string[] | ((prev: string[]) => string[])) => void;
   config?: any;
@@ -55,6 +56,7 @@ function ProductListWindow({
   onSelectProduct,
   onClose,
   onProductsUpdate,
+  onProductCodeChange,
   createdFamilles: propCreatedFamilles,
   onCreatedFamillesChange,
   config
@@ -553,11 +555,22 @@ function ProductListWindow({
     if (isAddingNew) {
       onAddProduct(payload);
     } else {
-      if (onProductsUpdate && editingOriginalCode) {
-        const updatedProducts = products.map(p => p.code === editingOriginalCode ? payload : p);
-        onProductsUpdate(updatedProducts);
+      if (editingOriginalCode && editingOriginalCode !== cleanCode) {
+        if (onProductCodeChange) {
+          onProductCodeChange(editingOriginalCode, cleanCode, payload);
+        } else if (onProductsUpdate) {
+          const updatedProducts = products.map(p => p.code === editingOriginalCode ? payload : p);
+          onProductsUpdate(updatedProducts);
+        } else {
+          onEditProduct(payload);
+        }
       } else {
-        onEditProduct(payload);
+        if (onProductsUpdate && editingOriginalCode) {
+          const updatedProducts = products.map(p => p.code === editingOriginalCode ? payload : p);
+          onProductsUpdate(updatedProducts);
+        } else {
+          onEditProduct(payload);
+        }
       }
     }
 

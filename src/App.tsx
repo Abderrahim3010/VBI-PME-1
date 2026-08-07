@@ -915,6 +915,88 @@ export default function App() {
     };
   }, [purchases, sales]);
 
+  // Propagate product code modification across catalog, purchase vouchers (F1), and sales vouchers
+  const handleProductCodeChange = (oldCode: string, newCode: string, updatedProduct: Product) => {
+    // 1. Update products list
+    setProducts(prevProducts => {
+      const nextProducts = prevProducts.map(p => p.code === oldCode ? updatedProduct : p);
+      saveJson('compos_products', nextProducts);
+      return nextProducts;
+    });
+
+    // 2. Update purchases array (Purchase Vouchers F1)
+    setPurchases(prevPurchases => {
+      const nextPurchases = prevPurchases.map(pv => {
+        if (!pv.items || !pv.items.some(i => i.code === oldCode)) return pv;
+        return {
+          ...pv,
+          items: pv.items.map(i => i.code === oldCode ? { ...i, code: newCode } : i)
+        };
+      });
+      saveJson('compos_purchases', nextPurchases);
+      return nextPurchases;
+    });
+
+    // 3. Update purchase_open_drafts in local storage
+    try {
+      const openDrafts = getStorageJson('purchase_open_drafts', []);
+      if (Array.isArray(openDrafts) && openDrafts.length > 0) {
+        let modified = false;
+        const nextDrafts = openDrafts.map((draft: any) => {
+          if (draft.draftItems && draft.draftItems.some((i: any) => i.code === oldCode)) {
+            modified = true;
+            return {
+              ...draft,
+              draftItems: draft.draftItems.map((i: any) => i.code === oldCode ? { ...i, code: newCode } : i)
+            };
+          }
+          return draft;
+        });
+        if (modified) {
+          saveJson('purchase_open_drafts', nextDrafts);
+        }
+      }
+    } catch (e) {
+      console.error('Error updating purchase_open_drafts:', e);
+    }
+
+    // 4. Update sales array (Sales Vouchers F2)
+    setSales(prevSales => {
+      const nextSales = prevSales.map(sv => {
+        if (!sv.items || !sv.items.some(i => i.code === oldCode)) return sv;
+        return {
+          ...sv,
+          items: sv.items.map(i => i.code === oldCode ? { ...i, code: newCode } : i)
+        };
+      });
+      saveJson('compos_sales', nextSales);
+      return nextSales;
+    });
+
+    // 5. Update sales_open_drafts in local storage
+    try {
+      const openSalesDrafts = getStorageJson('sales_open_drafts', []);
+      if (Array.isArray(openSalesDrafts) && openSalesDrafts.length > 0) {
+        let modified = false;
+        const nextDrafts = openSalesDrafts.map((draft: any) => {
+          if (draft.draftItems && draft.draftItems.some((i: any) => i.code === oldCode)) {
+            modified = true;
+            return {
+              ...draft,
+              draftItems: draft.draftItems.map((i: any) => i.code === oldCode ? { ...i, code: newCode } : i)
+            };
+          }
+          return draft;
+        });
+        if (modified) {
+          saveJson('sales_open_drafts', nextDrafts);
+        }
+      }
+    } catch (e) {
+      console.error('Error updating sales_open_drafts:', e);
+    }
+  };
+
   // Handle inventory updates upon purchase / sale vouchers
   const handleAddPurchaseVoucher = (voucher: PurchaseVoucher) => {
     // Add purchase safely preventing duplicates
@@ -2542,6 +2624,7 @@ export default function App() {
               onAddProduct={(p) => setProducts([...products, p])}
               onEditProduct={(p) => setProducts(products.map(o => o.code === p.code ? p : o))}
               onProductsUpdate={setProducts}
+              onProductCodeChange={handleProductCodeChange}
               onDeleteProduct={(code) => setProducts(products.filter(p => p.code !== code))}
               onClose={() => closeWindow('products')}
               createdFamilles={createdFamilles}

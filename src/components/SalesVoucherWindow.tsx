@@ -76,10 +76,26 @@ function SalesVoucherWindow({
   const [localProducts, setLocalProducts] = useState<Product[]>(products);
   const [editingVoucherId, setEditingVoucherId] = useState<string | null>(null);
 
-  // Synchronize local products with props dynamically
+  // Synchronize local products with props dynamically and sync draft items if product code changed
   useEffect(() => {
     productsRef.current = products;
     setLocalProducts(products);
+
+    const catalogCodes = new Set(products.map(p => p.code));
+    setDraftItems(prevItems => {
+      let changed = false;
+      const updated = prevItems.map(item => {
+        if (!catalogCodes.has(item.code)) {
+          const matchedProd = products.find(p => p.designation.trim().toUpperCase() === item.designation.trim().toUpperCase());
+          if (matchedProd && matchedProd.code !== item.code) {
+            changed = true;
+            return { ...item, code: matchedProd.code };
+          }
+        }
+        return item;
+      });
+      return changed ? updated : prevItems;
+    });
   }, [products]);
 
   // Mode de paiement modal states
