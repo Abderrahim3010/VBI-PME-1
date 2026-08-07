@@ -13,7 +13,7 @@ import {
 } from '../services/salesDraftReservations';
 import { 
   Edit, Edit3, RefreshCw, BarChart3, Printer, Plug, Search, Plus, Minus, Trash2, 
-  Package, Coins, DollarSign, User as UserIcon, Users, AlertTriangle, Lightbulb, 
+  Package, Coins, DollarSign, User as UserIcon, Users, UserCheck, AlertTriangle, Lightbulb, 
   Folder, FileText, MessageSquare, HelpCircle, X, Check, Eye, History, Barcode
 } from 'lucide-react';
 
@@ -1984,260 +1984,251 @@ function SalesVoucherWindow({
 
         {/* 2. Client and Document Metadatas panel - gradient background */}
         <div 
-          style={{ height: '128px', width: '100%' }}
-          className="mx-0.5 mt-0.5 mb-2 p-3 bg-gradient-to-r from-sky-200 via-sky-100 to-white dark:from-sky-950 dark:via-slate-900 dark:to-slate-950 border border-sky-200/80 dark:border-sky-900/40 rounded-2xl flex flex-nowrap gap-3.5 items-center justify-start text-slate-900 dark:text-slate-100 shadow-sm relative overflow-visible shrink-0"
+          style={{ minHeight: '136px', height: '136px', width: '100%' }}
+          className="mx-0.5 mt-0.5 mb-2 p-2.5 bg-gradient-to-r from-sky-200 via-sky-100 to-white dark:from-sky-950 dark:via-slate-900 dark:to-slate-950 border border-sky-200/80 dark:border-sky-900/40 rounded-2xl flex flex-nowrap gap-3 items-center justify-start text-slate-900 dark:text-slate-100 shadow-sm relative overflow-visible shrink-0"
         >
         
-        {/* Left container: Client + metadata on Row 1, and facturation auxiliary cards raised to Row 2 */}
-        <div className="flex flex-col gap-1.5 shrink-0 select-text justify-center">
-          {/* Row 1: Client Select/Avatar AND N° de bon, Date d'édition, Heure beside each other */}
-          <div className="flex items-center gap-2.5">
-            {/* Client avatar and select */}
-            <div className="flex items-center gap-2">
+        {/* Column 1: Stacked 4 boxes - Client, N° de bon, Date d'édition, Heure */}
+        <div className="flex flex-col gap-1.5 shrink-0 select-text justify-center w-[220px]">
+          {/* 1. Client box with professional icon */}
+          <div className="flex items-center justify-between gap-2 h-7 px-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-2xs w-full">
+            <div className="flex items-center gap-1.5 shrink-0">
               <button
                 type="button"
                 onClick={() => setIsClientModalOpen(true)}
                 title="Choisir ou créer un client (Fichier clients)"
-                className="w-10 h-10 shrink-0 bg-gradient-to-b from-sky-50 to-sky-100/50 dark:from-slate-900 dark:to-slate-950 border border-sky-100/30 dark:border-slate-800 rounded-xl shadow-sm flex items-center justify-center cursor-pointer hover:scale-110 hover:border-sky-300 dark:hover:border-slate-700 active:scale-95 transition-all duration-100 focus:outline-none"
+                className="w-5 h-5 shrink-0 bg-gradient-to-tr from-sky-600 via-blue-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white rounded shadow-xs flex items-center justify-center cursor-pointer hover:scale-105 active:scale-95 transition-all duration-150 focus:outline-none border border-sky-400/30"
               >
-                {/* Custom SVG Avatar resembling the blue client image exactly */}
-                <svg className="w-7 h-7" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="50" cy="50" r="48" fill="#e0f2fe" stroke="#38bdf8" strokeWidth="2"/>
-                  <path d="M25 40C25 25 35 15 50 15C65 15 75 25 75 40C75 43 70 45 68 40C62 30 38 30 32 40C30 45 25 43 25 40Z" fill="#eab308"/>
-                  <circle cx="50" cy="45" r="22" fill="#fed7aa"/>
-                  <path d="M35 30C42 22 58 22 65 30C60 25 40 25 35 30Z" fill="#ca8a04"/>
-                  <circle cx="43" cy="42" r="3" fill="#1e3a8a"/>
-                  <circle cx="57" cy="42" r="3" fill="#1e3a8a"/>
-                  <path d="M44 54C47 57 53 57 56 54" stroke="#1e3a8a" strokeWidth="2.5" strokeLinecap="round"/>
-                  <path d="M22 85C22 72 32 63 45 61L50 67L55 61C68 63 78 72 78 85H22Z" fill="#1d4ed8"/>
-                  <path d="M41 62L50 71L59 62L50 60L41 62Z" fill="#ffffff"/>
-                  <path d="M47 68L50 82L53 68L50 66L47 68Z" fill="#ea580c"/>
-                </svg>
+                <UserCheck size={11} className="text-white" />
               </button>
-              <div className="flex flex-col gap-0.5 w-[115px]">
-                <span className="font-extrabold text-[9px] text-blue-900 dark:text-sky-400/90 uppercase tracking-wide">Client</span>
-                {mode === 'create' ? (
-                  <select
-                    value={newClientName}
-                    onChange={(e) => setNewClientName(e.target.value)}
-                    className="h-7 px-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-[10px] font-sans font-extrabold text-blue-900 dark:text-sky-400 focus:outline-none w-full"
-                  >
-                    <option value="Anonyme">ANONYME</option>
-                    {clients.filter(c => c.name.toLowerCase() !== 'anonyme').map((c, idx) => (
-                      <option key={`sale-cli-opt-${c.id || 'cli'}-${idx}`} value={c.name}>{c.name}</option>
-                    ))}
-                  </select>
-                ) : (
-                  <input
-                    type="text"
-                    readOnly
-                    value={(selectedSale?.client?.toLowerCase() === 'anonyme') ? 'ANONYME' : (selectedSale?.client || '')}
-                    className="h-7 px-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg font-sans font-extrabold text-[10px] text-slate-900 dark:text-slate-100 focus:outline-none w-full"
-                  />
-                )}
-              </div>
+              <span className="font-extrabold text-[8.5px] text-blue-900 dark:text-sky-400 uppercase tracking-wide shrink-0">Client:</span>
             </div>
-
-            {/* Divider */}
-            <div className="h-7 w-[1px] bg-slate-200 dark:bg-slate-800 mx-1 shrink-0" />
-
-            {/* N° de bon, Date, Heure (now side by side next to Client group) */}
-            <div className="flex items-center gap-1.5 shrink-0">
-              {/* N° de bon */}
-              <div className="flex flex-col gap-0.5 shrink-0">
-                <span className="font-extrabold text-[8.5px] text-slate-400 dark:text-slate-400 leading-none uppercase tracking-wide">N° de bon</span>
-                <div 
-                  onClick={() => setIsBrowseBonsModalOpen(true)}
-                  title="Rechercher / Parcourir les bons de vente"
-                  className="h-7 px-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-sky-400 dark:hover:border-sky-500 rounded-lg flex items-center justify-between gap-1 cursor-pointer transition-all shrink-0 group shadow-2xs"
+            <div className="flex items-center justify-end flex-1 min-w-0">
+              {mode === 'create' ? (
+                <select
+                  value={newClientName}
+                  onChange={(e) => setNewClientName(e.target.value)}
+                  className="h-5 bg-transparent text-[10px] font-sans font-extrabold text-blue-900 dark:text-sky-400 focus:outline-none w-full text-right cursor-pointer truncate"
                 >
-                  <input
-                    type="text"
-                    readOnly
-                    value={mode === 'create' ? newSaleId : (selectedSale?.id || '')}
-                    style={{ fontSize: '12px', textDecorationLine: 'none', fontFamily: 'Arial' }}
-                    className="w-[56px] bg-transparent font-mono font-black text-center text-rose-600 border-none outline-none ring-0 shadow-none focus:outline-none focus:ring-0 p-0 m-0 pointer-events-none"
-                  />
-                  <Search size={13} className="text-slate-400 dark:text-slate-500 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors shrink-0" />
-                </div>
-              </div>
-
-              {/* Date d'édition */}
-              <div className="flex flex-col gap-0.5 w-[85px]">
-                <span className="font-extrabold text-[8.5px] text-slate-400 dark:text-slate-400 leading-none uppercase tracking-wide">Date d'édition</span>
+                  <option value="Anonyme">ANONYME</option>
+                  {clients.filter(c => c.name.toLowerCase() !== 'anonyme').map((c, idx) => (
+                    <option key={`sale-cli-opt-${c.id || 'cli'}-${idx}`} value={c.name}>{c.name}</option>
+                  ))}
+                </select>
+              ) : (
                 <input
                   type="text"
-                  readOnly={mode === 'view'}
-                  value={mode === 'create' ? newDate : (selectedSale?.date || '')}
-                  onChange={(e) => setNewDate(e.target.value)}
-                  style={{ fontSize: '12px', fontFamily: 'Arial' }}
-                  className="h-7 px-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg font-mono font-bold text-center text-slate-800 dark:text-slate-200 focus:outline-none"
+                  readOnly
+                  value={(selectedSale?.client?.toLowerCase() === 'anonyme') ? 'ANONYME' : (selectedSale?.client || '')}
+                  className="h-5 bg-transparent font-sans font-extrabold text-[10px] text-slate-900 dark:text-slate-100 focus:outline-none w-full text-right truncate"
                 />
-              </div>
-
-              {/* Heure */}
-              <div className="flex flex-col gap-0.5 w-[70px]">
-                <span className="font-extrabold text-[8.5px] text-slate-400 dark:text-slate-400 leading-none uppercase tracking-wide">Heure</span>
-                <input
-                  type="text"
-                  readOnly={mode === 'view'}
-                  value={mode === 'create' ? newTime : (selectedSale?.time || '')}
-                  onChange={(e) => setNewTime(e.target.value)}
-                  style={{ fontFamily: 'Arial', fontSize: '13px' }}
-                  className="h-7 px-1 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg font-mono font-bold text-center text-slate-800 dark:text-slate-200 focus:outline-none"
-                />
-              </div>
+              )}
             </div>
           </div>
 
-          {/* Row 2: Facturation, Autres imp, Import/Exp raised to Row 2 side by side */}
-          <div className="flex flex-row gap-1.5 select-none font-sans font-bold shrink-0 relative">
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => {
-                  if (mode === 'create') {
-                    showRetroAlert("Impression impossible. Veuillez d'abord fermer le bon (enregistrer) !", "Saisie ventes");
-                    return;
-                  }
-                  setIsFacturationDropdownOpen(!isFacturationDropdownOpen);
-                }}
-                className={`h-8 px-2.5 border rounded-xl flex gap-2 items-center text-left transition-all cursor-pointer active:scale-95 w-[145px] focus:outline-none ${
-                  isFacturationDropdownOpen
-                    ? 'bg-blue-50 border-blue-400 text-blue-700 dark:bg-slate-800 dark:border-sky-500 dark:text-sky-450'
-                    : 'bg-slate-50 dark:bg-slate-900/60 border-slate-200/50 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                }`}
-              >
-                <BarChart3 size={14} className="text-blue-500 dark:text-sky-400 shrink-0" />
-                <div className="flex-1 flex flex-col leading-none">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[8.5px] font-extrabold uppercase tracking-wide text-slate-700 dark:text-slate-300">Facturation</span>
-                    <span className="text-[7px] text-slate-400">▼</span>
-                  </div>
-                  <span className="text-[7.5px] text-slate-400 mt-0.5">Comptes actifs</span>
+          {/* 2. N° de bon */}
+          <div className="flex items-center justify-between gap-2 h-7 px-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-2xs w-full">
+            <span className="font-extrabold text-[8.5px] text-slate-500 dark:text-slate-400 uppercase tracking-wide shrink-0">N° de bon:</span>
+            <div 
+              onClick={() => setIsBrowseBonsModalOpen(true)}
+              title="Rechercher / Parcourir les bons de vente"
+              className="flex items-center justify-end gap-1 cursor-pointer transition-all flex-1 group"
+            >
+              <input
+                type="text"
+                readOnly
+                value={mode === 'create' ? newSaleId : (selectedSale?.id || '')}
+                className="w-full bg-transparent font-mono font-black text-right text-rose-600 border-none outline-none focus:outline-none p-0 m-0 text-[11px] pointer-events-none"
+              />
+              <Search size={12} className="text-slate-400 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors shrink-0" />
+            </div>
+          </div>
+
+          {/* 3. Date d'édition */}
+          <div className="flex items-center justify-between gap-2 h-7 px-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-2xs w-full">
+            <span className="font-extrabold text-[8.5px] text-slate-500 dark:text-slate-400 uppercase tracking-wide shrink-0">Date d'édition:</span>
+            <div className="flex items-center justify-end gap-1 flex-1">
+              <input
+                type="text"
+                readOnly={mode === 'view'}
+                value={mode === 'create' ? newDate : (selectedSale?.date || '')}
+                onChange={(e) => setNewDate(e.target.value)}
+                className="w-full h-5 px-0 bg-transparent font-mono font-bold text-right text-slate-800 dark:text-slate-200 focus:outline-none text-[11px] p-0 m-0"
+              />
+              <div className="w-3 shrink-0" />
+            </div>
+          </div>
+
+          {/* 4. Heure */}
+          <div className="flex items-center justify-between gap-2 h-7 px-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-2xs w-full">
+            <span className="font-extrabold text-[8.5px] text-slate-500 dark:text-slate-400 uppercase tracking-wide shrink-0">Heure:</span>
+            <div className="flex items-center justify-end gap-1 flex-1">
+              <input
+                type="text"
+                readOnly={mode === 'view'}
+                value={mode === 'create' ? newTime : (selectedSale?.time || '')}
+                onChange={(e) => setNewTime(e.target.value)}
+                className="w-full h-5 px-0 bg-transparent font-mono font-bold text-right text-slate-800 dark:text-slate-200 focus:outline-none text-[11px] p-0 m-0"
+              />
+              <div className="w-3 shrink-0" />
+            </div>
+          </div>
+        </div>
+
+        {/* Vertical subtle divider */}
+        <div className="h-28 w-[1px] bg-slate-300/60 dark:bg-slate-800/80 mx-0.5 shrink-0" />
+
+        {/* Column 2: Stacked 3 action buttons (Facturation, Autres imp., Import / Exp) */}
+        <div className="flex flex-col gap-2 shrink-0 select-none font-sans font-bold justify-center relative w-[145px]">
+          {/* Facturation */}
+          <div className="relative w-full">
+            <button
+              type="button"
+              onClick={() => {
+                if (mode === 'create') {
+                  showRetroAlert("Impression impossible. Veuillez d'abord fermer le bon (enregistrer) !", "Saisie ventes");
+                  return;
+                }
+                setIsFacturationDropdownOpen(!isFacturationDropdownOpen);
+              }}
+              className={`h-8 px-2.5 border rounded-lg flex gap-2 items-center text-left transition-all cursor-pointer active:scale-95 w-full focus:outline-none ${
+                isFacturationDropdownOpen
+                  ? 'bg-blue-50 border-blue-400 text-blue-700 dark:bg-slate-800 dark:border-sky-500 dark:text-sky-400'
+                  : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 shadow-2xs'
+              }`}
+            >
+              <BarChart3 size={13} className="text-blue-500 dark:text-sky-400 shrink-0" />
+              <div className="flex-1 flex flex-col leading-none">
+                <div className="flex items-center justify-between">
+                  <span className="text-[8.5px] font-extrabold uppercase tracking-wide text-slate-700 dark:text-slate-300">Facturation</span>
+                  <span className="text-[7px] text-slate-400">▼</span>
                 </div>
-              </button>
+                <span className="text-[7px] text-slate-400 mt-0.5">Comptes actifs</span>
+              </div>
+            </button>
 
-              {isFacturationDropdownOpen && (
-                <>
-                  {/* Backdrop to close dropdown */}
-                  <div 
-                    className="fixed inset-0 z-40" 
-                    onClick={() => setIsFacturationDropdownOpen(false)} 
-                  />
+            {isFacturationDropdownOpen && (
+              <>
+                {/* Backdrop to close dropdown */}
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setIsFacturationDropdownOpen(false)} 
+                />
+                
+                {/* Dropdown Menu */}
+                <div className="absolute left-0 top-full mt-1 w-[260px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-xl py-1 z-50 text-left font-sans select-none animate-in fade-in slide-in-from-top-1 duration-100 no-gray-override">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsFacturationDropdownOpen(false);
+                      setFactureType('normal');
+                      setIsFacturePreviewOpen(true);
+                    }}
+                    className="w-full px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-start text-xs text-slate-800 dark:text-slate-200 font-semibold cursor-pointer"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mr-2.5"></span>
+                    <span className="flex-1 text-slate-800 dark:text-slate-100">
+                      Imprimer Facture
+                    </span>
+                  </button>
                   
-                  {/* Dropdown Menu exactly like image.png */}
-                  <div className="absolute left-0 top-full mt-1 w-[260px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg shadow-xl py-1 z-50 text-left font-sans select-none animate-in fade-in slide-in-from-top-1 duration-100 no-gray-override">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsFacturationDropdownOpen(false);
-                        setFactureType('normal');
-                        setIsFacturePreviewOpen(true);
-                      }}
-                      className="w-full px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-start text-xs text-slate-800 dark:text-slate-200 font-semibold cursor-pointer"
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mr-2.5"></span>
-                      <span className="flex-1 text-slate-800 dark:text-slate-100">
-                        Imprimer Facture
-                      </span>
-                    </button>
-                    
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsFacturationDropdownOpen(false);
-                        setShowComptabiliseesList(true);
-                      }}
-                      className="w-full px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-start text-xs text-slate-800 dark:text-slate-200 font-semibold cursor-pointer border-t border-slate-100 dark:border-slate-800/60"
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-slate-400 mr-2.5"></span>
-                      <span className="flex-1 text-slate-800 dark:text-slate-100">
-                        Factures de Ventes Comptabilisées
-                      </span>
-                    </button>
-                    
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsFacturationDropdownOpen(false);
-                        setShowNonComptabiliseesList(true);
-                      }}
-                      className="w-full px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-start text-xs text-slate-800 dark:text-slate-200 font-semibold cursor-pointer"
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-slate-400 mr-2.5"></span>
-                      <span className="flex-1 text-slate-800 dark:text-slate-100">
-                        Factures de Ventes NON Comptabilisées
-                      </span>
-                    </button>
-                    
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsFacturationDropdownOpen(false);
-                        setFactureType('proforma');
-                        setIsFacturePreviewOpen(true);
-                      }}
-                      className="w-full px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-start text-xs text-slate-800 dark:text-slate-200 font-semibold cursor-pointer border-t border-slate-100 dark:border-slate-800/60"
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mr-2.5"></span>
-                      <span className="flex-1 text-slate-800 dark:text-slate-100">
-                        Facture Proforma
-                      </span>
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsFacturationDropdownOpen(false);
+                      setShowComptabiliseesList(true);
+                    }}
+                    className="w-full px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-start text-xs text-slate-800 dark:text-slate-200 font-semibold cursor-pointer border-t border-slate-100 dark:border-slate-800/60"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400 mr-2.5"></span>
+                    <span className="flex-1 text-slate-800 dark:text-slate-100">
+                      Factures de Ventes Comptabilisées
+                    </span>
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsFacturationDropdownOpen(false);
+                      setShowNonComptabiliseesList(true);
+                    }}
+                    className="w-full px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-start text-xs text-slate-800 dark:text-slate-200 font-semibold cursor-pointer"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-slate-400 mr-2.5"></span>
+                    <span className="flex-1 text-slate-800 dark:text-slate-100">
+                      Factures de Ventes NON Comptabilisées
+                    </span>
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsFacturationDropdownOpen(false);
+                      setFactureType('proforma');
+                      setIsFacturePreviewOpen(true);
+                    }}
+                    className="w-full px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-start text-xs text-slate-800 dark:text-slate-200 font-semibold cursor-pointer border-t border-slate-100 dark:border-slate-800/60"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mr-2.5"></span>
+                    <span className="flex-1 text-slate-800 dark:text-slate-100">
+                      Facture Proforma
+                    </span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
 
-            <div className="h-8 bg-slate-50 dark:bg-slate-900/60 px-2.5 border border-slate-200/50 dark:border-slate-800 rounded-xl flex gap-2 items-center text-slate-600 dark:text-slate-300 w-[145px]">
-              <Printer size={14} className="text-indigo-500 dark:text-indigo-400 shrink-0" />
-              <div className="flex flex-col leading-none text-left">
-                <span className="text-[8.5px] font-extrabold uppercase tracking-wide text-slate-700 dark:text-slate-300">Autres imp.</span>
-                <span className="text-[7.5px] text-slate-400 mt-0.5">BLs Multiples</span>
-              </div>
+          {/* Autres imp. */}
+          <div className="h-8 bg-white dark:bg-slate-900 px-2.5 border border-slate-200 dark:border-slate-800 rounded-lg flex gap-2 items-center text-slate-700 dark:text-slate-300 w-full shadow-2xs">
+            <Printer size={13} className="text-indigo-500 dark:text-indigo-400 shrink-0" />
+            <div className="flex flex-col leading-none text-left">
+              <span className="text-[8.5px] font-extrabold uppercase tracking-wide text-slate-700 dark:text-slate-300">Autres imp.</span>
+              <span className="text-[7px] text-slate-400 mt-0.5">BLs Multiples</span>
             </div>
-            <div className="h-8 bg-slate-50 dark:bg-slate-900/60 px-2.5 border border-slate-200/50 dark:border-slate-800 rounded-xl flex gap-2 items-center text-slate-600 dark:text-slate-300 w-[145px]">
-              <Plug size={14} className="text-teal-500 dark:text-teal-400 shrink-0" />
-              <div className="flex flex-col leading-none text-left">
-                <span className="text-[8.5px] font-extrabold uppercase tracking-wide text-slate-700 dark:text-slate-300">Import / Exp</span>
-                <span className="text-[7.5px] text-slate-400 mt-0.5">Sauvegardes</span>
-              </div>
+          </div>
+
+          {/* Import / Exp */}
+          <div className="h-8 bg-white dark:bg-slate-900 px-2.5 border border-slate-200 dark:border-slate-800 rounded-lg flex gap-1.5 items-center text-slate-700 dark:text-slate-300 w-full shadow-2xs">
+            <Plug size={13} className="text-teal-500 dark:text-teal-400 shrink-0" />
+            <div className="flex flex-col leading-none text-left">
+              <span className="text-[8.5px] font-extrabold uppercase tracking-wide text-slate-700 dark:text-slate-300">Import / Exp</span>
+              <span className="text-[7px] text-slate-400 mt-0.5">Sauvegardes</span>
             </div>
           </div>
         </div>
 
         {/* Central Balance / Cash Account summary card */}
-        <div className="w-[190px] bg-slate-50 dark:bg-slate-900 p-1.5 border border-slate-300/10 rounded-2xl flex flex-col gap-1 text-xs font-mono font-bold leading-tight shadow-xs select-none shrink-0">
+        <div className="w-[195px] bg-white/90 dark:bg-slate-900 p-1.5 border border-slate-200/80 dark:border-slate-800 rounded-2xl flex flex-col gap-1 text-xs font-mono font-bold leading-tight shadow-xs select-none shrink-0">
           {selectedClientObj.name.toLowerCase() !== 'anonyme' && (
-            <div className="flex justify-between items-center bg-white dark:bg-slate-950 px-2 py-0.5 border border-slate-200/50 dark:border-slate-800/55 rounded-lg">
-              <span style={{ fontFamily: 'Arial', fontSize: '11.5px' }} className="text-[9.5px] text-slate-500 dark:text-slate-400 font-semibold font-sans">Ancien solde:</span>
-              <span className="text-red-600 dark:text-red-400 font-extrabold text-xs">
+            <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 px-2.5 h-6.5 border border-slate-200/60 dark:border-slate-800 rounded-lg">
+              <span className="text-[9.5px] text-slate-500 dark:text-slate-400 font-extrabold font-sans uppercase tracking-wide">Ancien solde:</span>
+              <span className="text-red-600 dark:text-red-400 font-extrabold text-[11.5px] font-mono">
                 {(computedMetrics.oldBalance ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 1 })}
               </span>
             </div>
           )}
-          <div className="flex justify-between items-center bg-white dark:bg-slate-950 px-2 py-0.5 border border-slate-200/50 dark:border-slate-800/55 rounded-lg">
-            <span style={{ fontFamily: 'Arial', fontSize: '12.5px' }} className="text-[9.5px] text-m3-primary dark:text-sky-400 font-semibold font-sans">Montant bon:</span>
-            <span className="text-blue-900 dark:text-sky-300 font-extrabold text-xs">
+          <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 px-2.5 h-6.5 border border-slate-200/60 dark:border-slate-800 rounded-lg">
+            <span className="text-[9.5px] text-sky-700 dark:text-sky-400 font-extrabold font-sans uppercase tracking-wide">Montant bon:</span>
+            <span className="text-blue-900 dark:text-sky-300 font-black text-[11.5px] font-mono">
               {(computedMetrics.ttc ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 1 })}
             </span>
           </div>
-          <div className="flex justify-between items-center bg-white dark:bg-slate-950 px-2 py-0.5 border border-rose-200 dark:border-rose-900/40 rounded-lg">
-            <span style={{ fontSize: '12.5px', fontFamily: 'Arial' }} className="text-[9.5px] text-slate-500 dark:text-slate-400 font-semibold font-sans">Versement:</span>
+          <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 px-2.5 h-6.5 border border-slate-200/60 dark:border-slate-800 rounded-lg">
+            <span className="text-[9.5px] text-emerald-700 dark:text-emerald-400 font-extrabold font-sans uppercase tracking-wide">Versement:</span>
             <input
               type="number"
               disabled={mode === 'view'}
-              value={mode === 'create' ? versement : (selectedSale?.versement || 0)}
-              onChange={(e) => setVersement(Number(e.target.value))}
-              className="w-20 text-right bg-transparent font-mono font-extrabold text-green-700 dark:text-green-400 outline-none text-xs"
-              style={{ direction: 'ltr' }}
+              value={mode === 'create' ? (versement || '') : (selectedSale?.versement || 0)}
+              onChange={(e) => setVersement(Number(e.target.value) || 0)}
+              placeholder="0"
+              className="w-22 text-right bg-transparent font-mono font-black text-emerald-600 dark:text-emerald-400 outline-none text-[11.5px] focus:outline-none p-0 m-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
             />
           </div>
           {selectedClientObj.name.toLowerCase() !== 'anonyme' && (
-            <div className="flex justify-between items-center bg-white dark:bg-slate-950 px-2 py-0.5 border border-slate-200/50 dark:border-slate-800/55 rounded-lg">
-              <span style={{ fontSize: '12.5px', fontFamily: 'Arial', fontWeight: 'bold' }} className="text-[9.5px] text-slate-500 dark:text-slate-400 font-semibold font-sans">Nouveau solde:</span>
-              <span className="text-rose-600 dark:text-rose-400 font-extrabold text-xs">
+            <div className="flex justify-between items-center bg-slate-50 dark:bg-slate-950 px-2.5 h-6.5 border border-slate-200/60 dark:border-slate-800 rounded-lg">
+              <span className="text-[9.5px] text-slate-500 dark:text-slate-400 font-extrabold font-sans uppercase tracking-wide">Nouveau solde:</span>
+              <span className="text-rose-600 dark:text-rose-400 font-extrabold text-[11.5px] font-mono">
                 {(computedMetrics.newBalance ?? 0).toLocaleString('fr-FR', { minimumFractionDigits: 1 })}
               </span>
             </div>
