@@ -141,7 +141,10 @@ export default function InventaireWindow({
       // Search Query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
-        const matchCode = item.code.toLowerCase().includes(q);
+        if (scannerMode) {
+          return item.code.toLowerCase().includes(q) || (!!item.destockBarcode && item.destockBarcode.toLowerCase().includes(q));
+        }
+        const matchCode = item.code.toLowerCase().includes(q) || (!!item.destockBarcode && item.destockBarcode.toLowerCase().includes(q));
         const matchDes = item.designation.toLowerCase().includes(q);
         const matchCat = item.category.toLowerCase().includes(q);
         return matchCode || matchDes || matchCat;
@@ -149,7 +152,7 @@ export default function InventaireWindow({
 
       return true;
     });
-  }, [inventoryItems, selectedCategory, filterMode, searchQuery]);
+  }, [inventoryItems, selectedCategory, filterMode, searchQuery, scannerMode]);
 
   // Compute Overall Inventory Statistics
   const stats = useMemo(() => {
@@ -230,7 +233,10 @@ export default function InventaireWindow({
     if (!scanCode.trim()) return;
 
     const query = scanCode.trim().toLowerCase();
-    const matched = products.find(p => p.code.toLowerCase() === query || p.designation.toLowerCase().includes(query));
+    const matched = products.find(p => 
+      p.code.toLowerCase() === query || 
+      (p.destockBarcode && p.destockBarcode.toLowerCase() === query)
+    );
 
     if (matched) {
       setPhysicalCounts(prev => {

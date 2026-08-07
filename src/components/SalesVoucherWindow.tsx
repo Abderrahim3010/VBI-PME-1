@@ -142,6 +142,11 @@ function SalesVoucherWindow({
   const [tempObs, setTempObs] = useState('');
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
 
+  // Scanner Douchette mode state & refs
+  const [isScannerMode, setIsScannerMode] = useState(false);
+  const scannerBufferRef = useRef('');
+  const lastKeyTimeRef = useRef(0);
+
   // Product chooser dialogue states
   const [isProductChooserOpen, setIsProductChooserOpen] = useState(false);
   const [chooserSearchQuery, setChooserSearchQuery] = useState('');
@@ -151,22 +156,24 @@ function SalesVoucherWindow({
     if (!query) {
       return products.slice(0, 100);
     }
+    if (isScannerMode) {
+      return products.filter(p => 
+        p.code.toLowerCase().includes(query) ||
+        (p.destockBarcode && p.destockBarcode.toLowerCase().includes(query))
+      ).slice(0, 150);
+    }
     return products.filter(p => 
       p.designation.toLowerCase().includes(query) || 
-      p.code.toLowerCase().includes(query)
+      p.code.toLowerCase().includes(query) ||
+      (p.destockBarcode && p.destockBarcode.toLowerCase().includes(query))
     ).slice(0, 150);
-  }, [products, chooserSearchQuery]);
+  }, [products, chooserSearchQuery, isScannerMode]);
 
   const [selectedProductInChooser, setSelectedProductInChooser] = useState<Product | null>(null);
   const [chooserQty, setChooserQty] = useState<number | ''>(1);
   const [selectedPriceType, setSelectedPriceType] = useState<'prixVente1' | 'prixVente2' | 'prixVente3'>('prixVente1');
   const [customSellingPrice, setCustomSellingPrice] = useState<number | ''>(0);
   const [isConfigPopupOpen, setIsConfigPopupOpen] = useState(false);
-
-  // Scanner Douchette mode state & refs
-  const [isScannerMode, setIsScannerMode] = useState(false);
-  const scannerBufferRef = useRef('');
-  const lastKeyTimeRef = useRef(0);
 
   // Handle scanned barcode lookup and open Configuration d'Ajout d'Article popup
   const handleBarcodeScanned = (rawCode: string) => {
@@ -1734,11 +1741,19 @@ function SalesVoucherWindow({
   // Filtered products for search insertion
   const filteredProducts = useMemo(() => {
     if (!searchQuery) return localProducts;
+    const q = searchQuery.trim().toLowerCase();
+    if (isScannerMode) {
+      return localProducts.filter(p => 
+        p.code.toLowerCase().includes(q) ||
+        (p.destockBarcode && p.destockBarcode.toLowerCase().includes(q))
+      );
+    }
     return localProducts.filter(p => 
-      p.designation.toLowerCase().includes(searchQuery.toLowerCase()) || 
-      p.code.includes(searchQuery)
+      p.designation.toLowerCase().includes(q) || 
+      p.code.toLowerCase().includes(q) ||
+      (p.destockBarcode && p.destockBarcode.toLowerCase().includes(q))
     );
-  }, [localProducts, searchQuery]);
+  }, [localProducts, searchQuery, isScannerMode]);
 
   // Find info about product currently selected/clicked inside invoice details
   const viewingProduct = useMemo(() => {

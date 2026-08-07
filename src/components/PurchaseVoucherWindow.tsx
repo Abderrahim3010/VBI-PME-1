@@ -578,12 +578,19 @@ function PurchaseVoucherWindow({
   const filteredProductsToInsert = useMemo(() => {
     const q = insertSearchQuery.trim().toLowerCase();
     if (!q) return localProducts.slice(0, 100);
+    if (isScannerMode) {
+      return localProducts.filter(p => 
+        p.code.toLowerCase().includes(q) || 
+        (p.destockBarcode && p.destockBarcode.toLowerCase().includes(q))
+      ).slice(0, 150);
+    }
     return localProducts.filter(p => 
       p.code.toLowerCase().includes(q) || 
       p.designation.toLowerCase().includes(q) ||
-      (p.category || '').toLowerCase().includes(q)
+      (p.category || '').toLowerCase().includes(q) ||
+      (p.destockBarcode && p.destockBarcode.toLowerCase().includes(q))
     ).slice(0, 150);
-  }, [localProducts, insertSearchQuery]);
+  }, [localProducts, insertSearchQuery, isScannerMode]);
 
   const navigableVouchers = useMemo(() => {
     const map = new Map<string, { id: string; type: 'closed' | 'draft'; data: any }>();
