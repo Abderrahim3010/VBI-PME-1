@@ -56,6 +56,8 @@ export interface VoucherItem {
   qty: number;
   price: number; // Prix d'achat ou Prix de vente
   total: number;
+  purchasePrice?: number; // Frozen purchase price (prixAchat) at time of sale
+  costPrice?: number; // Frozen cost price (prixDeRevient) at time of sale
 }
 
 export interface PurchaseVoucher {

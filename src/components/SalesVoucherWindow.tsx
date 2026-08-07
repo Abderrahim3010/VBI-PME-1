@@ -993,7 +993,7 @@ function SalesVoucherWindow({
     const items = mode === 'create' ? draftItems : (selectedSale?.items || []);
     const itemsBenefit = items.reduce((acc, item) => {
       const originalProduct = products.find(p => p.code === item.code);
-      const buyPrice = originalProduct?.prixAchat ?? originalProduct?.prixDeRevient ?? 0;
+      const buyPrice = item.costPrice ?? item.purchasePrice ?? originalProduct?.prixDeRevient ?? originalProduct?.prixAchat ?? 0;
       const profitPerUnit = item.price - buyPrice;
       const itemProfit = profitPerUnit * item.qty;
       return acc + itemProfit;
@@ -1283,6 +1283,15 @@ function SalesVoucherWindow({
       ? computedMetrics.oldBalance - (computedMetrics.ttc - finalVersement)
       : computedMetrics.oldBalance + (computedMetrics.ttc - finalVersement);
 
+    const frozenItems = draftItems.map(item => {
+      const prod = products.find(p => p.code === item.code);
+      return {
+        ...item,
+        purchasePrice: item.purchasePrice ?? prod?.prixAchat ?? prod?.prixDeRevient ?? 0,
+        costPrice: item.costPrice ?? prod?.prixDeRevient ?? prod?.prixAchat ?? 0
+      };
+    });
+
     const savedVoucher: SalesVoucher = {
       id: newSaleId,
       date: newDate,
@@ -1302,7 +1311,7 @@ function SalesVoucherWindow({
       newBalance: finalNewBalance,
       observations: observations,
       vendeur: vendeurName,
-      items: draftItems,
+      items: frozenItems,
       paymentMode: paymentMode,
       paymentSource: paymentSource
     };
@@ -1608,7 +1617,9 @@ function SalesVoucherWindow({
       pieces: hasColisage ? quantitySelected % colisageVal : 0,
       qty: quantitySelected,
       price: finalPrice,
-      total: quantitySelected * finalPrice
+      total: quantitySelected * finalPrice,
+      purchasePrice: product.prixAchat ?? product.prixDeRevient ?? 0,
+      costPrice: product.prixDeRevient ?? product.prixAchat ?? 0
     };
     const updated = [...draftItems, newItem];
     void updateActiveDraftItems(updated).then(saved => {

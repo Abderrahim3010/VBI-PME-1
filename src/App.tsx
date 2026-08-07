@@ -975,15 +975,38 @@ export default function App() {
 
     const otherPurchases = purchases.filter(p => String(p.id) !== String(id));
 
-    // Revert stock (reset products in this purchase voucher to stock 0)
+    // Revert stock and prices correctly
     setProducts(prevProducts => {
       return prevProducts.map(p => {
         const matchingItems = target.items.filter(i => i.code === p.code);
         if (matchingItems.length > 0) {
+          const removedQty = matchingItems.reduce((acc, curr) => acc + curr.qty, 0);
+          const removedCost = matchingItems.reduce((acc, curr) => acc + (curr.qty * curr.price), 0);
+          const currentStock = p.stock || 0;
+          const currentCost = p.prixDeRevient !== undefined && p.prixDeRevient > 0 ? p.prixDeRevient : (p.prixAchat || 0);
+          const finalStock = Math.max(0, currentStock - removedQty);
+
+          let finalCostPrice = currentCost;
+          if (finalStock > 0 && removedQty > 0) {
+            const revertedTotalVal = (currentCost * currentStock) - removedCost;
+            if (revertedTotalVal > 0) {
+              finalCostPrice = Math.round(revertedTotalVal / finalStock);
+            }
+          }
+
+          const remainingMatchingItems = otherPurchases.flatMap(v => (v.items || []).filter(i => i.code === p.code));
+          let lastPrice = p.prixAchat || 0;
+          if (remainingMatchingItems.length > 0) {
+            lastPrice = remainingMatchingItems[remainingMatchingItems.length - 1].price;
+          }
+
+          const colNum = p.colissage ? parseInt(p.colissage) : 0;
           return {
             ...p,
-            stock: 0,
-            stockColis: 0
+            stock: finalStock,
+            stockColis: colNum > 0 ? Math.ceil(finalStock / colNum) : 0,
+            prixAchat: lastPrice,
+            prixDeRevient: finalCostPrice
           };
         }
         return p;

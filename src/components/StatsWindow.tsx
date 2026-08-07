@@ -263,15 +263,11 @@ function StatsWindow({
     filteredSales.forEach(s => {
       s.items.forEach(item => {
         const p = products.find(prod => prod.code === item.code);
-        if (p) {
-          const buyPrice = p.prixDeRevient || p.prixAchat || 0;
-          if (buyPrice > 0) {
-            totalMargin += (item.price - buyPrice) * item.qty;
-          } else {
-            // fallback cost is 75% of sale price (meaning 25% profit margin)
-            totalMargin += item.total * 0.25;
-          }
+        const buyPrice = (item as any).costPrice ?? (item as any).purchasePrice ?? p?.prixDeRevient ?? p?.prixAchat ?? 0;
+        if (buyPrice > 0) {
+          totalMargin += (item.price - buyPrice) * item.qty;
         } else {
+          // fallback cost is 75% of sale price (meaning 25% profit margin)
           totalMargin += item.total * 0.25;
         }
       });

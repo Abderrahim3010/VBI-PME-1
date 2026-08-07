@@ -1038,40 +1038,64 @@ function PurchaseVoucherWindow({
 
     // Calculate final products with both updated stocks and updated cost prices (weighted average cost / CUMP)
     const finalizedProducts = localProducts.map(p => {
+      const origVoucher = editingVoucherId ? purchases.find(v => String(v.id) === String(editingVoucherId)) : null;
+      const origItems = origVoucher ? (origVoucher.items || []).filter(item => item.code === p.code) : [];
+      const origQty = origItems.reduce((acc, curr) => acc + curr.qty, 0);
+      const origTotalCost = origItems.reduce((acc, curr) => acc + (curr.qty * curr.price), 0);
+
       const matchingItems = savedVoucher.items.filter(item => item.code === p.code);
-      if (matchingItems.length > 0) {
-        const totalQtyPurchased = matchingItems.reduce((acc, curr) => acc + curr.qty, 0);
-        
-        // Use our starting stock & cost calculator
-        const { startingStock, startingCost, currentStock, currentCost } = getStartingStockAndCost(p.code);
-        
-        // Calculate final stock
-        const finalStock = currentStock - (editingVoucherId ? getOriginalQtyOfItem(p.code) : 0) + totalQtyPurchased;
-        
-        // Calculate the new weighted average cost dynamically
-        let finalCostPrice = currentCost;
-        if (startingStock <= 0) {
-          // No prior stock, so new cost is just the weighted average of this purchase's items
-          const totalPurchasedCost = matchingItems.reduce((acc, curr) => acc + (curr.qty * curr.price), 0);
-          finalCostPrice = Math.round(totalPurchasedCost / totalQtyPurchased);
-        } else {
-          // Prior stock existed before this purchase
-          const totalPurchasedCost = matchingItems.reduce((acc, curr) => acc + (curr.qty * curr.price), 0);
-          finalCostPrice = Math.round(((startingStock * startingCost) + totalPurchasedCost) / (startingStock + totalQtyPurchased));
-        }
+      const newQty = matchingItems.reduce((acc, curr) => acc + curr.qty, 0);
+      const newTotalCost = matchingItems.reduce((acc, curr) => acc + (curr.qty * curr.price), 0);
 
-        const firstColisage = matchingItems[0].colisage;
-        const lastPrice = matchingItems[matchingItems.length - 1].price;
-
-        return {
-          ...p,
-          stock: finalStock,
-          stockColis: firstColisage && firstColisage > 0 ? Math.ceil(Math.max(0, finalStock) / firstColisage) : 0,
-          prixDeRevient: finalCostPrice,
-          prixAchat: lastPrice
-        };
+      if (origQty === 0 && newQty === 0) {
+        return p;
       }
-      return p;
+
+      const currentStock = p.stock || 0;
+      const currentCost = p.prixDeRevient !== undefined && p.prixDeRevient > 0
+        ? p.prixDeRevient
+        : (p.prixAchat || 0);
+
+      const deltaQty = newQty - origQty;
+      const finalStock = Math.max(0, currentStock + deltaQty);
+
+      // Stock and cost price right before applying the new items of this voucher
+      const startingStock = currentStock - origQty;
+      let startingCost = currentCost;
+      if (startingStock > 0 && currentStock > 0 && currentCost > 0 && origQty > 0) {
+        const revertedTotalVal = (currentCost * currentStock) - origTotalCost;
+        if (revertedTotalVal > 0) {
+          startingCost = Math.round(revertedTotalVal / startingStock);
+        }
+      }
+
+      // Calculate final CUMP (weighted average cost)
+      let finalCostPrice = startingCost;
+      if (startingStock <= 0) {
+        if (newQty > 0) {
+          finalCostPrice = Math.round(newTotalCost / newQty);
+        }
+      } else {
+        if (newQty > 0) {
+          finalCostPrice = Math.round(((startingStock * startingCost) + newTotalCost) / (startingStock + newQty));
+        }
+      }
+
+      let lastPrice = p.prixAchat || 0;
+      if (matchingItems.length > 0) {
+        lastPrice = matchingItems[matchingItems.length - 1].price;
+      }
+
+      const firstColisage = (matchingItems[0] && matchingItems[0].colisage) || (origItems[0] && origItems[0].colisage);
+      const colNum = firstColisage && firstColisage > 0 ? firstColisage : (p.colissage ? parseInt(p.colissage) : 0);
+
+      return {
+        ...p,
+        stock: finalStock,
+        stockColis: colNum > 0 ? Math.ceil(finalStock / colNum) : 0,
+        prixDeRevient: finalCostPrice,
+        prixAchat: lastPrice
+      };
     });
 
     if (!editingVoucherId && !config?.isActivated && purchases.length >= 1) {
@@ -1397,10 +1421,10 @@ function PurchaseVoucherWindow({
 
     // Check if another product already has the same designation (case-insensitive)
     const duplicateProduct = localProducts.find(
-      p => p.designation.trim().toLowerCase() === cleanDesignation.toLowerCase()
+      p => p.designation.trim().toLowerCase() === cleanDesignation.toLowerCase() && p.code !== selectedCatalogProductCode
     );
 
-    if (duplicateProduct && duplicateProduct.code !== cleanCode) {
+    if (duplicateProduct) {
       showRetroAlert(
         `Impossible d'enregistrer l'article : un produit avec la désignation "${duplicateProduct.designation}" existe déjà dans la base (Code: ${duplicateProduct.code}).`,
         "Désignation Déjà Utilisée"

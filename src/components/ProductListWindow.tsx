@@ -103,6 +103,7 @@ function ProductListWindow({
   const [selectedIndex, setSelectedIndex] = useState<number>(-1);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [editingOriginalCode, setEditingOriginalCode] = useState<string | null>(null);
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
 
   // Load manually created families from cache as fallback
@@ -382,6 +383,7 @@ function ProductListWindow({
   };
 
   const startAddNew = () => {
+    setEditingOriginalCode(null);
     setFormCode(generateRandomCode());
     setFormDesignation('');
     setFormCategory(familles[0] || '');
@@ -419,11 +421,13 @@ function ProductListWindow({
     setShowCodeMenu(false);
 
     setIsAddingNew(true);
+    setIsEditing(false);
   };
 
   const startEdit = (productToEdit?: Product) => {
     const target = productToEdit || selectedProduct;
     if (!target) return;
+    setEditingOriginalCode(target.code);
     setFormCode(target.code);
     setFormDesignation(target.designation);
     setFormCategory(target.category || familiasDefault());
@@ -463,6 +467,7 @@ function ProductListWindow({
     setIsCodeReadOnly(true); // Read-only by default for edited products, unlocked via Action menu
     setShowCodeMenu(false);
 
+    setIsAddingNew(false);
     setIsEditing(true);
   };
 
@@ -492,12 +497,21 @@ function ProductListWindow({
     const cleanCode = formCode.trim();
     const cleanDesignation = formDesignation.trim();
 
+    // Check if another product already has the same code (case-insensitive)
+    const codeConflict = products.find(
+      p => p.code.trim().toLowerCase() === cleanCode.toLowerCase() && p.code !== editingOriginalCode
+    );
+    if (codeConflict) {
+      alert(`Impossible d'enregistrer l'article : un produit avec le code "${codeConflict.code}" existe déjà dans la base (${codeConflict.designation}).`);
+      return;
+    }
+
     // Check if another product already has the same designation (case-insensitive)
     const duplicateProduct = products.find(
-      p => p.designation.trim().toLowerCase() === cleanDesignation.toLowerCase()
+      p => p.designation.trim().toLowerCase() === cleanDesignation.toLowerCase() && p.code !== editingOriginalCode
     );
 
-    if (duplicateProduct && duplicateProduct.code !== cleanCode) {
+    if (duplicateProduct) {
       alert(`Impossible d'enregistrer l'article : un produit avec la désignation "${duplicateProduct.designation}" existe déjà dans la base (Code: ${duplicateProduct.code}).`);
       return;
     }
@@ -539,11 +553,17 @@ function ProductListWindow({
     if (isAddingNew) {
       onAddProduct(payload);
     } else {
-      onEditProduct(payload);
+      if (onProductsUpdate && editingOriginalCode) {
+        const updatedProducts = products.map(p => p.code === editingOriginalCode ? payload : p);
+        onProductsUpdate(updatedProducts);
+      } else {
+        onEditProduct(payload);
+      }
     }
 
     setIsAddingNew(false);
     setIsEditing(false);
+    setEditingOriginalCode(null);
   };
 
   const selectAndConfirm = () => {
